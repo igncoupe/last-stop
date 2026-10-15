@@ -6,15 +6,16 @@ import { mat } from "../core/ps1.js";
 
 function face() {
   const g = new THREE.Group();
-  const skin = mat({ color: 0xa9b3ad, emissive: 0x0d1412, flatShading: true });
+  const skin = mat({ color: 0x6f7a74, emissive: 0x0a100e, flatShading: true });
   const black = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const wet = new THREE.MeshPhongMaterial({ color: 0x0a0b0c, shininess: 80, specular: 0x334044 });
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 9, 7), skin);
   head.scale.set(1, 1.28, 1.02);
   g.add(head);
-  // sunken cheeks and brow
-  const brow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.05), skin);
-  brow.position.set(0, 0.05, 0.11);
+  // a heavy brow that throws the eyes into shadow
+  const brow = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), skin);
+  brow.scale.set(1.9, 0.35, 0.6);
+  brow.position.set(0, 0.058, 0.098);
   g.add(brow);
   // hollow eyes with a tiny glint deep inside
   const eyes = [];
@@ -31,9 +32,9 @@ function face() {
   }
   // the mouth hangs open; the jaw drops during the scare
   const jaw = new THREE.Group();
-  jaw.position.set(0, -0.07, 0.1);
-  const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.035, 7, 6), black);
-  mouth.scale.set(1, 1.4, 0.5);
+  jaw.position.set(0, -0.085, 0.104);
+  const mouth = new THREE.Mesh(new THREE.SphereGeometry(0.04, 7, 6), black);
+  mouth.scale.set(0.9, 1.6, 0.5);
   jaw.add(mouth);
   g.add(jaw);
   // wet hair hanging over the face
@@ -55,8 +56,9 @@ function face() {
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.3, 0.2), mat({ color: 0x1b2226 }));
   body.position.set(0, -0.32, -0.02);
   g.add(body);
-  const light = new THREE.PointLight(0xbfe6ff, 2.5, 1.6, 1.5);
-  light.position.set(0, 0.05, 0.45);
+  // dim, cold light from below: like a flashlight held under a chin
+  const light = new THREE.PointLight(0x9fd8d0, 0.55, 1.2, 1.6);
+  light.position.set(0, -0.3, 0.3);
   g.add(light);
   g.userData = { jaw, eyes, light };
   return g;
@@ -123,7 +125,7 @@ export function createHorror(camera) {
         // facing the camera (its front is +z), twitching
         f.rotation.set(-0.08 + (Math.random() - 0.5) * 0.18, (Math.random() - 0.5) * 0.22, (Math.random() - 0.5) * 0.3);
         f.userData.jaw.scale.y = 1 + Math.min(1, k / 0.25) * 1.6;
-        f.userData.light.intensity = 2.5 * (Math.random() < 0.15 ? 0.2 : 1);
+        f.userData.light.intensity = 0.55 * (Math.random() < 0.15 ? 0.15 : 1);
         if (k > 0.75) {
           f.visible = false;
           finish();
