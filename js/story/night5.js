@@ -24,13 +24,12 @@ export async function night5(g) {
   const elm = STOPS["Elm & 4th"];
   g.spawn("rosie", "rosie", { at: curb("Elm & 4th", -1, 7.1), yaw: route.heading(elm) + Math.PI / 2 });
   const teo = g.spawn("teodor", "uniform", { at: curb("Elm & 4th", 3, 6.2), yaw: route.heading(elm) + Math.PI / 2 });
-  await g.until(() => g.d > elm - 70);
+  await g.until(() => g.d > elm - 120 || g.drive.stoppedNear(elm));
+  // tonight the bus knows where it's stopping
+  if (!g.drive.stoppedNear(elm)) g.auto(7, elm - 4);
   await g.think("Two people at Elm and Fourth. A woman on the bench. And a man under the streetlight in an old brown driver's uniform.");
-  if (!g.drive.stoppedNear(elm)) {
-    g.auto(5, elm - 2);
-    await g.until(() => g.drive.speed < 0.3, 20000);
-    g.release();
-  }
+  await g.until(() => g.drive.speed < 0.3, 25000);
+  g.release();
   await openUp(g, 60000);
   f.knowsVarga = true;
   await g.actor("rosie").walk([doorOutside()], { speed: 1 });

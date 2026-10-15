@@ -248,7 +248,7 @@ async function bridge(g) {
   g.amb({ water: 0, engine: 0.3 });
   g.drive.detach(false);
   g.drive.d = STOPS["St. Agnes"] - 2;
-  g.release();
+  g.park();                      // parked until this scene is over
   await g.fade(0, 1200);
   g.mood("uneasy");
   if (f.obeyedN4) {
@@ -267,6 +267,7 @@ async function bridge(g) {
   }
   await g.think("Up on the fourth floor, the window of four B is lit. Dimmer now. The thin figure is holding up one finger.");
   await g.think("One more night.");
+  g.release();
   await closeDoorsAndGo(g);
 
   // the rest of the run, then Northgate
