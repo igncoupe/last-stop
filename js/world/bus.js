@@ -252,7 +252,11 @@ export function buildBus(scene) {
   }
   put(bus, box(1.6, 0.28, 2.4, mat({ color: 0xc9c1ab })), 0, 3.2, -1.5);      // roof AC unit
   for (const s of [1, -1]) {
-    put(bus, box(0.04, 0.05, 12, blackPlastic), s * (W + 0.04), 1.31, 0);       // window rail, bottom
+    // window rail, bottom (it stops at the door)
+    if (s === -1) {
+      put(bus, box(0.04, 0.05, 9.62, blackPlastic), -(W + 0.04), 1.31, -1.19);
+      put(bus, box(0.04, 0.05, 0.34, blackPlastic), -(W + 0.04), 1.31, 5.83);
+    } else put(bus, box(0.04, 0.05, 12, blackPlastic), W + 0.04, 1.31, 0);
     put(bus, box(0.04, 0.05, 12, blackPlastic), s * (W + 0.04), 2.62, 0);       // window rail, top
   }
 
