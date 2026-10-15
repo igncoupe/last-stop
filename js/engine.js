@@ -508,11 +508,16 @@
     }
   }, { once: true }));
 
+  function showMute() {
+    ui.muteBtn.classList.toggle("off", settings.muted);
+    ui.muteBtn.textContent = settings.muted ? "🔇" : "🔊";
+    ui.muteBtn.setAttribute("aria-label", settings.muted ? "Unmute sound" : "Mute sound");
+  }
+
   function toggleMute() {
     settings.muted = !settings.muted;
     Sound.setMuted(settings.muted);
-    ui.muteBtn.classList.toggle("off", settings.muted);
-    ui.muteBtn.textContent = settings.muted ? "Muted" : "Sound";
+    showMute();
     saveSettings();
   }
 
@@ -533,8 +538,7 @@
   document.body.classList.toggle("no-flash", !settings.flash);
   Sound.setVolume(settings.volume);
   Sound.setMuted(settings.muted);
-  ui.muteBtn.classList.toggle("off", settings.muted);
-  ui.muteBtn.textContent = settings.muted ? "Muted" : "Sound";
+  showMute();
 
   ui.volume.addEventListener("input", () => {
     settings.volume = ui.volume.value / 100;

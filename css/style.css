@@ -589,8 +589,12 @@ body.no-flash .view[data-fx="dark"] .blackout { animation: none; }
 @media (max-width: 560px) {
   body { font-size: 17px; }
   .game { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); gap: 8px; }
-  .hud { font-size: 18px; gap: 8px; padding-left: 10px; }
+  .hud { font-size: 17px; gap: 8px; padding-left: 10px; }
+  .hud > * { white-space: nowrap; }
   .hud-route-name { display: none; }
+  .hud-schedule { min-width: 0; }
+  .hud-btn { padding: 1px 6px; }
+  .view[data-mode="mystery"] .stop-sign { right: 70%; }
   .view { height: clamp(140px, 28vh, 220px); }
   .mirror { top: 30px; }
   .route { padding: 10px 18px 12px; }
