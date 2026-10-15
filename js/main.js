@@ -139,6 +139,12 @@ function frame(now) {
   if (playing && input.hit("KeyF")) toggleDoors();
   player.state.vibration = drive.speed / 14;
   player.update(dt, input);
+  // look at the rear-view mirror and your eyes focus on it: the view narrows so you can see who's back there
+  const wantFov = player.mode === "seat" && g.lookingAtMirror() ? 34 : 72;
+  if (Math.abs(camera.fov - wantFov) > 0.05) {
+    camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 4);
+    camera.updateProjectionMatrix();
+  }
   horror.update(dt);
   shade.update(dt, camera);
   drive.update(dt, input, playing && player.mode === "seat" && !player.state.locked);
