@@ -506,12 +506,13 @@ function engine(level, rev) {
 
 /* ---------------- voices ---------------- */
 const clips = new Map();
+let clipVersions = {};                 // id -> hash of the file, so a re-recorded line isn't played from an old cached copy
 function loadClip(id) {
   if (!clips.has(id)) {
     // a stalled download must never hold up the story: give up after 8 s and show the subtitle alone
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);
-    clips.set(id, fetch(`voices/${id}.mp3`, { signal: ctrl.signal })
+    clips.set(id, fetch(`voices/${id}.mp3${clipVersions[id] ? `?v=${clipVersions[id]}` : ""}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.arrayBuffer() : null))
       .then((buf) => (buf && ctx ? ctx.decodeAudioData(buf) : null))
       .catch(() => null)
@@ -621,6 +622,7 @@ export const Sound = {
   ambience,
   engine,
   voice,
+  setVersions(v) { clipVersions = v || {}; },
   prefetch(ids) { if (ctx && voicesOn) ids.forEach((id) => loadClip(id)); },
   // fast automated tests can't wait for real-time voice clips
   setVoices(on) { voicesOn = on; },

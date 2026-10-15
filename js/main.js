@@ -366,6 +366,7 @@ async function begin(startNight, saved) {
   $("screen-title").hidden = true;
   ui.loading("Loading voices…");
   manifest = await loadManifest();
+  if (manifest) Sound.setVersions(manifest.versions);
   ui.loading(null);
   play(startNight, saved);
 }
