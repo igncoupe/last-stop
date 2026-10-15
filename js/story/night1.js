@@ -57,7 +57,7 @@ export async function night1(g) {
       f.maraHelped = true;
       g.kind();
       g.late(2);
-      await g.board("mara", "L0");
+      await g.board("mara", "R0");
       g.flags.maraAboard = true;
       await g.say("mara", "Thank you. Oh my god, thank you. I'm Mara. If I'm late one more time they'll take me off nights, and I can't afford days.");
     } else {

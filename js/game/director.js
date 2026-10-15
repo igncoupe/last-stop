@@ -39,6 +39,22 @@ export function createDirector(w) {
   let storm = false;
   const s = { flags: {}, kind: 0, late: 0, warn: 0, lateAtNight: 0, night: 1, waiting: "" };
 
+  // who is sitting where, so nobody sits on anybody: a taken seat sends you to the nearest free one
+  const seated = new Map();            // seat name -> actor key
+  function freeSeatOf(key) { for (const [seat, k] of seated) if (k === key) seated.delete(seat); }
+  function takeSeat(key, want) {
+    freeSeatOf(key);
+    const taken = (seat) => seated.has(seat) && actors.has(seated.get(seat));
+    let seat = want;
+    if (taken(want)) {
+      const at = bus.seatSlots[want];
+      seat = Object.keys(bus.seatSlots).filter((n) => !taken(n))
+        .sort((a, b) => bus.seatSlots[a].distanceTo(at) - bus.seatSlots[b].distanceTo(at))[0] || want;
+    }
+    seated.set(seat, key);
+    return seat;
+  }
+
   let speech = Promise.resolve();
   async function speak(who, text, { keep = false, after = 260 } = {}) {
     s.waiting = `line (${who})`;
@@ -200,12 +216,13 @@ export function createDirector(w) {
       const p = actors.get(key);
       if (p) p.remove();
       actors.delete(key);
+      freeSeatOf(key);
     },
     despawnAll() { [...actors.keys()].forEach((k) => g.despawn(k)); },
     // sit someone straight down in a bus seat
     seat(key, seatName) {
       const p = actors.get(key);
-      p.sit(bus.group, bus.seatSlots[seatName], 0);
+      p.sit(bus.group, bus.seatSlots[takeSeat(key, seatName)], 0);
       return p;
     },
     // walk from where they are, up the steps, pay, and sit down
@@ -217,7 +234,7 @@ export function createDirector(w) {
       const at = p.root.getWorldPosition(new THREE.Vector3());
       // someone already up on the steps (they came to the door to ask) just carries on in
       if (at.distanceTo(step) >= at.distanceTo(outside)) await p.walk([outside], { speed, parent: scene });
-      const seatPos = bus.seatSlots[seatName];
+      const seatPos = bus.seatSlots[takeSeat(key, seatName)];
       await p.walk([bus.boardPath[1], bus.boardPath[2]], { speed, parent: bus.group, ground: bus.groundAt });
       Sound.sfx("coin");
       // the last step is up to the seat's own height (seats over the wheels sit on a platform)
@@ -230,6 +247,7 @@ export function createDirector(w) {
       const p = actors.get(key);
       if (!p) return;
       const z = p.root.position.z;
+      freeSeatOf(key);
       p.stand();
       await p.walk([new THREE.Vector3(0, 0.45, z), bus.boardPath[2], bus.boardPath[1], bus.boardPath[0]], { speed, parent: bus.group, ground: bus.groundAt });
       if (to) await p.walk([to], { speed, parent: scene });
@@ -533,6 +551,7 @@ export function createDirector(w) {
   function clear() {
     waiters.clear();
     speech = Promise.resolve();          // a night that's over doesn't hold up the next one's lines
+    seated.clear();
     g.despawnAll();
     routeOverride = null;
     doorControl = true;

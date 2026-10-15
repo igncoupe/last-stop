@@ -63,7 +63,7 @@ export async function night2(g) {
   let stopped = await g.arrive("Elm & 4th");
   await tape;
   if (stopped && (await openUp(g))) {
-    await g.board("mara", "L0");
+    await g.board("mara", "R0");
     f.maraAboard = true;
     if (f.maraHelped) {
       await g.say("mara", "Figured I owe you a coffee. It's terrible. Hospital coffee always is.");
