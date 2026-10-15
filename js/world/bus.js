@@ -29,11 +29,39 @@ export function buildBus(scene) {
   const strips = [];
   for (const x of [-0.75, 0.75]) strips.push(put(bus, box(0.18, 0.03, 9.5, glow(0xe8f0ff)), x, 2.87, -0.4));
 
+  // the lower body side: one panel with real arched cut-outs over the wheels,
+  // running from the skirt (just above the road) up to the window line
+  const WHEELS_Z = [-3.7, 2.75];
+  const ARCH_R = 0.62, WHEEL_Y = 0.5, SKIRT = 0.28, LOW_TOP = 1.375;
+  function lowerSide(side, z0, z1) {
+    const sh = new THREE.Shape();
+    sh.moveTo(z0, SKIRT);
+    for (const wz of WHEELS_Z) {
+      if (wz - ARCH_R < z0 || wz + ARCH_R > z1) continue;
+      sh.lineTo(wz - ARCH_R, SKIRT);
+      sh.lineTo(wz - ARCH_R, WHEEL_Y);
+      sh.absarc(wz, WHEEL_Y, ARCH_R, Math.PI, 0, true);
+      sh.lineTo(wz + ARCH_R, SKIRT);
+    }
+    sh.lineTo(z1, SKIRT);
+    sh.lineTo(z1, LOW_TOP);
+    sh.lineTo(z0, LOW_TOP);
+    sh.closePath();
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: 0.08, bevelEnabled: false, curveSegments: 14 });
+    geo.rotateY(-Math.PI / 2);          // shape x -> bus z; the 8 cm depth -> across the side
+    const m = new THREE.Mesh(geo, shell);
+    m.position.set(side * W + 0.04, 0, 0);
+    bus.add(m);
+    // a dark rubber skirt along the bottom edge
+    for (const [a, b] of [[z0, WHEELS_Z[0] - ARCH_R], [WHEELS_Z[0] + ARCH_R, Math.min(z1, WHEELS_Z[1] - ARCH_R)], [WHEELS_Z[1] + ARCH_R, z1]]) {
+      if (b - a > 0.05) put(bus, box(0.1, 0.06, b - a, mat({ color: 0x1a1b1d })), side * (W + 0.01), SKIRT + 0.03, (a + b) / 2);
+    }
+  }
+
   // side walls with window openings; the right side has a gap for the door
   for (const side of [1, -1]) {
     const x = side * W;
-    const lowLen = side === -1 ? 9.6 : 12;
-    put(bus, box(0.08, 0.95, lowLen, shell), x, 0.9, side === -1 ? -1.2 : 0);
+    lowerSide(side, -6, side === -1 ? 3.62 : 6);
     put(bus, box(0.08, 0.5, 12, shell), x, 2.68, 0);
     for (let z = -5.6; z <= 5.7; z += 1.4) {
       if (side === -1 && z > 3.6 && z < 5.6) continue;
@@ -43,14 +71,26 @@ export function buildBus(scene) {
     // the orange stripe stops at the door, like the real paint job
     const stripe = mat({ color: 0xd2721f });
     if (side === -1) {
-      put(bus, box(0.04, 0.16, 9.62, stripe), x - 0.05, 1.15, -1.19);
-      put(bus, box(0.04, 0.16, 0.34, stripe), x - 0.05, 1.15, 5.83);
-    } else put(bus, box(0.04, 0.16, 12, stripe), x + 0.05, 1.15, 0);
+      put(bus, box(0.04, 0.15, 9.62, stripe), x - 0.05, 1.205, -1.19);
+      put(bus, box(0.04, 0.15, 0.34, stripe), x - 0.05, 1.205, 5.83);
+    } else put(bus, box(0.04, 0.15, 12, stripe), x + 0.05, 1.205, 0);
   }
 
   // front: dashboard, windshield, destination sign
-  put(bus, box(2.5, 0.95, 0.08, shell), 0, 0.9, 6);
+  put(bus, box(2.5, 1.095, 0.08, shell), 0, 0.8275, 6);
   put(bus, box(2.5, 1.5, 0.02, glassMat), 0, 2.1, 6);
+  {
+    const surround = mat({ color: 0x141517 });
+    put(bus, box(2.56, 0.08, 0.06, surround), 0, 1.37, 6.02);              // bottom of the windshield
+    put(bus, box(2.56, 0.1, 0.06, surround), 0, 2.88, 6.02);               // top
+    for (const sx of [-1, 1]) put(bus, box(0.09, 1.56, 0.07, surround), sx * 1.24, 2.12, 6.02);   // A-pillars
+    // wipers, parked at the bottom of the glass
+    for (const sx of [-1, 1]) {
+      const arm = put(bus, box(0.85, 0.022, 0.02, surround), sx * 0.42, 1.47, 6.045);
+      arm.rotation.z = sx * 0.1;
+      put(bus, box(0.05, 0.05, 0.04, surround), sx * 0.82, 1.42, 6.04);    // pivot
+    }
+  }
   // what's left on the outside of the windshield after something hits it: ash handprints, a crack
   const smudgeCanvas = document.createElement("canvas");
   smudgeCanvas.width = 512;
@@ -145,26 +185,42 @@ export function buildBus(scene) {
   put(bus, box(2.5, 1.0, 0.08, shell), 0, 0.92, -6);
   put(bus, box(2.5, 1.4, 0.02, glassMat), 0, 2.05, -6);
 
-  // wheels: tire, steel hub, lug nuts, and a dark arch over each one.
-  // The front wheel sits behind the door, like a real transit bus.
-  const tireMat = mat({ color: 0x0e0e0f });
-  const hubMat = mat({ color: 0x7c8186 });
-  const archMat = mat({ color: 0x0b0b0c, side: THREE.DoubleSide });
-  for (const z of [-3.7, 2.75]) for (const s of [1, -1]) {
-    const wheelG = put(bus, new THREE.Group(), s * 1.13, 0.5, z);
-    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.32, 14), tireMat);
-    tire.rotation.z = Math.PI / 2;
-    wheelG.add(tire);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.27, 0.34, 10), hubMat);
-    hub.rotation.z = Math.PI / 2;
-    wheelG.add(hub);
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      put(wheelG, box(0.36, 0.04, 0.04, mat({ color: 0x3c4044 })), 0, Math.sin(a) * 0.16, Math.cos(a) * 0.16);
+  // wheels: they sit up inside the arches, tucked in under the body like a real transit bus.
+  // Tire with a sidewall, a steel rim with vent holes, ten lug nuts and a hub cap.
+  // The front wheel sits behind the door.
+  const tireMat = mat({ color: 0x101011 });
+  const sidewallMat = mat({ color: 0x1d1d1f });
+  const rimMat = mat({ color: 0x9aa0a6 });
+  const rimDark = mat({ color: 0x5c6166 });
+  const nutMat = mat({ color: 0xc3c8cc });
+  const wellMat = mat({ color: 0x070708, side: THREE.DoubleSide });
+  const lipMat = mat({ color: 0x1a1b1d });
+  const disc = (r0, r1, h, seg, material) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg).rotateZ(Math.PI / 2), material);
+  for (const z of WHEELS_Z) for (const s of [1, -1]) {
+    const wheelG = put(bus, new THREE.Group(), s * 1.09, 0.5, z);
+    wheelG.add(disc(0.5, 0.5, 0.3, 20, tireMat));
+    put(wheelG, disc(0.48, 0.48, 0.012, 20, sidewallMat), s * 0.151, 0, 0);       // sidewall
+    put(wheelG, disc(0.32, 0.32, 0.016, 18, rimMat), s * 0.156, 0, 0);            // rim
+    put(wheelG, disc(0.24, 0.24, 0.01, 16, rimDark), s * 0.163, 0, 0);            // dished centre
+    for (let i = 0; i < 8; i++) {                                                 // vent holes
+      const a = (i / 8) * Math.PI * 2 + 0.2;
+      put(wheelG, disc(0.035, 0.035, 0.01, 8, tireMat), s * 0.165, Math.sin(a) * 0.27, Math.cos(a) * 0.27);
     }
-    const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.36, 14, 1, true, 0, Math.PI), archMat);   // the top half, over the tire
-    arch.rotation.z = Math.PI / 2;
-    put(bus, arch, s * 1.14, 0.5, z);
+    for (let i = 0; i < 10; i++) {                                                // lug nuts
+      const a = (i / 10) * Math.PI * 2;
+      put(wheelG, disc(0.017, 0.017, 0.035, 6, nutMat), s * 0.17, Math.sin(a) * 0.16, Math.cos(a) * 0.16);
+    }
+    put(wheelG, disc(s > 0 ? 0.1 : 0.075, s > 0 ? 0.075 : 0.1, 0.06, 12, nutMat), s * 0.18, 0, 0);   // hub cap, narrow end out
+    // the dark wheel well inside the arch
+    const well = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.44, 16, 1, true, 0, Math.PI).rotateZ(Math.PI / 2), wellMat);
+    put(bus, well, s * 1.05, 0.5, z);
+    // a black rubber lip around the edge of the arch
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.635, 0.028, 6, 18, Math.PI), lipMat);
+    lip.rotation.y = Math.PI / 2;
+    put(bus, lip, s * (W + 0.045), 0.5, z);
+    for (const e of [-1, 1]) put(bus, box(0.06, 0.22, 0.056, lipMat), s * (W + 0.045), 0.39, z + e * 0.635);
+    // mud flaps behind the rear wheels
+    if (z < 0) put(bus, box(0.3, 0.34, 0.025, lipMat), s * 1.08, 0.22, z - 0.66);
     // inside, the wheel sits under a raised housing, like a real low-floor bus
     put(bus, box(0.42, 0.72, 1.42, mat({ color: 0x3a3c40 })), s * 1.0, 0.8, z);
     put(bus, box(0.44, 0.03, 1.44, mat({ color: 0x8a6a1e })), s * 1.0, 1.17, z);      // worn yellow edge
@@ -174,9 +230,21 @@ export function buildBus(scene) {
   const blackPlastic = mat({ color: 0x1a1b1d });
   put(bus, box(2.62, 0.28, 0.16, blackPlastic), 0, 0.32, 6.08);
   put(bus, box(2.62, 0.28, 0.16, blackPlastic), 0, 0.32, -6.08);
+  put(bus, box(2.5, 0.3, 0.03, blackPlastic), 0, 0.66, 6.045);                  // the black band across the front
+  {
+    put(bus, box(0.9, 0.2, 0.02, mat({ color: 0x0c0c0d })), 0, 0.66, 6.06);            // grille
+    for (let i = 0; i < 3; i++) put(bus, box(0.86, 0.02, 0.025, mat({ color: 0x3a3c40 })), 0, 0.6 + i * 0.06, 6.07);
+    const plate = tex.sign("RT 9", { bg: "#e9e4d4", fg: "#1a1a1a", w: 48, h: 16, font: 11 });
+    put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.13), mat({ map: plate })), 0, 0.4, 6.165);
+  }
+  const lampMat = glow(0xfff4d6);
   for (const s of [1, -1]) {
-    put(bus, box(0.34, 0.16, 0.04, glow(0xfff4d6)), s * 0.95, 0.62, 6.06);       // headlights
-    put(bus, box(0.12, 0.1, 0.04, glow(0xffa32a)), s * 1.18, 0.62, 6.06);        // turn signals
+    put(bus, box(0.54, 0.22, 0.03, mat({ color: 0x2a2c30 })), s * 0.86, 0.66, 6.06);   // headlight housing
+    for (const lx of [0.72, 0.98]) {
+      put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.03, 14).rotateX(Math.PI / 2), mat({ color: 0x8a8e92 })), s * lx, 0.66, 6.075);
+      put(bus, new THREE.Mesh(new THREE.CircleGeometry(0.06, 14), lampMat), s * lx, 0.66, 6.092);
+    }
+    put(bus, box(0.1, 0.12, 0.03, glow(0xffa32a)), s * 1.18, 0.66, 6.075);       // turn signals
     put(bus, box(0.3, 0.2, 0.04, glow(0x9c1410)), s * 1.0, 0.75, -6.06);        // tail lights
     // side mirror on an arm
     put(bus, box(0.05, 0.05, 0.5, blackPlastic), s * 1.45, 2.35, 5.9);
@@ -322,28 +390,40 @@ export function buildBus(scene) {
   const safety = mat({ color: 0xe0b21e, emissive: 0x2a1e00 });
   const DZ0 = 3.72;
   const DZ1 = 5.58;
-  // door posts, header and threshold
-  put(bus, box(0.14, 2.15, 0.1, trim), -W, 1.52, DZ0 - 0.05);
-  put(bus, box(0.14, 2.15, 0.1, trim), -W, 1.52, DZ1 + 0.05);
-  put(bus, box(0.16, 0.16, DZ1 - DZ0 + 0.2, trim), -W, 2.56, (DZ0 + DZ1) / 2);
-  put(bus, box(0.16, 0.06, DZ1 - DZ0 + 0.2, chrome), -W, 0.03, (DZ0 + DZ1) / 2);
-  // body panel below the window line, closing the side in around the door
-  put(bus, box(0.08, 0.5, 0.12, shell), -W, 0.25, DZ0 - 0.16);
-  // the leaves: frame, glass, push bar and a rubber seal on the closing edge
+  // door portal: body-coloured posts with a black rubber seal facing the opening, a header, a threshold
+  for (const [z, e] of [[DZ0 - 0.05, 1], [DZ1 + 0.05, -1]]) {
+    put(bus, box(0.12, 2.2, 0.1, shell), -W, 1.38, z);
+    put(bus, box(0.13, 2.2, 0.03, rubber), -W, 1.38, z + e * 0.06);
+  }
+  put(bus, box(0.14, 0.14, DZ1 - DZ0 + 0.2, shell), -W, 2.54, (DZ0 + DZ1) / 2);
+  put(bus, box(0.15, 0.03, DZ1 - DZ0, rubber), -W, 2.46, (DZ0 + DZ1) / 2);
+  put(bus, box(0.16, 0.05, DZ1 - DZ0 + 0.2, chrome), -W, 0.03, (DZ0 + DZ1) / 2);
+  // a lit side sign above the door, like a real city bus
+  const sideSign = tex.sign("9  NORTHGATE", { bg: "#120c02", fg: "#ffb54a", w: 128, h: 20, font: 15 });
+  const sign = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.2), glow(0xffffff, { map: sideSign })), -W - 0.052, 2.76, (DZ0 + DZ1) / 2);
+  sign.rotation.y = -Math.PI / 2;
+  put(bus, box(0.05, 0.26, 1.38, trim), -W - 0.02, 2.76, (DZ0 + DZ1) / 2);
+  // the leaves: black aluminium frames, big tinted glass panes, a lower kick panel,
+  // fat rubber seals where they meet, and a steel grab handle on the inside
+  const doorFrame = mat({ color: 0x18191c });
+  const doorGlass = new THREE.MeshLambertMaterial({ color: 0x34505e, transparent: true, opacity: 0.4, depthWrite: false });
   const doorPanels = [];
   const leafW = (DZ1 - DZ0) / 2;
   for (const [z, dir] of [[DZ0, 1], [DZ1, -1]]) {
     const pivot = put(bus, new THREE.Group(), -W, 0.08, z);
     const leaf = put(pivot, new THREE.Group(), 0, 0, dir * leafW / 2);
-    const H = 2.38;
-    put(leaf, box(0.05, 0.08, leafW, metal), 0, H, 0);                  // top rail
-    put(leaf, box(0.05, 0.3, leafW, metal), 0, 0.15, 0);                // kick plate
-    put(leaf, box(0.05, H, 0.05, metal), 0, H / 2, -dir * (leafW / 2 - 0.025));  // hinge stile
-    put(leaf, box(0.05, H, 0.05, metal), 0, H / 2, dir * (leafW / 2 - 0.025));   // closing stile
-    put(leaf, box(0.07, H, 0.03, rubber), 0, H / 2, dir * (leafW / 2 + 0.01));   // rubber seal
-    put(leaf, box(0.012, H - 0.4, leafW - 0.1, glassMat), 0, H / 2 + 0.1, 0);    // glass
-    put(leaf, box(0.06, 0.05, leafW - 0.1, metal), 0, 1.25, 0);         // mid rail
-    put(leaf, box(0.05, 0.04, leafW * 0.6, chrome), -0.05, 1.05, 0);    // push bar (inside)
+    const H = 2.36;
+    put(leaf, box(0.055, 0.08, leafW, doorFrame), 0, H - 0.04, 0);                    // top rail
+    put(leaf, box(0.055, 0.1, leafW, doorFrame), 0, 0.05, 0);                         // bottom rail
+    put(leaf, box(0.055, 0.06, leafW, doorFrame), 0, 0.62, 0);                        // kick-panel rail
+    put(leaf, box(0.03, 0.46, leafW - 0.08, metal), 0, 0.33, 0);                      // brushed kick panel
+    put(leaf, box(0.055, H, 0.05, doorFrame), 0, H / 2, -dir * (leafW / 2 - 0.025));  // hinge stile
+    put(leaf, box(0.055, H, 0.05, doorFrame), 0, H / 2, dir * (leafW / 2 - 0.025));   // closing stile
+    put(leaf, box(0.075, H - 0.06, 0.05, rubber), 0, H / 2, dir * (leafW / 2 + 0.018)); // the seal they close on
+    put(leaf, box(0.014, H - 0.79, leafW - 0.09, doorGlass), 0, (0.65 + H - 0.08) / 2, 0); // one tall pane
+    // grab handle on the inside, on two stand-offs
+    put(leaf, new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.85, 8), chrome), 0.075, 1.32, dir * (leafW / 2 - 0.13));
+    for (const hy of [0.92, 1.72]) put(leaf, box(0.07, 0.025, 0.025, chrome), 0.045, hy, dir * (leafW / 2 - 0.13));
     doorPanels.push({ pivot, dir });
   }
   // stairwell: two steps with yellow safety edges, a step light, chrome handrails
