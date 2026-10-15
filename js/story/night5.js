@@ -87,7 +87,7 @@ export async function night5(g) {
   await closeDoorsAndGo(g);
 
   // ---------- Ashgrove
-  const md = g.props.mystery.d;
+  const md = g.mysteryAhead();   // never behind you
   const crowd = [];
   for (let i = 0; i < 14; i++) {
     const look = i === 0 ? "lena" : i === 1 ? "daniel" : i === 2 ? "ivy" : "drowned";

@@ -91,33 +91,35 @@ export async function night3(g) {
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
-  // ---------- the radio plays 1994
-  await g.wait(5000);
-  g.radio("CH 9 ????");
-  g.sfx("static", 1.6);
-  await g.wait(1600);
-  await g.say("radio94", "Repeating our top story. At twelve thirty-one this morning, the Ashgrove bridge collapsed during the storm.");
-  await g.say("radio94", "A Route 9 city bus was crossing at the time. Divers have recovered fourteen.");
-  g.sfx("static", 0.6);
-  await g.say("radio94", "The driver, Teodor Varga, fifty-eight, was pulled from the river alive, and is in critical condition at St. Agnes.");
-  await g.say("radio94", "Among the dead, a St. Agnes nurse, Lena Marsh, thirty-one, who leaves behind a four-year-old child.");
-  await g.say("radio94", "Dispatch records show the bus was running eleven minutes behind sched");
-  g.sfx("static", 0.4);
-  g.radio("CH 9");
-  await g.say("rhee", "That's enough of that.");
-  f.knowsVarga = true;
-  f.knowsMother = true;
-  g.mood("grief");
-  await g.wait(1500);
-  await g.think("Lena Marsh.");
-  await g.think("My mother's name was Lena Marsh. I was four.");
-  if (f.knowsLena) await g.think("The woman in the shelter. Lena. She looked at me like she knew me. Because she did.");
-  await g.think("Nobody ever told me how. They just said there was an accident. They just said she wasn't coming home.");
-  g.mood("dread");
-  g.hint("Check your mirror");
-  await g.until(() => g.lookingAtMirror(), 9000);
-  g.hint(null);
-  await g.think("Varga. Teodor Varga. He's looking at the radio. Then at me. He nods. Very slightly.");
+  // ---------- the radio plays 1994 (while you drive; St. Agnes waits for it)
+  const broadcast = (async () => {
+    await g.wait(5000);
+    g.radio("CH 9 ????");
+    g.sfx("static", 1.6);
+    await g.wait(1600);
+    await g.say("radio94", "Repeating our top story. At twelve thirty-one this morning, the Ashgrove bridge collapsed during the storm.");
+    await g.say("radio94", "A Route 9 city bus was crossing at the time. Divers have recovered fourteen.");
+    g.sfx("static", 0.6);
+    await g.say("radio94", "The driver, Teodor Varga, fifty-eight, was pulled from the river alive, and is in critical condition at St. Agnes.");
+    await g.say("radio94", "Among the dead, a St. Agnes nurse, Lena Marsh, thirty-one, who leaves behind a four-year-old child.");
+    await g.say("radio94", "Dispatch records show the bus was running eleven minutes behind sched");
+    g.sfx("static", 0.4);
+    g.radio("CH 9");
+    await g.say("rhee", "That's enough of that.");
+    f.knowsVarga = true;
+    f.knowsMother = true;
+    g.mood("grief");
+    await g.wait(1500);
+    await g.think("Lena Marsh.");
+    await g.think("My mother's name was Lena Marsh. I was four.");
+    if (f.knowsLena) await g.think("The woman in the shelter. Lena. She looked at me like she knew me. Because she did.");
+    await g.think("Nobody ever told me how. They just said there was an accident. They just said she wasn't coming home.");
+    g.mood("dread");
+    g.hint("Check your mirror");
+    await g.until(() => g.lookingAtMirror(), 9000);
+    g.hint(null);
+    await g.think("Varga. Teodor Varga. He's looking at the radio. Then at me. He nods. Very slightly.");
+  })();
 
   // ---------- St. Agnes, and Room 4B
   if (f.maraAboard) {
@@ -125,6 +127,7 @@ export async function night3(g) {
     g.sfx("bell");
   }
   stopped = await g.arrive("St. Agnes");
+  await broadcast;
   if (f.maraAboard && stopped && (await openUp(g))) {
     await g.say("mara", "Fourth floor. Room four B. Please.");
     await g.say("rhee", "Driver. You have no scheduled break at St. Agnes.");
@@ -145,7 +148,7 @@ export async function night3(g) {
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
   // ---------- the stop with no name: two blocks past St. Agnes
-  const md = g.props.mystery.d;
+  const md = g.mysteryAhead();   // never behind you
   const crowd = [];
   for (let i = 0; i < 10; i++) {
     const look = i === 1 ? "lena" : i === 2 ? "daniel" : "drowned";

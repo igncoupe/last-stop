@@ -64,8 +64,14 @@ export async function night4(g) {
     await g.say("mara", "I'll be with him. He won't be alone. I promise.");
     g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
   }
-  if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
-  await g.wait(3000);
+  // the clipping happens while the bus is parked (if you drove past Elm, the bus stops itself)
+  if (g.drive.moving) {
+    g.auto(5, g.d + 30);
+    await g.until(() => g.drive.speed < 0.3, 15000);
+    await g.think("The bus coughed and rolled to a stop on its own. The engine's still running.");
+  }
+  g.park();
+  await g.wait(1500);
   await g.think("A streetlight glare, right in my eyes.");
   g.hint("Pull down the sun visor");
   await g.interact(g.bus.interactables[2], "Pull down the visor");
@@ -86,6 +92,8 @@ export async function night4(g) {
     await g.say("rhee", "Put that away, driver. Teodor kept that for thirty years. Look where it got him.");
   }
   g.visor(false);
+  g.release();
+  await closeDoorsAndGo(g);
 
   // ---------- Market St
   const junOk = f.junRode || f.junFound;
@@ -104,7 +112,7 @@ export async function night4(g) {
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
   // ---------- the stop with no name: they get on
-  const md = g.props.mystery.d;
+  const md = g.mysteryAhead();   // never behind you
   await g.until(() => g.d > md - 90);
   g.despawn("jun");
   g.despawn("mara");

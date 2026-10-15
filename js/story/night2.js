@@ -235,7 +235,7 @@ export async function night2(g) {
   g.dread(false);
 
   // ---------- the stop with no name
-  const md = g.props.mystery.d;
+  const md = g.mysteryAhead();   // never behind you
   const crowd = [];
   for (let i = 0; i < 8; i++) {
     crowd.push(g.spawn(`drowned${i}`, i === 0 ? "lena" : i === 3 ? "ivy" : "drowned", { ghost: true, at: mysteryCurb(g, -1.8 + (i % 4) * 1.2, 6.4 + Math.floor(i / 4) * 0.6), yaw: route.heading(md) + Math.PI / 2 }));

@@ -140,6 +140,16 @@ export function createDirector(w) {
     interior(mode) { bus.setInterior(mode); },
     visor(down) { bus.setVisor(down); },
     mystery(d) { props.mystery.place(d); },
+    // the stop with no name is never behind you: if you've passed it, it moves ahead
+    mysteryAhead(min = 100) {
+      if (props.mystery.d === null || props.mystery.d - drive.d >= min) return props.mystery.d;
+      let d = drive.d + 170;
+      const clash = (x) => Object.values(STOPS).some((sd) => Math.abs(sd - x) < 45);
+      while (clash(d)) d += 20;
+      d = Math.min(d, route.length - 110);
+      props.mystery.place(d);
+      return d;
+    },
     mysteryName(text) { props.mystery.setName(text); },
 
     // ---------- people ----------
