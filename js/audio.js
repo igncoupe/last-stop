@@ -4,6 +4,9 @@
 let ctx = null;
 let master, musicBus, ambBus, sfxBus, voiceBus, reverb, noiseBuf;
 let volume = 0.8;
+// the player's own mix (settings): voices, music, and effects with ambience
+const levels = { voices: 1, music: 1, sfx: 1 };
+let userVoice, userMusic, userSfx;
 let muted = false;
 let currentMood = null;
 let moodVoices = [];
@@ -34,9 +37,12 @@ function init() {
   master.gain.value = muted ? 0 : volume;
   master.connect(limiter);
   limiter.connect(ctx.destination);
-  musicBus = bus(0.55);
-  ambBus = bus(0.7);
-  sfxBus = bus(0.9);
+  userVoice = bus(levels.voices);
+  userMusic = bus(levels.music);
+  userSfx = bus(levels.sfx);
+  musicBus = bus(0.55, userMusic);
+  ambBus = bus(0.7, userSfx);
+  sfxBus = bus(0.9, userSfx);
   // voices go through their own compressor, so every line lands at the same loudness
   voiceBus = gainNode(1.25);
   const voiceComp = ctx.createDynamicsCompressor();
@@ -48,7 +54,7 @@ function init() {
   const voiceMakeup = gainNode(1.5);
   voiceBus.connect(voiceComp);
   voiceComp.connect(voiceMakeup);
-  voiceMakeup.connect(master);
+  voiceMakeup.connect(userVoice);
   reverb = ctx.createConvolver();
   reverb.buffer = impulse(3.2);
   const rOut = gainNode(0.5);
@@ -61,7 +67,7 @@ function init() {
   document.addEventListener("visibilitychange", () => { if (ctx) document.hidden ? ctx.suspend() : ctx.resume(); });
 }
 
-function bus(level) { const g = gainNode(level); g.connect(master); return g; }
+function bus(level, out = master) { const g = gainNode(level); g.connect(out); return g; }
 function gainNode(v = 0) { const g = ctx.createGain(); g.gain.value = v; return g; }
 function send(node, amount) { const g = gainNode(amount); node.connect(g); g.connect(reverb); }
 function impulse(seconds) {
@@ -215,7 +221,7 @@ const SFX = {
     drive.connect(g);
     out(noise(t, dur, "bandpass", 3000, 1.2), 0.5, t, 0.02, dur * 0.9, 0.3);        // the rasp of breath in it
     out(tone(t, 0.9, "sine", 70, 28), 1.4, t, 0.002, 0.85, 0.3);                     // body blow
-    g.connect(master);
+    g.connect(userSfx);
     send(g, 0.5);
     // everything else drops away for a moment
     for (const b of [musicBus, ambBus]) {
@@ -654,6 +660,10 @@ export const Sound = {
       const side = (d[0] * r[0] + d[1] * r[1] + d[2] * r[2]) / len;
       panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, side)) * 0.4, ctx.currentTime, 0.05);
     });
+  },
+  setLevels(l) {
+    Object.assign(levels, l);
+    if (ctx) { ramp(userVoice.gain, levels.voices, 0.1); ramp(userMusic.gain, levels.music, 0.1); ramp(userSfx.gain, levels.sfx, 0.1); }
   },
   setVolume(v) { volume = v; if (ctx && !muted) ramp(master.gain, v, 0.2); },
   setMuted(m) { muted = m; if (ctx) ramp(master.gain, m ? 0 : volume, 0.2); },

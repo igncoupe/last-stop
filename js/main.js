@@ -17,6 +17,7 @@ import { createDirector } from "./game/director.js";
 import { createHorror } from "./world/horror.js";
 import { createShade } from "./world/shade.js";
 import { createTraffic } from "./world/traffic.js";
+import { createMenuArt } from "./core/menuArt.js";
 import { NIGHTS, ENDINGS, CREDITS } from "./story/nights.js";
 import { KIND_ENOUGH } from "./story/common.js";
 
@@ -80,7 +81,13 @@ const places = buildPlaces(scene);
 const drive = createDrive(bus);
 const player = createPlayer(camera, scene);
 
-const settings = Object.assign({ volume: 0.8, mouse: 1, scares: true, subs: true, warned: false }, store.get(SETTINGS) || {});
+const DEFAULTS = {
+  volume: 0.8, voices: 1, music: 1, sfx: 1,
+  mouse: 1, invertY: false,
+  brightness: 1, fov: 72, grain: true,
+  subs: true, subSize: "medium", scares: true, shake: true,
+};
+const settings = Object.assign({ ...DEFAULTS, warned: false }, store.get(SETTINGS) || {});
 const horror = createHorror(camera);
 const shade = createShade(scene);
 const traffic = createTraffic(scene, (name, ...args) => Sound.sfx(name, ...args));
@@ -180,7 +187,7 @@ function frame(now) {
   player.state.vibration = drive.speed / 14;
   player.update(dt, input);
   // look at the rear-view mirror and your eyes focus on it: the view narrows so you can see who's back there
-  const wantFov = player.mode === "seat" && g.lookingAtMirror() ? 34 : 72;
+  const wantFov = player.mode === "seat" && g.lookingAtMirror() ? 34 : settings.fov;
   if (Math.abs(camera.fov - wantFov) > 0.05) {
     camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 4);
     camera.updateProjectionMatrix();
@@ -208,8 +215,9 @@ function frame(now) {
   director.update(dt);
   Sound.update(camera);
   const draw = !TEST || FAST <= 1 || testFrame++ % 3 === 0;
-  if (draw && player.mode === "seat") bus.renderMirror(renderer, scene);
-  if (draw) renderer.render(scene, camera);
+  // the main menu has its own picture: the game world isn't drawn behind it
+  if (draw && !menuUp && player.mode === "seat") bus.renderMirror(renderer, scene);
+  if (draw && !menuUp) renderer.render(scene, camera);
   input.endFrame();
 }
 
@@ -243,6 +251,7 @@ input.onLockChange = (locked) => {
 };
 canvas.addEventListener("click", () => { if (playing && !inMenu) input.lock(); });
 $("btn-resume").addEventListener("click", () => input.lock());
+$("btn-pause-settings").addEventListener("click", () => openSettings("screen-pause"));
 $("btn-quit").addEventListener("click", () => location.reload());
 
 /* ---------- the game ---------- */
@@ -349,9 +358,14 @@ async function play(startNight, saved) {
   location.reload();
 }
 
+const menuArt = createMenuArt($("menu-art"));
+let menuUp = true;
 function showTitle() {
   $("screen-warning").hidden = true;
   $("screen-title").hidden = false;
+  menuUp = true;
+  menuArt.start();
+  hideConfirm();
   const saved = store.get(SAVE);
   $("btn-continue").hidden = !saved;
   $("btn-new").classList.toggle("primary", !saved);
@@ -361,9 +375,15 @@ function showTitle() {
 }
 
 async function begin(startNight, saved) {
+  if (!menuUp) return;                 // a double click starts one game, not two
   Sound.init();
   Sound.setVolume(SILENT ? 0 : settings.volume);
+  Sound.setLevels({ voices: settings.voices, music: settings.music, sfx: settings.sfx });
   $("screen-title").hidden = true;
+  $("screen-settings").hidden = true;
+  menuCol.hidden = false;
+  menuUp = false;
+  menuArt.stop();
   ui.loading("Loading voices…");
   manifest = await loadManifest();
   if (manifest) Sound.setVersions(manifest.versions);
@@ -371,7 +391,25 @@ async function begin(startNight, saved) {
   play(startNight, saved);
 }
 
-$("btn-new").addEventListener("click", () => begin(Number(params.get("night")) || 1, null));
+// a new game over a save asks first
+function hideConfirm() {
+  $("confirm-new").hidden = true;
+  $("menu-list").hidden = false;
+}
+$("btn-new").addEventListener("click", () => {
+  const saved = store.get(SAVE);
+  if (saved && !params.get("night")) {
+    $("confirm-night").textContent = `Night ${saved.night}`;
+    $("menu-list").hidden = true;
+    $("confirm-new").hidden = false;
+    $("btn-new-no").focus();
+    return;
+  }
+  begin(Number(params.get("night")) || 1, null);
+});
+$("btn-new-yes").addEventListener("click", () => begin(Number(params.get("night")) || 1, null));
+$("btn-new-no").addEventListener("click", () => { hideConfirm(); $("btn-new").focus(); });
+$("btn-settings").addEventListener("click", () => openSettings("screen-title"));
 $("btn-continue").addEventListener("click", () => {
   const saved = store.get(SAVE);
   begin(saved.night, saved);
@@ -382,23 +420,163 @@ $("btn-warning").addEventListener("click", () => {
   showTitle();
 });
 
-// settings
-const bind = (id, key, read, apply) => {
-  const el = $(id);
-  if (el.type === "checkbox") el.checked = settings[key];
-  else el.value = key === "volume" ? settings.volume * 100 : settings.mouse * 100;
-  el.addEventListener("input", () => {
-    settings[key] = read(el);
-    apply && apply(settings[key]);
-    store.set(SETTINGS, settings);
-  });
+/* ---------- settings ---------- */
+const pct = (v) => `${Math.round(v * 100)}%`;
+const range = (key, label, min, max, step, show, sub) => ({ key, label, sub, type: "range", min, max, step, show });
+const toggle = (key, label, sub) => ({ key, label, sub, type: "toggle" });
+const fullscreen = {
+  label: "Fullscreen", type: "toggle",
+  get: () => !!document.fullscreenElement,
+  set(on) {
+    if (on === !!document.fullscreenElement) return;
+    const p = on ? document.documentElement.requestFullscreen?.() : document.exitFullscreen?.();
+    if (p && p.catch) p.catch(() => {});
+  },
 };
-bind("set-volume", "volume", (el) => el.value / 100, (v) => Sound.setVolume(v));
-bind("set-mouse", "mouse", (el) => el.value / 100, (v) => { input.sensitivity = v; });
-bind("set-scares", "scares", (el) => el.checked);
-bind("set-subs", "subs", (el) => el.checked, (v) => { ui.subsOn = v; });
-input.sensitivity = settings.mouse;
-ui.subsOn = settings.subs;
+const SETTING_TABS = [
+  { name: "Audio", rows: [
+    range("volume", "Master volume", 0, 1, 0.01, pct),
+    range("voices", "Voices", 0, 1, 0.01, pct),
+    range("music", "Music", 0, 1, 0.01, pct),
+    range("sfx", "Effects", 0, 1, 0.01, pct, "Rain, the engine, the doors, the screams"),
+  ] },
+  { name: "Controls", keys: true, rows: [
+    range("mouse", "Mouse sensitivity", 0.2, 2, 0.05, (v) => `${v.toFixed(2)}x`),
+    toggle("invertY", "Invert mouse", "Push the mouse forward to look down"),
+  ] },
+  { name: "Display", rows: [
+    range("brightness", "Brightness", 0.6, 1.6, 0.05, pct, "Turn it up if the nights are too dark to see"),
+    range("fov", "Field of view", 60, 90, 1, (v) => `${v}°`),
+    toggle("grain", "Film grain"),
+    fullscreen,
+  ] },
+  { name: "Gameplay", rows: [
+    toggle("subs", "Subtitles"),
+    { key: "subSize", label: "Subtitle size", type: "choice", options: [["small", "Small"], ["medium", "Medium"], ["large", "Large"]] },
+    toggle("scares", "Jumpscares", "Off: the scary moments still happen, just without the faces and the screams"),
+    toggle("shake", "Camera shake"),
+  ] },
+];
+const KEYS = [
+  ["W A S D", "Walk"], ["Mouse", "Look around"], ["E", "Use, pick up, talk"], ["W · S", "Gas and brake while driving (Space brakes too)"],
+  ["F", "Open or close the doors"], ["1 2 3", "Pick an answer"], ["Esc", "Pause"],
+];
+// what each setting changes, right away
+const APPLY = {
+  volume: (v) => Sound.setVolume(SILENT ? 0 : v),
+  voices: (v) => Sound.setLevels({ voices: v }),
+  music: (v) => Sound.setLevels({ music: v }),
+  sfx: (v) => Sound.setLevels({ sfx: v }),
+  mouse: (v) => { input.sensitivity = v; },
+  invertY: (v) => { input.invertY = v; },
+  brightness: (v) => { canvas.classList.toggle("bright", v !== 1); canvas.style.setProperty("--bright", String(v)); },
+  grain: (v) => document.body.classList.toggle("no-grain", !v),
+  subs: (v) => { ui.subsOn = v; },
+  subSize: (v) => { document.body.dataset.subs = v; },
+  shake: (v) => document.body.classList.toggle("no-shake", !v),
+};
+const shakeCamera = player.shake;
+player.shake = (amount) => { if (settings.shake) shakeCamera(amount); };
+function change(key, v) {
+  settings[key] = v;
+  if (APPLY[key]) APPLY[key](v);
+  store.set(SETTINGS, settings);
+}
+Object.keys(APPLY).forEach((k) => { if (k !== "volume") APPLY[k](settings[k]); });
+
+const node = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+};
+function settingRow(d) {
+  const row = node("div", "set-row");
+  const lbl = node("div", "lbl", d.label);
+  if (d.sub) lbl.append(node("span", "sub", d.sub));
+  const ctl = node("div", "set-ctl");
+  if (d.type === "range") {
+    const el = node("input");
+    Object.assign(el, { type: "range", min: d.min, max: d.max, step: d.step, value: settings[d.key] });
+    el.setAttribute("aria-label", d.label);
+    const val = node("span", "set-val");
+    const show = () => {
+      val.textContent = d.show(settings[d.key]);
+      el.style.setProperty("--fill", `${((settings[d.key] - d.min) / (d.max - d.min)) * 100}%`);
+    };
+    el.addEventListener("input", () => { change(d.key, Number(el.value)); show(); });
+    show();
+    ctl.append(el, val);
+  } else {
+    const opts = d.type === "toggle" ? [[true, "On"], [false, "Off"]] : d.options;
+    const seg = node("div", "seg");
+    seg.setAttribute("role", "group");
+    seg.setAttribute("aria-label", d.label);
+    const now = () => (d.get ? d.get() : settings[d.key]);
+    const paint = () => [...seg.children].forEach((btn, i) => btn.setAttribute("aria-pressed", String(opts[i][0] === now())));
+    for (const [v, text] of opts) {
+      const btn = node("button", null, text);
+      btn.type = "button";
+      btn.addEventListener("click", () => { if (d.set) d.set(v); else change(d.key, v); paint(); });
+      seg.append(btn);
+    }
+    paint();
+    ctl.append(seg);
+  }
+  row.append(lbl, ctl);
+  return row;
+}
+function keyList() {
+  const list = node("div", "keys");
+  for (const [keys, what] of KEYS) {
+    const k = node("span");
+    keys.split(" ").forEach((t) => k.append(t === "·" ? " · " : node("kbd", null, t)));
+    list.append(k, node("span", null, what));
+  }
+  return list;
+}
+let setTab = 0;
+let settingsFrom = null;          // the screen Back goes to
+function renderSettings() {
+  const tabs = $("set-tabs");
+  tabs.replaceChildren(...SETTING_TABS.map((t, i) => {
+    const btn = node("button", "set-tab", t.name);
+    btn.type = "button";
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("aria-selected", String(i === setTab));
+    btn.addEventListener("click", () => { setTab = i; renderSettings(); $("set-tabs").children[i].focus(); });
+    return btn;
+  }));
+  const tab = SETTING_TABS[setTab];
+  $("set-body").replaceChildren(...tab.rows.map(settingRow), ...(tab.keys ? [keyList()] : []));
+}
+// over the main menu, the rainy street stays behind the settings; over the pause menu, the game does
+const menuCol = document.querySelector("#screen-title .menu-col");
+function openSettings(from) {
+  settingsFrom = from;
+  if (from === "screen-title") menuCol.hidden = true;
+  else $(from).hidden = true;
+  $("screen-settings").hidden = false;
+  renderSettings();
+}
+function closeSettings() {
+  $("screen-settings").hidden = true;
+  menuCol.hidden = false;
+  if (settingsFrom === "screen-pause") $("screen-pause").hidden = false;
+  if (settingsFrom === "screen-title") $("btn-settings").focus();
+  settingsFrom = null;
+}
+$("btn-set-back").addEventListener("click", closeSettings);
+$("btn-set-reset").addEventListener("click", () => {
+  for (const k of Object.keys(DEFAULTS)) change(k, DEFAULTS[k]);
+  renderSettings();
+});
+addEventListener("keydown", (e) => {
+  if (e.code !== "Escape") return;
+  if (!$("screen-settings").hidden) closeSettings();
+  else if (!$("confirm-new").hidden) { hideConfirm(); $("btn-new").focus(); }
+});
+document.addEventListener("fullscreenchange", () => { if (!$("screen-settings").hidden) renderSettings(); });
 
 /* ---------- start ---------- */
 addEventListener("resize", () => resize(camera));

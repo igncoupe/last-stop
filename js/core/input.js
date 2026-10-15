@@ -6,6 +6,7 @@ export const input = {
   dy: 0,
   locked: false,
   sensitivity: 1,
+  invertY: false,
   canvas: null,
   onLockChange: null,
 
@@ -22,7 +23,7 @@ export const input = {
     addEventListener("mousemove", (e) => {
       if (!this.locked) return;
       this.dx += e.movementX * this.sensitivity;
-      this.dy += e.movementY * this.sensitivity;
+      this.dy += e.movementY * this.sensitivity * (this.invertY ? -1 : 1);
     });
     document.addEventListener("pointerlockchange", () => {
       this.locked = document.pointerLockElement === canvas;

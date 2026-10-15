@@ -10,20 +10,21 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=ddf38cca">
+  <link rel="stylesheet" href="css/style.css?v=7d03991a">
   <script type="importmap">
     {
      "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "./js/audio.js": "./js/audio.js?v=288dbdd0",
-      "./js/core/input.js": "./js/core/input.js?v=fe397caf",
+      "./js/audio.js": "./js/audio.js?v=29f97adc",
+      "./js/core/input.js": "./js/core/input.js?v=a7c510b7",
+      "./js/core/menuArt.js": "./js/core/menuArt.js?v=dfc9bdb6",
       "./js/core/ps1.js": "./js/core/ps1.js?v=8e802927",
       "./js/core/textures.js": "./js/core/textures.js?v=d4ab434a",
       "./js/core/ui.js": "./js/core/ui.js?v=8dedcf73",
       "./js/game/director.js": "./js/game/director.js?v=20546ac2",
       "./js/game/drive.js": "./js/game/drive.js?v=9a03196c",
       "./js/game/player.js": "./js/game/player.js?v=43bc322d",
-      "./js/main.js": "./js/main.js?v=769bb4f9",
+      "./js/main.js": "./js/main.js?v=ce38c34e",
       "./js/story/cast.js": "./js/story/cast.js?v=5540802e",
       "./js/story/common.js": "./js/story/common.js?v=7b1df325",
       "./js/story/night1.js": "./js/story/night1.js?v=f80ee046",
@@ -76,22 +77,41 @@
     </div>
   </section>
 
-  <section id="screen-title" class="screen" hidden>
-    <div class="panel">
+  <!-- the main menu: its own picture, not the game world -->
+  <section id="screen-title" class="screen menu" hidden>
+    <canvas id="menu-art" class="menu-art" aria-hidden="true"></canvas>
+    <div class="menu-shade" aria-hidden="true"></div>
+    <div class="menu-col">
       <p class="kicker">Route 9 · Last run of the night</p>
       <h1 class="logo">LAST STOP</h1>
-      <div class="actions">
+      <nav id="menu-list" class="menu-list" aria-label="Main menu">
         <button id="btn-continue" class="btn primary" type="button" hidden>Continue</button>
         <button id="btn-new" class="btn" type="button">New game</button>
+        <button id="btn-settings" class="btn" type="button">Settings</button>
+      </nav>
+      <div id="confirm-new" class="confirm" hidden>
+        <p>Start over from Night 1? Your save on <span id="confirm-night">Night 1</span> will be lost.</p>
+        <div class="menu-list">
+          <button id="btn-new-yes" class="btn primary" type="button">Start over</button>
+          <button id="btn-new-no" class="btn" type="button">Cancel</button>
+        </div>
       </div>
-      <div class="settings">
-        <label class="setting"><span>Volume</span><input id="set-volume" type="range" min="0" max="100" value="80"></label>
-        <label class="setting"><span>Mouse</span><input id="set-mouse" type="range" min="20" max="200" value="100"></label>
-        <label class="setting"><input id="set-scares" type="checkbox" checked><span>Jumpscares</span></label>
-        <label class="setting"><input id="set-subs" type="checkbox" checked><span>Subtitles</span></label>
+      <p id="endings-found" class="menu-foot"></p>
+    </div>
+  </section>
+
+  <!-- settings: from the main menu or the pause menu -->
+  <section id="screen-settings" class="screen settings-screen" hidden>
+    <div class="panel set-panel">
+      <p class="kicker">Route 9</p>
+      <h2 class="card-title">Settings</h2>
+      <div id="set-tabs" class="set-tabs" role="tablist" aria-label="Settings sections"></div>
+      <div id="set-body" class="set-body"></div>
+      <div class="actions">
+        <button id="btn-set-back" class="btn primary" type="button">Back</button>
+        <button id="btn-set-reset" class="btn" type="button">Reset to defaults</button>
       </div>
-      <p id="endings-found" class="dim small"></p>
-      <p class="dim small">WASD move · Mouse look · E interact · W/S drive · 1–3 choose · Esc pause</p>
+      <p class="dim small">Esc to go back · changes save by themselves</p>
     </div>
   </section>
 
@@ -110,6 +130,7 @@
       <h2 class="card-title">Paused</h2>
       <div class="actions">
         <button id="btn-resume" class="btn primary" type="button">Resume</button>
+        <button id="btn-pause-settings" class="btn" type="button">Settings</button>
         <button id="btn-quit" class="btn" type="button">Quit to title</button>
       </div>
       <p class="dim small">Progress saves at the start of each night.</p>
@@ -130,6 +151,6 @@
     </div>
   </section>
 
-  <script type="module" src="js/main.js?v=769bb4f9"></script>
+  <script type="module" src="js/main.js?v=ce38c34e"></script>
 </body>
 </html>
