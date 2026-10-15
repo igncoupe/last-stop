@@ -2,8 +2,8 @@
 // vertices, and cheap Lambert lighting. Every world material goes through mat().
 import * as THREE from "three";
 
-export const PIXEL_SCALE = 3;                       // 1 game pixel = 3 screen pixels
-const SNAP = new THREE.Vector2(240, 180);            // vertex snapping grid (lower = wobblier)
+export const PIXEL_SCALE = 2;                       // 1 game pixel = 2 screen pixels
+const SNAP = new THREE.Vector2(360, 270);            // vertex snapping grid (lower = wobblier)
 
 function patch(material) {
   material.onBeforeCompile = (shader) => {

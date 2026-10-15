@@ -13,7 +13,7 @@ export const CAST = {
   junmom:  { name: "Mrs. Park", color: "#c6a3ff", fx: "dry", voice: "af_sarah", speed: 1.0, pitch: 1.0 },
   momcall: { name: "Mrs. Park (phone)", color: "#c6a3ff", fx: "phone", voice: "af_sarah", speed: 1.0, pitch: 1.0 },
   daniel:  { name: (f) => (f.knowsDaniel ? "Daniel" : "Drenched man"), color: "#78c0b8", fx: "ghost", voice: "bm_fable", speed: 0.9, pitch: 0.95 },
-  lena:    { name: (f) => (f.knowsLena ? "Lena" : "Woman in the shelter"), color: "#e59ab0", fx: "ghost", voice: "bf_emma", speed: 0.92, pitch: 0.98 },
+  lena:    { name: (f) => (f.knowsMother ? "Mom" : f.knowsLena ? "Lena" : "Woman in the shelter"), color: "#e59ab0", fx: "ghost", voice: "bf_emma", speed: 0.92, pitch: 0.98 },
   ivy:     { name: "Little girl", color: "#f2d36b", fx: "ghost", voice: "af_bella", speed: 0.88, pitch: 1.3 },
   rosie:   { name: (f) => (f.metRosie ? "Rosie" : "Woman on the bench"), color: "#f0b98a", fx: "dry", voice: "af_kore", speed: 0.98, pitch: 1.0 },
   harold:  { name: "Harold Rhee", color: "#9aa0ad", fx: "ghost", voice: "am_fenrir", speed: 0.86, pitch: 0.92 },

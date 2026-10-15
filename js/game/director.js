@@ -235,6 +235,59 @@ export function createDirector(w) {
     const a = actors.get(key);
     return !!a && g.gazing(a.root.localToWorld(new THREE.Vector3(0, a.look.height - 0.3, 0)), deg);
   };
+  // someone standing in the road ahead, lit by the headlights.
+  // Stop in time and they stare, then vanish. Hit them and... you'll see.
+  g.roadFigure = async (look = "drowned", ahead = 75) => {
+    const d0 = drive.d + ahead;
+    g.spawn("roadfig", look, { ghost: true, at: route.at(d0, 2.3, 0), yaw: route.heading(d0) + Math.PI });
+    await until(() => drive.d > d0 - 8 || (drive.speed < 0.3 && drive.d > d0 - 45));
+    if (drive.d > d0 - 8 && drive.speed > 1.5) {
+      g.despawn("roadfig");
+      Sound.sfx("bang");
+      await g.scare("face");
+      player.shake(2.2);
+      return "hit";
+    }
+    await g.wait(1800);
+    bus.setInterior("flicker");
+    Sound.sfx("lightsout");
+    await g.wait(900);
+    g.despawn("roadfig");
+    bus.setInterior("on");
+    return "stopped";
+  };
+  // something walks up the aisle, a little closer every time you check the mirror
+  g.creepMirror = async (look = "drowned") => {
+    g.spawn("creep", look, { ghost: true, mirrorOnly: true });
+    for (const seat of ["B1", "L7", "L4", "L1"]) {
+      g.seat("creep", seat);
+      ui.hint("Check your mirror");
+      await until(() => g.lookingAtMirror(), 14000);
+      ui.hint(null);
+      Sound.sfx(seat === "L1" ? "breath" : "drip");
+      await g.wait(seat === "L1" ? 1200 : 2600);
+    }
+    ui.hint("Turn around");
+    await until(() => g.lookingBack() || g.gazing(bus.group.localToWorld(new THREE.Vector3(0.66, 1.3, 3.1)), 30), 12000);
+    ui.hint(null);
+    g.despawn("creep");
+    await g.wait(1600);
+    await until(() => g.gazing(bus.group.localToWorld(new THREE.Vector3(0.7, 1.6, 12)), 35), 10000);
+    await g.faceScare(look, 0.6);
+  };
+  // random whispers, breathing and knocks while the bus is moving
+  let dread = false;
+  let dreadT = 20;
+  g.dread = (on) => { dread = on; dreadT = 15 + Math.random() * 15; };
+  g.tickDread = (dt) => {
+    if (!dread || !drive.moving) return;
+    dreadT -= dt;
+    if (dreadT > 0) return;
+    dreadT = 22 + Math.random() * 28;
+    const pick = ["whisper", "breath", "drip", "knock", "whisper"][Math.floor(Math.random() * 5)];
+    Sound.sfx(pick, ...(pick === "knock" ? [2] : []));
+  };
+
   // show a hint and wait for a key press
   g.pressKey = async (code, text) => {
     ui.hint(text);
@@ -248,6 +301,7 @@ export function createDirector(w) {
     routeOverride = null;
     doorControl = true;
     storm = false;
+    g.dread(false);
     ui.hint(null);
     ui.clearSubtitle();
     ui.clearChoices();
@@ -270,6 +324,7 @@ export function createDirector(w) {
       return { text: nextName ? `NEXT: ${nextName.toUpperCase()}` : "ROUTE 9", glitch: false };
     },
     update(dt) {
+      g.tickDread(dt);
       waiters.forEach((wt) => {
         wt.left -= dt;
         if (wt.test(dt) || wt.left <= 0) {

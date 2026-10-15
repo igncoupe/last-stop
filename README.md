@@ -62,15 +62,17 @@ Lines in `g.say`, `g.think` and `g.choose` must be plain `"double-quoted"` strin
 
 ## Making the voices
 
-The voices are generated with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx), a free open-source AI voice model. After changing any lines:
+The voices are generated with [Chatterbox](https://github.com/resemble-ai/chatterbox), a free open-source (MIT) AI voice model with emotional delivery. Each character's voice is copied from a short reference clip in `tools/refs/`, which was made with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx). After changing any lines:
 
 ```bash
 node tools/extract-lines.mjs
-pip install kokoro-onnx soundfile
-python tools/make_voices.py path/to/kokoro-models
+pip install chatterbox-tts "setuptools<81"
+python tools/make_voices.py
 ```
 
-The model files (`kokoro-v1.0.int8.onnx`, `voices-v1.0.bin`) come from the kokoro-onnx GitHub releases. Only new or changed lines get generated; voice files for deleted lines are removed.
+Only new or changed lines get generated. Chatterbox runs on the CPU (slowly); `--workers 3 --worker N` lets you run several at once. For a fast, flatter fallback there's `tools/make_voices_kokoro.py`.
+
+Chatterbox adds an inaudible watermark to its audio that marks it as AI-generated.
 
 Want real actors instead? Record a line and save it over its file in `voices/` (the file name is in `voices/manifest.json`).
 

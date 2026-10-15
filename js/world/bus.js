@@ -84,7 +84,7 @@ export function buildBus(scene) {
 
   // driver's area
   put(bus, box(0.55, 0.12, 0.55, mat({ color: 0x1c1d20 })), 0.7, 0.95, 4.75);
-  put(bus, box(0.55, 0.8, 0.1, mat({ color: 0x1c1d20 })), 0.7, 1.4, 4.45);
+  put(bus, box(0.55, 0.5, 0.1, mat({ color: 0x1c1d20 })), 0.7, 1.22, 4.45);   // low, so you can look back over it
   const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.025, 6, 14), trim);
   wheel.rotation.x = -1.1;
   put(bus, wheel, 0.7, 1.42, 5.32);
@@ -103,11 +103,11 @@ export function buildBus(scene) {
 
   // radio in the middle of the dash
   const radioTex = tex.live(48, 16);
-  const radio = put(bus, box(0.32, 0.14, 0.2, [trim, trim, trim, trim, trim, glow(0xffffff, { map: radioTex.texture })]), 0.15, 1.43, 5.5);
+  const radio = put(bus, box(0.2, 0.08, 0.14, [trim, trim, trim, trim, trim, glow(0xffffff, { map: radioTex.texture })]), 0.2, 1.4, 5.52);
   radio.userData.interact = "radio";
 
   // door button on the dash, left of the wheel (closer to the door side)
-  const doorBtn = put(bus, box(0.1, 0.05, 0.1, glow(0x3fd06a)), 0.3, 1.38, 5.32);
+  const doorBtn = put(bus, box(0.06, 0.03, 0.06, glow(0x3fd06a)), 0.36, 1.37, 5.36);
   doorBtn.userData.interact = "doors";
 
   // sun visor above the driver; flips down

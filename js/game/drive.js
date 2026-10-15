@@ -8,8 +8,8 @@ const ACCEL = 2.4;
 const BRAKE = 7;
 const DRAG = 0.35;
 // a stop counts when the bus is stopped with its door near the shelter
-export const STOP_BEFORE = 10;
-export const STOP_AFTER = 4;
+export const STOP_BEFORE = 18;
+export const STOP_AFTER = 5;
 
 export function createDrive(bus) {
   const s = {

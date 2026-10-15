@@ -12,6 +12,7 @@ export async function night5(g) {
   await g.wait(900);
   await g.think("Last night. I reached into my pocket for my keys and found coins instead. Four of them. Heavy. Worn smooth.");
   if (f.hasBadge) await g.think("And the brass badge. T. Varga. It's warm, like someone was just holding it.");
+  await g.think("Thirty-two years. Tonight I find out if she ever gets home.");
   await clockIn(g);
   await g.think("The stain on the back seat has spread across three seats now.");
   g.sfx("static", 0.8);
@@ -68,6 +69,7 @@ export async function night5(g) {
   await g.say("teodor", "March fourteenth, nineteen ninety-four. I was eleven minutes late.");
   await g.say("teodor", "I asked to wait out the storm. Harold said no. Harold said make up the time. And I was scared of losing my job, and I had a schedule, and I did what I was told.");
   await g.say("teodor", "Fourteen people. Lena. Daniel. Little Ivy. Eleven more. I knew every one of their faces. I used to wave.");
+  await g.say("teodor", "Your mother sat right behind me, every night. She talked about her kid the whole way home. You. She talked about you.");
   await g.wait(1200);
   await g.say("teodor", "They pulled me out of the river alive. Everyone said I survived.");
   await g.say("teodor", "I didn't. I've been riding this bus every night since. Waiting for a driver who would stop.");
@@ -103,6 +105,8 @@ export async function night5(g) {
   g.sfx("thunder");
   await g.think("The display stopped flickering. For the first time, the stop has a name. Ashgrove.");
   await g.think("Fourteen of them. Standing in a rain that isn't falling anywhere else. They're not knocking. They're just waiting. Like they always have.");
+  await g.say("lena", "Hi, sweetheart.");
+  await g.think("Mom.");
   g.sfx("static", 1.4);
   await g.say("rhee", "DRIVER.");
   await g.say("rhee", "You are ELEVEN MINUTES LATE. You will MAKE. UP. THE. TIME.");
@@ -179,6 +183,9 @@ async function endHome(g, crowd, deadAir) {
     await g.wait(1500);
     await g.say("lena", "Everyone gets a ride home. That's the job.");
   }
+  await g.say("lena", "You don't have to keep driving for me anymore. I'm going home now. Then you go home too.");
+  await g.say("you", "I missed you.");
+  await g.say("lena", "I know. I was always on my way back. Always.");
   await g.say("teodor", "Mind if I drive the last bit?");
   // you give him the seat
   await g.fade(1, 1000);
@@ -236,6 +243,7 @@ async function dawn(g, deadAir) {
   g.mood("grief");
   await g.fade(0, 3000, true);
   await g.think("Northgate. Morning. The bus is empty, and dry.");
+  await g.think("For the first time in thirty-two years, I think she made it home.");
   if (f.maraHelped) await g.think("There's a note taped to the driver's window. Mr. Varga passed at twelve thirty-one. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Mara.");
   if (f.gaveRosie) await g.think("Somewhere across town, a music box is playing on a kitchen table. And a woman is finally asleep.");
   if (f.junRode || f.junFound) {
@@ -267,6 +275,7 @@ async function endNotYet(g) {
   await g.think("Nobody moves.");
   await g.say("daniel", "It isn't enough to stop once. You have to be the kind of driver who stops.");
   await g.say("lena", "We'll know when you are.");
+  await g.say("lena", "Not yet, sweetheart. Not yet.");
   g.setDoors(false);
   await g.say("teodor", "Tomorrow, then. And the night after. As long as it takes.");
   await g.think("But tonight is his last night. We both know it.");
@@ -279,18 +288,21 @@ async function endNotYet(g) {
 
 async function endOnTime(g) {
   await g.say("rhee", "Good. GOOD. Back on schedule.");
+  g.vanish("teodor");
   g.storm(false);
   g.mood("dread");
   for (let i = 0; i < 14; i++) {
     g.despawn(`g${i}`);
-    g.spawn(`m${i}`, i === 1 ? "daniel" : "drowned", { ghost: true, mirrorOnly: true });
-    g.seat(`m${i}`, ["L1", "R1", "L2", "R2", "L3", "R3", "L4", "R4", "L5", "R5", "B0", "B1", "B2", "B3"][i]);
+    g.spawn(`m${i}`, i === 0 ? "lena" : i === 1 ? "daniel" : "drowned", { ghost: true, mirrorOnly: true });
+    g.seat(`m${i}`, ["L0", "R1", "L2", "R2", "L3", "R3", "L4", "R4", "L5", "R5", "B0", "B1", "B2", "B3"][i]);
   }
   await g.wait(4000);
   g.hint("Check your mirror");
   await g.until(() => g.lookingAtMirror(), 12000);
   g.hint(null);
   await g.think("Every seat is full. Fourteen people, soaked to the bone, staring straight ahead.");
+  await g.think("Mom is in the seat right behind me.");
+  await g.say("lena", "You didn't stop.");
   g.bus.setWater(0.2);
   await g.wait(2000);
   g.bus.setWater(0.5);

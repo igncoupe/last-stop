@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { mat, glow, box } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { ribbon, radialTexture } from "./city.js";
-import { route, STOPS, CURB, ROAD_HALF } from "./route.js";
+import { route, STOPS, CURB, LANE } from "./route.js";
 
 const glass = () => new THREE.MeshLambertMaterial({ color: 0x8aa0b0, transparent: true, opacity: 0.18, depthWrite: false });
 
@@ -36,8 +36,27 @@ function shelter(name, { old = false } = {}) {
   return { group: g, plate, strip };
 }
 
+// a yellow box painted on the road: pull the bus into it to stop
+function stopBox(d) {
+  const g = new THREE.Group();
+  const paint = new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.85 });
+  const fill = new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.12, depthWrite: false });
+  g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE + 1.5, 0.025, fill, [3, 3], 1));
+  g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE - 1.3, 0.03, paint, [1, 1], 1));
+  g.add(ribbon(d - 17, d + 6, LANE + 1.3, LANE + 1.5, 0.03, paint, [1, 1], 1));
+  g.add(ribbon(d - 17, d - 16.7, LANE - 1.5, LANE + 1.5, 0.03, paint, [1, 1], 0.3));
+  g.add(ribbon(d + 5.7, d + 6, LANE - 1.5, LANE + 1.5, 0.03, paint, [1, 1], 0.3));
+  const word = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.3), new THREE.MeshBasicMaterial({ map: tex.sign("BUS\nSTOP", { bg: "rgba(0,0,0,0)", fg: "#e0b23a", w: 64, h: 32, font: 13 }), transparent: true, depthWrite: false }));
+  word.rotation.set(-Math.PI / 2, 0, 0, "YXZ");
+  word.rotation.y = route.heading(d) + Math.PI;
+  word.position.copy(route.at(d - 3, LANE, 0.035));
+  g.add(word);
+  return g;
+}
+
 export function buildProps(scene) {
   const props = { stops: {}, colliders: [] };
+  for (const [name, d] of Object.entries(STOPS)) if (name !== "Depot") scene.add(stopBox(d));
 
   // ---- regular stops
   for (const [name, d] of Object.entries(STOPS)) {
@@ -73,7 +92,12 @@ export function buildProps(scene) {
     place(d) {
       this.d = d;
       m.group.visible = d !== null;
-      if (d !== null) place(m.group, d, CURB - 1.4);
+      if (this.box) { this.box.removeFromParent(); this.box = null; }
+      if (d !== null) {
+        place(m.group, d, CURB - 1.4);
+        this.box = stopBox(d);
+        scene.add(this.box);
+      }
     },
     setName(text) {
       const t = tex.sign(text, { bg: "#d8b24a", fg: "#1a1206" });

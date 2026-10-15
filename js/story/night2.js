@@ -12,6 +12,8 @@ export async function night2(g) {
   g.mood("uneasy");
   await g.wait(800);
   await g.think("I barely slept. Every time I closed my eyes I heard dripping.");
+  await g.think("Mom took the last bus home every night. That's most of what I remember about her. Her keys in the door, at one in the morning.");
+  await g.think("And then one night, the keys didn't come.");
   await clockIn(g, [
     "NOTICE: DEPOT CAMERAS SHOW NO PASSENGERS BOARDING ROUTE 9 AT THE DEPOT.",
     "I checked the tape before my shift. It shows me getting on alone.",
@@ -74,6 +76,7 @@ export async function night2(g) {
     await g.say("mara", "What time is it. And is Route 9 running yet.");
     await g.wait(1200);
     await g.say("mara", "I always tell him yes. It seems to help.");
+    await g.say("mara", "My mom was a nurse at St. Agnes back then too. She lost a friend on that bus. She never really talked about it.");
     g.hint("Check your mirror");
     await g.until(() => g.lookingAtMirror(), 9000);
     g.hint(null);
@@ -223,6 +226,14 @@ export async function night2(g) {
   g.flood(false);
   g.amb({ water: 0 });
 
+  // ---------- something in the aisle
+  g.dread(true);
+  await g.wait(3000);
+  await g.think("I can hear someone breathing. Somewhere behind me.");
+  await g.creepMirror("drowned");
+  await g.think("There's nothing there. There's nothing there. There's nothing there.");
+  g.dread(false);
+
   // ---------- the stop with no name
   const md = g.props.mystery.d;
   const crowd = [];
@@ -251,6 +262,10 @@ export async function night2(g) {
     await g.think("Nobody's getting on.");
     await g.say("lena", "Not yet. Not tonight.");
     await g.say("lena", "I'm Lena. You're the first one who's opened the doors in a very long time.");
+    await g.wait(1200);
+    await g.say("lena", "Have we met? You look so much like someone I");
+    await g.wait(1500);
+    await g.think("She stopped. She's looking at me like she knows me.");
     await g.say("lena", "He's still riding, isn't he? Every night. Tell him we don't blame him. We never did.");
     await g.say("rhee", "Driver. Close. The. Doors.");
     await g.doors(false);

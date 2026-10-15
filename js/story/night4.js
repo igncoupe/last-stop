@@ -80,6 +80,8 @@ export async function night4(g) {
     await g.think("Route 9 driver Teodor Varga radioed dispatch at twelve nineteen, asking permission to wait out the storm at Northgate.");
     await g.think("Dispatcher Harold Rhee refused. Recordings show Rhee told Varga, eleven minutes behind schedule, to make up the time by taking the Ashgrove bridge.");
     await g.think("Asked if he regretted the order, Rhee said: the schedule always comes first. That's the job.");
+    await g.think("There's a photo of the victims. Fourteen faces. A woman in a cardigan, holding a little kid on her hip.");
+    await g.think("The kid is me.");
     await g.think("Under the article, in shaky pencil, one word, over and over, until the paper tore. Stop. Stop. Stop. Stop.");
     await g.say("rhee", "Put that away, driver. Teodor kept that for thirty years. Look where it got him.");
   }
@@ -111,7 +113,7 @@ export async function night4(g) {
   g.lockDoors(true);
   g.setDoors(true);
   g.rain(true);
-  const walkers = [["lena", "lena", "R1"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"]];
+  const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"]];
   for (const [key, look, seat] of walkers) {
     g.spawn(key, look, { ghost: true, at: mysteryCurb(g, 0, 6.6), yaw: route.heading(md) + Math.PI / 2 });
   }
@@ -131,6 +133,15 @@ export async function night4(g) {
   await g.wait(1500);
   g.bus.setWater(0.25);
   await g.think("Water. Around my shoes. Rising.");
+  g.sfx("breath");
+  await g.think("Someone sat down right behind me. I can feel cold coming off her, like an open freezer.");
+  await g.say("lena", "You grew up.");
+  await g.wait(1500);
+  await g.think("Mom.");
+  g.hint("Turn around");
+  await g.until(() => g.lookingAtActor("lena", 30), 10000);
+  g.hint(null);
+  await g.say("lena", "Don't look at me, sweetheart. Look at the road. He's going to make you drive.");
   await g.say("rhee", "There we go. Full bus. Just like the old days.");
   await g.say("rhee", "You're eleven minutes late, driver.");
   await g.think("I'm not. The clock says I'm not.");
@@ -192,6 +203,7 @@ async function bridge(g) {
     g.sfx("whisper");
     await g.say("voices", "He stopped. He stopped this time.");
     await g.think("Behind me, fourteen people let out a breath they've been holding for thirty years.");
+    await g.say("lena", "That's my kid. That's my kid.");
     g.hint("Look in the mirror");
     await g.until(() => g.lookingAtMirror(), 12000);
     g.hint(null);
@@ -200,6 +212,7 @@ async function bridge(g) {
     await rolling;
     speed = 16;
     await g.say("rhee", "GOOD. GOOD DRIVER.");
+    await g.say("lena", "No. No, no, no. Not you too.");
     await g.frames((dt) => {
       bus.position.z += speed * dt;
       if (bus.position.z > edgeZ) {

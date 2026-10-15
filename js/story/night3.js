@@ -100,11 +100,20 @@ export async function night3(g) {
   await g.say("radio94", "A Route 9 city bus was crossing at the time. Divers have recovered fourteen.");
   g.sfx("static", 0.6);
   await g.say("radio94", "The driver, Teodor Varga, fifty-eight, was pulled from the river alive, and is in critical condition at St. Agnes.");
+  await g.say("radio94", "Among the dead, a St. Agnes nurse, Lena Marsh, thirty-one, who leaves behind a four-year-old child.");
   await g.say("radio94", "Dispatch records show the bus was running eleven minutes behind sched");
   g.sfx("static", 0.4);
   g.radio("CH 9");
   await g.say("rhee", "That's enough of that.");
   f.knowsVarga = true;
+  f.knowsMother = true;
+  g.mood("grief");
+  await g.wait(1500);
+  await g.think("Lena Marsh.");
+  await g.think("My mother's name was Lena Marsh. I was four.");
+  if (f.knowsLena) await g.think("The woman in the shelter. Lena. She looked at me like she knew me. Because she did.");
+  await g.think("Nobody ever told me how. They just said there was an accident. They just said she wasn't coming home.");
+  g.mood("dread");
   g.hint("Check your mirror");
   await g.until(() => g.lookingAtMirror(), 9000);
   g.hint(null);
@@ -156,6 +165,11 @@ export async function night3(g) {
   g.shake(1.2);
   await g.think("Knocking. Not on the doors. Under the floor. Under my feet. Like people trapped in something, beating on the walls.");
   await g.say("rhee", "CLOSE THE DOORS. Driver, CLOSE THEM.");
+  await g.say("teodor", "She's in there, you know. Your mother. In the cardigan. She sat right behind me every night.");
+  g.hint("Look at the shelter");
+  await g.until(() => g.lookingAtActor("drowned1", 25), 12000);
+  g.hint(null);
+  await g.think("She's looking right at me. She's soaking wet. She's younger than I am now.");
   await ivy.walk([doorOutside()], { speed: 0.8 });
   await g.say("ivy", "Is it time yet?");
   await g.say("teodor", "Not tonight, Ivy. Soon. I promise. Soon.");
@@ -193,6 +207,15 @@ export async function night3(g) {
   await g.departed();
   g.hint(null);
 
+  // ---------- something hits the windshield
+  g.dread(true);
+  await g.wait(7000);
+  g.sfx("bang");
+  await g.scare("hands");
+  g.shake(1.8);
+  await g.think("Something hit the windshield. Hands. Two gray hands, pressed flat. Then the rain washed them away.");
+  await g.say("rhee", "Keep driving, driver. You don't stop for weather.");
+
   // ---------- Canal Row is a river
   g.flood(true, 0.55);
   g.amb({ water: 0.9 });
@@ -205,6 +228,7 @@ export async function night3(g) {
   g.drive.setLimit(14);
   g.flood(false);
   g.amb({ water: 0 });
+  g.dread(false);
   g.mood("uneasy");
 
   // ---------- Northgate
@@ -261,6 +285,7 @@ async function ward(g) {
   await g.wait(900);
   await g.scare("hands");
   g.mood("terror");
+  await g.say("teodor", "You came back. Lena's child. You came back for her.");
   await g.say("teodor", "Don't let him make you late.");
   await g.say("teodor", "The man on the radio. Don't listen to him. He told me to make up the time, and I listened.");
   await g.say("teodor", "Fourteen. I listened, and it was fourteen.");

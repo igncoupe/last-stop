@@ -10,6 +10,7 @@ export async function night1(g) {
   g.amb({ engine: 0.3, rain: 0, water: 0 });
   await g.wait(800);
   await g.think("First night on Route 9. Nobody else wanted the shift.");
+  await g.think("I asked for it. I didn't tell them why.");
   await clockIn(g, [
     "NIGHT ROUTE 9. DEPOT TO NORTHGATE. 11:40 PM.",
     "DO NOT RUN LATE. NO FREE RIDES. DISPATCH IS WATCHING.",
@@ -36,7 +37,7 @@ export async function night1(g) {
     await g.say("you", "Northgate, then.");
     await g.say("teodor", "If you say so.");
     await g.wait(500);
-    await g.say("teodor", "You've got kind eyes. That's going to make this harder for you.");
+    await g.say("teodor", "You've got kind eyes. I've seen them before. That's going to make this harder for you.");
   }
   await closeDoorsAndGo(g);
   await g.think("Elm and Fourth is first. Then Market, St. Agnes, Canal Row, Northgate.");
@@ -204,6 +205,24 @@ export async function night1(g) {
     if (g.bus.doorsOpen) await closeDoorsAndGo(g);
   }
   g.amb({ water: 0 });
+  g.dread(true);
+
+  // ---------- someone standing in the road
+  await g.until(() => g.d > 2180);
+  g.mood("dread");
+  const fig = await g.roadFigure("drowned", 85);
+  if (fig === "hit") {
+    await g.think("I hit someone. Oh god. I hit someone.");
+    g.hint("Check your mirror");
+    await g.until(() => g.lookingAtMirror(), 12000);
+    g.hint(null);
+    await g.think("There's nobody on the road behind me. Nothing. Not even a dent.");
+    await g.say("rhee", "Something wrong, driver? You're slowing down.");
+  } else {
+    await g.think("Someone was just standing there. In the headlights. Soaking wet. Not even blinking.");
+    await g.think("And then they weren't.");
+    await g.say("rhee", "Why are you stopped, driver? There's no stop there.");
+  }
   g.mood("uneasy");
 
   // ---------- Northgate
@@ -232,6 +251,11 @@ export async function night1(g) {
   g.hint(null);
   g.sfx("coin");
   await g.think("He's gone. I didn't hear the doors. There's a coin on his seat. Old. Worn smooth. And the seat is soaking wet.");
+  g.dread(false);
+  await g.wait(1500);
+  g.sfx("whisper");
+  await g.say("voices", "You came back.");
+  await g.think("I'm alone on the bus. I'm alone on the bus.");
   await rheeLateness(g);
   if (f.junRode) await g.say("rhee", "And no more free rides. I mean it.");
   await g.say("rhee", "Get some sleep. Same time tomorrow.");
