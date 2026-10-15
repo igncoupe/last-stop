@@ -37,7 +37,18 @@ function init() {
   musicBus = bus(0.55);
   ambBus = bus(0.7);
   sfxBus = bus(0.9);
-  voiceBus = bus(1.15);
+  // voices go through their own compressor, so every line lands at the same loudness
+  voiceBus = gainNode(1.25);
+  const voiceComp = ctx.createDynamicsCompressor();
+  voiceComp.threshold.value = -26;
+  voiceComp.knee.value = 12;
+  voiceComp.ratio.value = 4;
+  voiceComp.attack.value = 0.005;
+  voiceComp.release.value = 0.2;
+  const voiceMakeup = gainNode(1.5);
+  voiceBus.connect(voiceComp);
+  voiceComp.connect(voiceMakeup);
+  voiceMakeup.connect(master);
   reverb = ctx.createConvolver();
   reverb.buffer = impulse(3.2);
   const rOut = gainNode(0.5);
@@ -461,12 +472,10 @@ async function voice(id, { fx = "dry", at = null } = {}) {
   if (!buf) return false;
   const { input, tail } = fxChain(fx);
   let outNode = tail;
+  // where they are only moves the voice left or right; it never gets quieter with distance
   let panner = null;
-  if (at) {
-    panner = ctx.createPanner();
-    panner.panningModel = "HRTF";
-    panner.refDistance = 1.2;
-    panner.rolloffFactor = 1;
+  if (at && ctx.createStereoPanner) {
+    panner = ctx.createStereoPanner();
     tail.connect(panner);
     outNode = panner;
   }
@@ -539,12 +548,15 @@ export const Sound = {
       l.setPosition(...p);
       l.setOrientation(...f, ...u);
     }
+    const r = [e[0], e[1], e[2]];        // the camera's right
     live.forEach(({ panner, at }) => {
       if (!panner || !at) return;
       const v = at();
       if (!v) return;
-      if (panner.positionX) { panner.positionX.value = v.x; panner.positionY.value = v.y; panner.positionZ.value = v.z; }
-      else panner.setPosition(v.x, v.y, v.z);
+      const d = [v.x - p[0], v.y - p[1], v.z - p[2]];
+      const len = Math.hypot(d[0], d[1], d[2]) || 1;
+      const side = (d[0] * r[0] + d[1] * r[1] + d[2] * r[2]) / len;
+      panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, side)) * 0.4, ctx.currentTime, 0.05);
     });
   },
   setVolume(v) { volume = v; if (ctx && !muted) ramp(master.gain, v, 0.2); },
