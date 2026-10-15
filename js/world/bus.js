@@ -230,8 +230,8 @@ export function buildBus(scene) {
     // mud flaps behind the rear wheels
     if (z < 0) put(bus, box(0.3, 0.34, 0.025, lipMat), s * 1.08, 0.22, z - 0.66);
     // inside, the wheel sits under a raised housing, like a real low-floor bus
-    put(bus, box(0.42, 0.66, 1.42, mat({ color: 0x3a3c40 })), s * 1.0, 0.77, z);
-    put(bus, box(0.44, 0.02, 1.44, mat({ color: 0x8a6a1e })), s * 1.0, 1.11, z);      // worn yellow edge
+    put(bus, box(0.42, 0.66, 1.1, mat({ color: 0x2c2e32 })), s * 1.0, 0.77, z);
+    put(bus, box(0.44, 0.02, 1.12, mat({ color: 0x1e1f22 })), s * 1.0, 1.11, z);      // rubber edge
   }
 
   // outside details: bumpers, lights, mirrors, roof unit
@@ -387,10 +387,10 @@ export function buildBus(scene) {
   const face = put(pod, new THREE.Group(), 0, 0.055, 0);
   face.rotation.x = -Math.atan2(0.04, 0.14);                                 // lies on the sloped top
   const panelTex = tex.sign("DOORS", { bg: "#16171a", fg: "#e2e2e2", w: 64, h: 16, font: 12 });
-  const label = put(face, new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.03), glow(0xffffff, { map: panelTex })), 0, 0.0015, 0.045);
+  const label = put(face, new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.03), glow(0xffffff, { map: panelTex })), 0, 0.0015, 0.042);
   label.rotation.set(-Math.PI / 2, 0, Math.PI);                              // reads the right way up from the seat
-  put(face, box(0.09, 0.012, 0.07, mat({ color: 0x8a9096 })), 0, 0.006, -0.02);  // chrome bezel
-  const doorBtn = put(face, box(0.07, 0.02, 0.05, glow(0x3fd06a)), 0, 0.014, -0.02);
+  put(face, box(0.07, 0.01, 0.055, mat({ color: 0x5d6268 })), 0, 0.005, -0.028);  // bezel
+  const doorBtn = put(face, box(0.05, 0.022, 0.038, glow(0x3fd06a)), 0, 0.016, -0.028);   // the lit button
   doorBtn.userData.interact = "doors";
 
   // sun visor above the driver; flips down
@@ -640,7 +640,7 @@ export function buildBus(scene) {
       wheelG.rotation.z = THREE.MathUtils.lerp(wheelG.rotation.z, THREE.MathUtils.clamp((info.steer || 0) * 9, -2.2, 2.2), Math.min(1, dt * 4));
       // door button: pressed in for a moment, green = closed, amber = open
       state.btnT = Math.max(0, (state.btnT || 0) - dt);
-      doorBtn.position.y = state.btnT > 0 ? 0.008 : 0.014;
+      doorBtn.position.y = state.btnT > 0 ? 0.01 : 0.016;
       doorBtn.material.color.set(state.doorsOpen ? 0xffa32a : 0x3fd06a);
       knob.rotation.z += ((state.knobTarget || 0) - knob.rotation.z) * Math.min(1, dt * 10);
       // interior lights
