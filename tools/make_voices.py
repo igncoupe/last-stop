@@ -30,6 +30,7 @@ REFS = ROOT / "tools" / "refs"
 def speakable(text: str) -> str:
     t = text.replace("“", "").replace("”", "").replace("—", ", ").replace("…", "...")
     t = re.sub(r"\bSt\.", "Saint", t)
+    t = re.sub(r"\bJun\b", "Joon", t)          # not "John"
     t = re.sub(r"\b4B\b", "four B", t)
     t = re.sub(r"\b[A-Z]{2,}\b", lambda m: m.group(0).capitalize(), t)
     t = t.strip()
