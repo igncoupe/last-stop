@@ -126,14 +126,20 @@ export const tex = {
     return toTexture(c, false);
   },
   poster: (lines) => {
-    const [c, x] = canvas(48, 64);
-    x.fillStyle = "#d8d2c0"; x.fillRect(0, 0, 48, 64);
-    x.fillStyle = "#111"; x.font = "bold 8px monospace"; x.textAlign = "center";
-    x.fillText(lines[0], 24, 10);
-    x.fillStyle = "#6a6a6a"; x.fillRect(12, 14, 24, 26);
-    x.fillStyle = "#3c3c3c"; x.fillRect(19, 18, 10, 10); x.fillRect(16, 29, 16, 11);
-    x.fillStyle = "#111"; x.font = "6px monospace";
-    lines.slice(1).forEach((ln, i) => x.fillText(ln, 24, 48 + i * 7));
+    const [c, x] = canvas(120, 160);
+    x.fillStyle = "#e6e1d2"; x.fillRect(0, 0, 120, 160);
+    x.fillStyle = "#a51616"; x.font = "bold 22px sans-serif"; x.textAlign = "center";
+    x.fillText(lines[0], 60, 24);
+    // a photocopied photo: grey, a face, shoulders
+    x.fillStyle = "#77746c"; x.fillRect(26, 32, 68, 70);
+    x.fillStyle = "#3e3c38"; x.beginPath(); x.ellipse(60, 58, 14, 17, 0, 0, Math.PI * 2); x.fill();
+    x.fillRect(36, 78, 48, 24);
+    x.fillStyle = "#111"; x.font = "bold 11px monospace";
+    lines.slice(1).forEach((ln, i) => x.fillText(ln, 60, 118 + i * 14));
+    // rain streaks and a torn corner
+    x.fillStyle = "rgba(60,60,70,.18)";
+    for (let i = 0; i < 9; i++) x.fillRect(8 + i * 13, 0, 2, 160);
+    x.fillStyle = "#2a2a2a"; x.beginPath(); x.moveTo(120, 140); x.lineTo(120, 160); x.lineTo(98, 160); x.fill();
     return toTexture(c, false);
   },
   // a canvas you redraw every frame (route display, speedometer)

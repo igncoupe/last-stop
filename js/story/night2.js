@@ -111,8 +111,10 @@ export async function night2(g) {
       g.despawn("jun");
     }
   } else if (stopped) {
-    await g.think("There's a poster on the shelter. MISSING. Jun Park, fifteen. Last seen Market Street, around midnight.");
-    await g.think("It's the kid from last night. There's a phone number. Underneath, someone wrote: please. anything.");
+    await g.read({ kind: "poster", title: "Missing", photo: "JUN PARK", lines: ["JUN PARK, 15", "Last seen Market Street, around midnight.", "Black hoodie. Yellow backpack.", "PLEASE CALL 555-0143"], scrawl: "please. anything." }, [
+      "There's a poster on the shelter. MISSING. Jun Park, fifteen. Last seen Market Street, around midnight.",
+      "It's the kid from last night. There's a phone number. Underneath, someone wrote: please. anything.",
+    ]);
     const c = await g.choose(["[Call the number]", "[It's not my business]"]);
     if (c === 0) {
       f.calledMom = true;

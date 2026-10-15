@@ -254,7 +254,11 @@ async function dawn(g, deadAir) {
   await g.fade(0, 3000, true);
   await g.think("Northgate. Morning. The bus is empty, and dry.");
   await g.think("For the first time in thirty-two years, I think she made it home.");
-  if (f.maraHelped) await g.think("There's a note taped to the driver's window. Mr. Varga passed at twelve thirty-one. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Mara.");
+  if (f.maraHelped) {
+    await g.read({ kind: "note", lines: ["Mr. Varga passed at 12:31.", "Peacefully.", "He asked if Route 9 was running, and I said yes, and he smiled."], scrawl: "- Mara" }, [
+      "There's a note taped to the driver's window. Mr. Varga passed at twelve thirty-one. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Mara.",
+    ]);
+  }
   if (f.gaveRosie) await g.think("Somewhere across town, a music box is playing on a kitchen table. And a woman is finally asleep.");
   if (f.junRode || f.junFound) {
     const jun = g.spawn("jun", "jun", { at: g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)) });

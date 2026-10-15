@@ -90,6 +90,16 @@ export function createDirector(w) {
       if (after) await g.wait(after);
     },
     think(text, opts) { return g.say("you", text, opts); },
+    // hold a document up close (null puts it away)
+    paper(doc) { ui.paper(doc); },
+    // read a document: it stays up while the lines are thought out loud
+    async read(doc, lines) {
+      ui.paper(doc);
+      await g.wait(500);
+      for (const line of lines) await g.think(line);
+      ui.paper(null);
+      await g.wait(300);
+    },
     // dialogue options; the one you pick is said out loud (unless it's an [action])
     async choose(options, { silent = false } = {}) {
       ui.clearSubtitle();
@@ -413,6 +423,7 @@ export function createDirector(w) {
     ui.hint(null);
     ui.clearSubtitle();
     ui.clearChoices();
+    ui.paper(null);
   }
 
   return {

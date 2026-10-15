@@ -67,7 +67,9 @@ export async function night3(g) {
       }
     } else {
       f.junFound = true;
-      await g.think("The missing poster has a strip pasted across it. FOUND SAFE.");
+      await g.read({ kind: "poster", kicker: "FOUND SAFE · THANK YOU", title: "Missing", photo: "JUN PARK", lines: ["JUN PARK, 15", "Last seen Market Street, around midnight."] }, [
+        "The missing poster has a strip pasted across it. FOUND SAFE.",
+      ]);
       await g.board("junmom", "R1");
       await g.say("junmom", "You. You're the driver who called.");
       await g.say("junmom", "The police found him on the road to Northgate. Halfway there, in the dark. He was walking to me.");
@@ -252,7 +254,9 @@ export async function night3(g) {
   g.sfx("coin");
   await rheeLateness(g);
   await g.think("There's a sheet of paper under my windshield wiper.");
-  await g.think("Notice. Route 9 radio moves to channel 4 starting tomorrow. Channel 9 has been out of service since nineteen ninety-four. Dana, night dispatch.");
+  await g.read({ kind: "notice", kicker: "Metro Transit · Radio", title: "Notice", lines: ["Route 9 radio moves to CHANNEL 4 starting tomorrow.", "Channel 9 has been OUT OF SERVICE since 1994.", "If you hear anything on channel 9, do not answer it.", "- Dana, Night Dispatch"] }, [
+    "Notice. Route 9 radio moves to channel 4 starting tomorrow. Channel 9 has been out of service since nineteen ninety-four. Dana, night dispatch.",
+  ]);
   await g.say("rhee", "Ignore that.");
   await g.think("The stop with no name moved again. It's right after Market Street now.");
   g.storm(false);

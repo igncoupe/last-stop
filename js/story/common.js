@@ -25,16 +25,31 @@ function busDoor(g) {
   return doorTrigger;
 }
 
+// what's pinned on the depot notice board each night
+const RHEE_SIG = "- H. Rhee, Night Dispatch";
+export const BOARD = {
+  1: { kicker: "Metro Transit · Depot 3", title: "Night Route 9", lines: ["Depot to Northgate. First departure 11:40 PM.", "DO NOT RUN LATE.", "NO FREE RIDES.", "DISPATCH IS WATCHING.", RHEE_SIG], scrawl: "stop for them" },
+  2: { kicker: "Metro Transit · Depot 3", title: "Notice", lines: ["Depot cameras show NO PASSENGERS boarding Route 9 at the depot.", "Drivers are reminded the logbook is a legal record. Write down what happened, not what you think happened.", RHEE_SIG], scrawl: "stop for them" },
+  3: { kicker: "Metro Transit · Depot 3", title: "Storm Warning", lines: ["Heavy rain all night. Flooding reported on Canal Row.", "Drive slow. Keep to the schedule anyway.", "Report anything in the road to dispatch.", RHEE_SIG], scrawl: "they're cold" },
+  4: { kicker: "Metro Transit · Depot 3", title: "Ashgrove Bridge", lines: ["The old Ashgrove bridge is CLOSED to all traffic.", "Route 9 does not cross it. Route 9 has never crossed it.", "Do not take the bridge.", RHEE_SIG], scrawl: "he made us" },
+  5: { kicker: "Metro Transit · Depot 3", title: "Route 9", lines: ["Final night of Route 9 night service.", "Last bus. Last stop.", "Thank you for your years of service.", "  "], scrawl: "bring them home" },
+};
+
 // walk from the dispatch office, punch the clock, get on the bus
 export async function clockIn(g, notice = null) {
+  const board = BOARD[g.state.night] || BOARD[1];
+  g.props.depot.boardObj.setNotice(board);
   g.hint("Clock in at the time clock");
   await g.interact(g.props.depot.clock, "Clock in");
-  g.sfx("punch");
-  await g.wait(400);
+  g.hint(null);
+  g.look(g.props.depot.clockObj.slotWorld());
+  await g.props.depot.clockObj.punch(() => g.sfx("punch"));
+  await g.wait(300);
   if (notice) {
     g.hint("Read the notice board");
     await g.interact(g.props.depot.board, "Read notice");
-    for (const line of notice) await g.think(line);
+    g.hint(null);
+    await g.read({ kind: "notice", ...board }, notice);
   }
   g.hint("Get on the bus");
   await g.interact(busDoor(g), "Get on");

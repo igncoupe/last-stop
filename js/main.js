@@ -115,9 +115,9 @@ function nextStopName() {
   const next = stops.find((x) => x.d > drive.d - 4);
   return next ? next.n : null;
 }
+const clockMinutes = () => 23 * 60 + 40 + Math.round((drive.d / route.length) * 40) + g.lateTonight;
 function clockText() {
-  const mins = 23 * 60 + 40 + Math.round((drive.d / route.length) * 40) + g.lateTonight;
-  const m = ((mins % 1440) + 1440) % 1440;
+  const m = ((clockMinutes() % 1440) + 1440) % 1440;
   const h = Math.floor(m / 60);
   return `${h % 12 || 12}:${String(m % 60).padStart(2, "0")}${h < 12 ? "a" : "p"}`;
 }
@@ -146,6 +146,7 @@ function frame(now) {
   bus.update(dt, { speed: drive.speed, clock: clockText(), late: g.lateTonight });
   camera.getWorldPosition(focus);
   city.update(focus, dt);
+  props.depot.update(dt, clockMinutes());
   busInverse.copy(bus.group.matrixWorld).invert();
   props.rain.update(dt, focus, insideBus);
   props.flood.update(dt);
@@ -194,6 +195,8 @@ function resetWorld(n) {
   bus.setDoors(true);
   bus.setInterior("on");
   bus.setVisor(false);
+  bus.setClipping(n === 4);                       // Teodor's clipping waits in the visor
+  bus.group.getObjectByName("gift")?.removeFromParent();
   bus.setRadio("CH 9");
   bus.setHeadlights(true);
   props.mystery.place(n >= 2 ? MYSTERY[n] : null);

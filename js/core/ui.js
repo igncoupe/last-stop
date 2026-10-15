@@ -151,6 +151,29 @@ export const ui = {
     });
   },
 
+  // a document held up close: { kind: "notice"|"clipping"|"poster"|"note", title, lines, scrawl, photo }
+  paper(doc) {
+    let p = document.getElementById("paper");
+    if (!doc) { if (p) p.classList.remove("on"); return; }
+    if (!p) {
+      p = document.createElement("div");
+      p.id = "paper";
+      document.body.append(p);
+    }
+    p.className = `paper paper-${doc.kind || "notice"}`;
+    p.replaceChildren();
+    const sheet = document.createElement("div");
+    sheet.className = "sheet";
+    if (doc.kicker) { const k = document.createElement("div"); k.className = "p-kicker"; k.textContent = doc.kicker; sheet.append(k); }
+    if (doc.title) { const h = document.createElement("div"); h.className = "p-title"; h.textContent = doc.title; sheet.append(h); }
+    if (doc.photo) { const ph = document.createElement("div"); ph.className = "p-photo"; ph.textContent = doc.photo; sheet.append(ph); }
+    for (const line of doc.lines || []) { const l = document.createElement("p"); l.textContent = line; sheet.append(l); }
+    if (doc.scrawl) { const s = document.createElement("div"); s.className = "p-scrawl"; s.textContent = doc.scrawl; sheet.append(s); }
+    p.append(sheet);
+    void p.offsetWidth;
+    p.classList.add("on");
+  },
+
   loading(text) {
     el.loading.hidden = !text;
     if (text) el.loadingText.textContent = text;

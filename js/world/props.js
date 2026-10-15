@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { ribbon, radialTexture } from "./city.js";
+import { makeTimeClock, makeNoticeBoard } from "./depotProps.js";
 import { route, STOPS, CURB, LANE } from "./route.js";
 
 const glass = () => new THREE.MeshLambertMaterial({ color: 0x8aa0b0, transparent: true, opacity: 0.18, depthWrite: false });
@@ -200,13 +201,18 @@ function buildDepot(scene, props) {
   sign.position.set(-5.58, 2.9, -12);
   sign.rotation.y = Math.PI / 2;
   g.add(sign);
-  // the time clock you punch at the start of every shift
-  const clock = add(0.3, 0.5, 0.4, -5.45, 1.4, -9.4, mat({ color: 0x9a9070 }));
-  // a notice board for the night's notice
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.9), mat({ color: 0x6b4a2b }));
-  board.position.set(-5.58, 1.6, -14.6);
-  board.rotation.y = Math.PI / 2;
-  g.add(board);
+  // the time clock you punch at the start of every shift (on the office wall, facing the room)
+  const clockObj = makeTimeClock();
+  clockObj.group.position.set(-5.48, 1.45, -9.6);
+  clockObj.group.rotation.y = Math.PI / 2;
+  g.add(clockObj.group);
+  // the notice board, with tonight's notice pinned up
+  const boardObj = makeNoticeBoard();
+  boardObj.group.position.set(-5.56, 1.65, -14.6);
+  boardObj.group.rotation.y = Math.PI / 2;
+  g.add(boardObj.group);
+  const clock = clockObj.hit;
+  const board = boardObj.hit;
   const lights = [new THREE.PointLight(0xdfe8ff, 30, 30, 1.5), new THREE.PointLight(0xdfe8ff, 22, 26, 1.5)];
   lights[0].position.set(0, 6, -14);
   lights[1].position.set(0, 6, -38);
@@ -214,7 +220,11 @@ function buildDepot(scene, props) {
   scene.add(g);
 
   props.colliders.push(...walls.map((w) => new THREE.Box3().setFromObject(w)), new THREE.Box3().setFromObject(office));
-  props.depot = { group: g, clock, board, lights, spawn: new THREE.Vector3(-4.4, 1.7, -5.5) };
+  props.depot = {
+    group: g, clock, board, clockObj, boardObj, lights,
+    spawn: new THREE.Vector3(-4.4, 1.7, -5.5),
+    update(dt, minutes) { clockObj.update(dt, minutes); },
+  };
 }
 
 // Northgate: the end of the line. A lit canopy, a terminal building, a barrier.

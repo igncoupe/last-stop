@@ -2,7 +2,7 @@
 // Kindness: brake at the bridge (+1), keep Daniel's present safe (+1)
 import * as THREE from "three";
 import { STOPS, route, LANE } from "../world/route.js";
-import { mat, box } from "../core/ps1.js";
+import { makeGift } from "../world/depotProps.js";
 import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
 
 export async function night4(g) {
@@ -76,19 +76,31 @@ export async function night4(g) {
   g.hint("Pull down the sun visor");
   await g.interact(g.bus.interactables[2], "Pull down the visor");
   g.visor(true);
+  g.bus.setClipping(false);
   g.sfx("click");
   await g.think("Something fell out of the visor into my lap. A newspaper clipping, folded small. Someone kept it a long time.");
   const read = await g.choose(["[Read it]", "[Put it back]"]);
   if (read === 0) {
     f.rheeTruth = true;
     g.mood("dread");
-    await g.think("Inquiry. Dispatcher ordered bus onto bridge.");
-    await g.think("Route 9 driver Teodor Varga radioed dispatch at twelve nineteen, asking permission to wait out the storm at Northgate.");
-    await g.think("Dispatcher Harold Rhee refused. Recordings show Rhee told Varga, eleven minutes behind schedule, to make up the time by taking the Ashgrove bridge.");
-    await g.think("Asked if he regretted the order, Rhee said: the schedule always comes first. That's the job.");
-    await g.think("There's a photo of the victims. Fourteen faces. A woman in a cardigan, holding a little kid on her hip.");
-    await g.think("The kid is me.");
-    await g.think("Under the article, in shaky pencil, one word, over and over, until the paper tore. Stop. Stop. Stop. Stop.");
+    await g.read({
+      kind: "clipping", kicker: "The Harbor Ledger · March 1994", title: "Inquiry: dispatcher ordered bus onto bridge",
+      lines: [
+        "Route 9 driver Teodor Varga radioed dispatch at 12:19 a.m., asking permission to wait out the storm at Northgate.",
+        "Dispatcher Harold Rhee refused. Recordings show Rhee told Varga, eleven minutes behind schedule, to make up the time by taking the Ashgrove bridge.",
+        "\"The schedule always comes first,\" Rhee said. \"That's the job.\"",
+      ],
+      photo: "THE 14 VICTIMS",
+      scrawl: "stop stop stop stop stop stop",
+    }, [
+      "Inquiry. Dispatcher ordered bus onto bridge.",
+      "Route 9 driver Teodor Varga radioed dispatch at twelve nineteen, asking permission to wait out the storm at Northgate.",
+      "Dispatcher Harold Rhee refused. Recordings show Rhee told Varga, eleven minutes behind schedule, to make up the time by taking the Ashgrove bridge.",
+      "Asked if he regretted the order, Rhee said: the schedule always comes first. That's the job.",
+      "There's a photo of the victims. Fourteen faces. A woman in a cardigan, holding a little kid on her hip.",
+      "The kid is me.",
+      "Under the article, in shaky pencil, one word, over and over, until the paper tore. Stop. Stop. Stop. Stop.",
+    ]);
     await g.say("rhee", "Put that away, driver. Teodor kept that for thirty years. Look where it got him.");
   }
   g.visor(false);
@@ -256,11 +268,16 @@ async function bridge(g) {
     await g.say("rhee", "That's how it's done. You'll do it properly next time.");
   } else {
     await g.think("I'm parked outside St. Agnes. The bus is dry. The engine ticks as it cools.");
-    const gift = box(0.22, 0.14, 0.22, mat({ color: 0x9fb3c8 }));
-    gift.position.set(0.3, 1.42, 5.5);
+    const gift = makeGift();
+    gift.position.set(0.3, 1.43, 5.45);
+    gift.rotation.y = 0.3;
     g.bus.group.add(gift);
-    await g.think("There's a little box on the dashboard, wrapped in soggy paper with balloons on it. For Rosie. Love, Dad.");
-    await g.think("Underneath, newer, in shaky handwriting: she waits at Elm and Fourth. She doesn't know why.");
+    g.look(gift.getWorldPosition(new THREE.Vector3()));
+    await g.wait(900);
+    await g.read({ kind: "note", kicker: "the gift tag", lines: ["For Rosie.", "Love, Dad. x"], scrawl: "she waits at Elm and 4th. she doesn't know why." }, [
+      "There's a little box on the dashboard, wrapped in soggy paper with balloons on it. For Rosie. Love, Dad.",
+      "Underneath, newer, in shaky handwriting: she waits at Elm and Fourth. She doesn't know why.",
+    ]);
     const keep = await g.choose(["[Keep it safe. Find her]", "[Leave it. Not my problem]"]);
     if (keep === 0) { f.keptPresent = true; g.kind(); gift.removeFromParent(); }
     f.hasPresent = true;
