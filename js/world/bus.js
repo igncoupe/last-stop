@@ -230,8 +230,8 @@ export function buildBus(scene) {
     // mud flaps behind the rear wheels
     if (z < 0) put(bus, box(0.3, 0.34, 0.025, lipMat), s * 1.08, 0.22, z - 0.66);
     // inside, the wheel sits under a raised housing, like a real low-floor bus
-    put(bus, box(0.42, 0.72, 1.42, mat({ color: 0x3a3c40 })), s * 1.0, 0.8, z);
-    put(bus, box(0.44, 0.03, 1.44, mat({ color: 0x8a6a1e })), s * 1.0, 1.17, z);      // worn yellow edge
+    put(bus, box(0.42, 0.66, 1.42, mat({ color: 0x3a3c40 })), s * 1.0, 0.77, z);
+    put(bus, box(0.44, 0.02, 1.44, mat({ color: 0x8a6a1e })), s * 1.0, 1.11, z);      // worn yellow edge
   }
 
   // outside details: bumpers, lights, mirrors, roof unit
@@ -272,16 +272,34 @@ export function buildBus(scene) {
   const seatSlots = {};
   const RAISE = 0.4;
   const overWheel = (z) => WHEELS_Z.some((wz) => Math.abs(z - wz) < 0.95);
+  const shellMat = mat({ color: 0x2a2c31 });
+  const legMat = mat({ color: 0x45484e });
+  // a pair of seats (window + aisle) centred at x, facing forward (+z); `up` lifts it onto a platform
   const seat = (x, z, name) => {
     const up = overWheel(z) ? RAISE : 0;
-    put(bus, box(0.9, 0.12, 0.46, fabric), x, 0.86 + up, z);
-    put(bus, box(0.9, 0.62, 0.08, fabric), x, 1.22 + up, z - 0.24);
-    if (name) seatSlots[name] = new THREE.Vector3(x, 0.45 + up, z);
+    const out = Math.sign(x);                   // toward the window
+    const g = put(bus, new THREE.Group(), x, up, z);
+    for (const sx of [-0.225, 0.225]) {
+      put(g, box(0.42, 0.04, 0.44, shellMat), sx, 0.8, 0);                 // plastic seat shell
+      put(g, box(0.39, 0.065, 0.41, fabric), sx, 0.852, 0.01);             // cushion
+      const back = put(g, new THREE.Group(), sx, 0.82, -0.2);
+      back.rotation.x = -0.16;                                             // leans back a little
+      put(back, box(0.42, 0.62, 0.04, shellMat), 0, 0.31, -0.03);
+      put(back, box(0.39, 0.56, 0.045, fabric), 0, 0.3, 0.01);
+    }
+    put(g, box(0.06, 0.3, 0.06, legMat), -out * 0.36, 0.62, -0.02);        // leg on the aisle side
+    put(g, box(0.95, 0.04, 0.05, legMat), out * 0.095, 0.76, -0.02);       // beam under the seats, into the wall
+    // grab handle across the top of the aisle seat's back
+    put(g, new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.3, 8).rotateZ(Math.PI / 2), yellow), -out * 0.225, 1.45, -0.31);
+    for (const hx of [-0.11, 0.11]) put(g, box(0.025, 0.06, 0.025, yellow), -out * 0.225 + hx, 1.41, -0.3);
+    // passengers sit in the window seat
+    if (name) seatSlots[name] = new THREE.Vector3(x + out * 0.225, 0.45 + up, z);
   };
-  // the platforms: floor-coloured, with a yellow safety edge along the aisle
+  // the platforms over the wheels: the same floor, with a yellow safety edge along the aisle
+  const platformMat = mat({ map: tex.busFloor() });
   for (const [z0, z1] of [[1.95, 3.6], [-4.95, -2.45]]) for (const sx of [1, -1]) {
-    put(bus, box(1.0, 0.4, z1 - z0, mat({ map: tex.busFloor(), color: 0x8a8c90 })), sx * 0.71, 0.67, (z0 + z1) / 2);
-    put(bus, box(0.04, 0.03, z1 - z0, yellow), sx * 0.23, 0.86, (z0 + z1) / 2);
+    put(bus, box(1.0, 0.4, z1 - z0, platformMat), sx * 0.71, 0.67, (z0 + z1) / 2);
+    put(bus, box(0.045, 0.02, z1 - z0, yellow), sx * 0.235, 0.875, (z0 + z1) / 2);
   }
   let row = 0;
   for (let z = 3.1; z > -4.9; z -= 0.86, row++) {
@@ -331,11 +349,11 @@ export function buildBus(scene) {
   put(fare, box(0.12, 0.015, 0.01, mat({ color: 0x050505 })), 0, 1.1, -0.155);
 
   // dashboard screen: speed, time, schedule (redrawn by update())
-  const dash = tex.live(96, 40);
+  const dash = tex.live(144, 60);
   const binMat = mat({ color: 0x1f2023 });
-  put(bus, box(0.56, 0.2, 0.16, binMat), 0.7, 1.49, 5.55);           // binnacle: y 1.39..1.59, z 5.47..5.63
-  put(bus, box(0.6, 0.025, 0.21, binMat), 0.7, 1.6025, 5.525);        // its hood
-  const dashScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.15), glow(0xffffff, { map: dash.texture })), 0.7, 1.49, 5.466);
+  put(bus, box(0.56, 0.23, 0.16, binMat), 0.7, 1.505, 5.55);         // binnacle: y 1.39..1.62, z 5.47..5.63
+  put(bus, box(0.6, 0.025, 0.21, binMat), 0.7, 1.6325, 5.525);        // its hood
+  const dashScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.15), glow(0xffffff, { map: dash.texture })), 0.7, 1.52, 5.466);
   dashScreen.rotation.y = Math.PI;                                     // faces the driver
 
   // route display above the windshield, facing the passengers and you
@@ -357,9 +375,22 @@ export function buildBus(scene) {
   put(bus, new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 4, 10, Math.PI * 1.4), mat({ color: 0x151618 })), -0.1, 1.17, 5.43);  // curly cord
 
   // door control panel: a labeled plate with a big lit button that clicks down
-  const panelTex = tex.sign("DOORS", { bg: "#1b1c1f", fg: "#d8d8d8", w: 48, h: 16, font: 10 });
-  put(bus, box(0.13, 0.015, 0.1, [trim, trim, glow(0xffffff, { map: panelTex }), trim, trim, trim]), 0.345, 1.3975, 5.52);
-  const doorBtn = put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.02, 12), glow(0x3fd06a)), 0.345, 1.415, 5.5);
+  // a wedge that sits flat on the dash, its top sloping up toward the driver
+  const wedge = new THREE.Shape();
+  wedge.moveTo(-0.07, 0);
+  wedge.lineTo(0.07, 0);
+  wedge.lineTo(0.07, 0.075);
+  wedge.lineTo(-0.07, 0.035);
+  wedge.closePath();
+  const wedgeGeo = new THREE.ExtrudeGeometry(wedge, { depth: 0.16, bevelEnabled: false }).rotateY(-Math.PI / 2).translate(0.08, 0, 0);
+  const pod = put(bus, new THREE.Mesh(wedgeGeo, binMat), 0.345, 1.39, 5.53);
+  const face = put(pod, new THREE.Group(), 0, 0.055, 0);
+  face.rotation.x = -Math.atan2(0.04, 0.14);                                 // lies on the sloped top
+  const panelTex = tex.sign("DOORS", { bg: "#16171a", fg: "#e2e2e2", w: 64, h: 16, font: 12 });
+  const label = put(face, new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.03), glow(0xffffff, { map: panelTex })), 0, 0.0015, 0.045);
+  label.rotation.set(-Math.PI / 2, 0, Math.PI);                              // reads the right way up from the seat
+  put(face, box(0.09, 0.012, 0.07, mat({ color: 0x8a9096 })), 0, 0.006, -0.02);  // chrome bezel
+  const doorBtn = put(face, box(0.07, 0.02, 0.05, glow(0x3fd06a)), 0, 0.014, -0.02);
   doorBtn.userData.interact = "doors";
 
   // sun visor above the driver; flips down
@@ -521,15 +552,29 @@ export function buildBus(scene) {
   }
   function drawDash(info) {
     const c = dash.ctx;
+    // laid out in the top two thirds: the steering wheel's rim covers the bottom of the screen
     c.fillStyle = "#050505";
-    c.fillRect(0, 0, 96, 40);
+    c.fillRect(0, 0, 144, 60);
     c.fillStyle = "#ffb54a";
-    c.font = "bold 16px monospace";
-    c.fillText(`${String(Math.round(info.speed * 2.237)).padStart(2, " ")} mph`, 4, 16);
-    c.font = "12px monospace";
-    c.fillText(info.clock, 4, 32);
+    c.textBaseline = "alphabetic";
+    c.textAlign = "right";
+    c.font = "bold 26px monospace";
+    c.fillText(String(Math.round(info.speed * 2.237)), 50, 30);
+    c.textAlign = "left";
+    c.font = "bold 11px monospace";
+    c.fillText("mph", 53, 30);
+    c.textAlign = "right";
+    c.font = "bold 14px monospace";
+    c.fillText(info.clock, 140, 17);
+    c.font = "bold 11px monospace";
     c.fillStyle = info.late > 0 ? "#ff5a4f" : "#86cf9b";
-    c.fillText(info.late > 0 ? `+${info.late}m` : "ON TIME", 54, 32);
+    c.fillText(info.late > 0 ? `LATE ${info.late}m` : "ON TIME", 140, 33);
+    c.textAlign = "left";
+    c.fillStyle = "#3a2a10";
+    c.fillRect(4, 40, 136, 1);
+    c.fillStyle = "#8a6a2a";
+    c.font = "9px monospace";
+    c.fillText("ROUTE 9 · NIGHT", 4, 52);
     dash.texture.needsUpdate = true;
   }
   function drawRadio() {
@@ -595,7 +640,7 @@ export function buildBus(scene) {
       wheelG.rotation.z = THREE.MathUtils.lerp(wheelG.rotation.z, THREE.MathUtils.clamp((info.steer || 0) * 9, -2.2, 2.2), Math.min(1, dt * 4));
       // door button: pressed in for a moment, green = closed, amber = open
       state.btnT = Math.max(0, (state.btnT || 0) - dt);
-      doorBtn.position.y = state.btnT > 0 ? 1.408 : 1.415;
+      doorBtn.position.y = state.btnT > 0 ? 0.008 : 0.014;
       doorBtn.material.color.set(state.doorsOpen ? 0xffa32a : 0x3fd06a);
       knob.rotation.z += ((state.knobTarget || 0) - knob.rotation.z) * Math.min(1, dt * 10);
       // interior lights
