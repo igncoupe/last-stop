@@ -2,8 +2,9 @@
 // broken Ashgrove bridge. They sit far away from the city and you're
 // moved there with a fade.
 import * as THREE from "three";
-import { mat, glow, box } from "../core/ps1.js";
+import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
+import { radialTexture } from "./city.js";
 
 const put = (parent, mesh, x, y, z) => {
   mesh.position.set(x, y, z);
@@ -137,12 +138,26 @@ function buildBridge(scene) {
   water.material.map.repeat.set(40, 40);
   water.rotation.x = -Math.PI / 2;
   put(g, water, 0, -6, 300);
+  // painted lines so the road reads in the dark: edges and a dashed center
+  const paint = decal(glow(0xb59a52), 2);
+  for (const x of [-4.6, 4.6]) put(g, box(0.14, 0.02, 200, paint), x, 0.06, 100);
+  for (let z = 4; z < 200; z += 9) put(g, box(0.14, 0.02, 3, paint), 0, 0.06, z);
+  for (const x of [-3.2, 3.2]) put(g, box(0.12, 0.02, 66, paint), x, 0.06, 235);
+  // streetlights, dying the closer you get to the river (the last ones are dead)
+  const pool = decal(new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false, map: radialTexture() }), 2);
   for (let z = 20; z < 270; z += 30) {
+    const alive = z < 200;
     put(g, box(0.16, 6, 0.16, mat({ color: 0x2a2c30 })), 4.2, 3, z);
-    put(g, box(0.5, 0.18, 0.8, glow(z > 180 ? 0x3a2a10 : 0xffd9a0)), 3.2, 5.9, z);
+    put(g, box(0.5, 0.18, 0.8, glow(alive ? 0xffd9a0 : 0x3a2a10)), 3.2, 5.9, z);
+    if (alive) {
+      const p = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), pool);
+      p.rotation.x = -Math.PI / 2;
+      put(g, p, 2.6, 0.07, z);
+    }
   }
-  const light = new THREE.PointLight(0xffc27a, 30, 30, 1.6);
-  put(g, light, 2, 5, 60);
+  for (const z of [50, 110, 170]) put(g, new THREE.PointLight(0xffc27a, 40, 34, 1.5), 2.6, 5.4, z);
+  // a cold light out over the water, so you can see where the bridge ends
+  put(g, new THREE.PointLight(0x8fb0c8, 25, 60, 1.2), 0, 8, 262);
   return {
     group: g,
     start: new THREE.Vector3(X + 2.3, 0, 4),

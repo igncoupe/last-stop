@@ -51,7 +51,7 @@ const SKIES = {
   night: { fog: 0x05070c, density: 0.03, hemi: 0.35 },
   storm: { fog: 0x070a10, density: 0.042, hemi: 0.3 },
   dawn: { fog: 0x8a95a3, density: 0.014, hemi: 1.6 },
-  void: { fog: 0x000000, density: 0.06, hemi: 0.15 },
+  void: { fog: 0x05070b, density: 0.024, hemi: 0.35 },   // the bridge: dark, but you can see the road
   hospital: { fog: 0x0b0d0c, density: 0.02, hemi: 0.4 },
 };
 let hemiBase = 0.35;
