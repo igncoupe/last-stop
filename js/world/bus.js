@@ -69,22 +69,24 @@ export function buildBus(scene) {
     // the bus x of a mark -> canvas u (the plane is turned to face the driver)
     const U = (bx) => ((1.25 - bx) / 2.5) * W2;
     const V = (by) => ((2.85 - by) / 1.5) * H2;
+    // a print of a long, thin hand: smudged palm, four finger streaks, all dragged down the glass
     const hand = (cx, cy, rot, smear) => {
       x.save();
       x.translate(cx, cy);
       x.rotate(rot);
-      x.fillStyle = "rgba(150,148,140,0.55)";
-      x.beginPath(); x.ellipse(0, 0, 15, 19, 0, 0, Math.PI * 2); x.fill();
+      x.filter = "blur(1.5px)";
+      x.fillStyle = "rgba(160,158,150,0.34)";
+      x.beginPath(); x.ellipse(0, 0, 8, 10, 0, 0, Math.PI * 2); x.fill();
       for (let i = 0; i < 4; i++) {
         x.save();
-        x.rotate((i - 1.5) * 0.17);
-        x.fillRect(-3.5 + (i - 1.5) * 1.5, -60, 7, 44);
+        x.rotate((i - 1.5) * 0.16);
+        x.beginPath(); x.ellipse((i - 1.5) * 1.2, -24, 2.2, 13 + (i === 1 || i === 2 ? 3 : 0), 0, 0, Math.PI * 2); x.fill();
         x.restore();
       }
-      x.save(); x.rotate(-1.0); x.fillRect(-3.5, -40, 7, 26); x.restore();
-      // dragged down the glass
-      x.fillStyle = "rgba(150,148,140,0.22)";
-      x.fillRect(-14, 10, 28, smear);
+      x.save(); x.rotate(-1.1); x.beginPath(); x.ellipse(0, -14, 2.2, 8, 0, 0, Math.PI * 2); x.fill(); x.restore();
+      // dragged down the glass, streaky
+      x.fillStyle = "rgba(160,158,150,0.13)";
+      for (let i = 0; i < 4; i++) x.fillRect(-6 + i * 3.5, 4, 2.2, smear * (0.6 + Math.random() * 0.5));
       x.restore();
     };
     hand(U(-0.75), V(2.48), -0.35, 60);
@@ -96,34 +98,43 @@ export function buildBus(scene) {
     x.fillStyle = grd;
     x.fillRect(0, 0, W2, H2);
     if (level >= 2) {
-      // cracks from where its head hit
+      // a star of cracks from where its head hit: a crushed white spot, jagged lines that branch and thin out
+      x.filter = "none";
       const cx = U(0.3), cy = V(2.4);
-      x.strokeStyle = "rgba(225,232,236,0.55)";
-      x.lineWidth = 1.2;
-      for (let i = 0; i < 11; i++) {
-        let a = (i / 11) * Math.PI * 2 + Math.random() * 0.3;
-        let px = cx, py = cy;
+      x.fillStyle = "rgba(220,226,230,0.28)";
+      x.beginPath(); x.ellipse(cx, cy, 6, 5, 0.3, 0, Math.PI * 2); x.fill();
+      const branch = (px, py, a, len, width) => {
+        if (len < 5 || width < 0.3) return;
+        x.strokeStyle = `rgba(225,232,236,${0.18 + width * 0.18})`;
+        x.lineWidth = width;
         x.beginPath();
         x.moveTo(px, py);
-        for (let s = 0; s < 6; s++) {
-          a += (Math.random() - 0.5) * 0.6;
-          px += Math.cos(a) * (12 + Math.random() * 18);
-          py += Math.sin(a) * (12 + Math.random() * 18);
-          x.lineTo(px, py);
+        let qx = px, qy = py;
+        for (let s = 0; s < 4; s++) {
+          a += (Math.random() - 0.5) * 0.5;
+          qx += Math.cos(a) * len / 4;
+          qy += Math.sin(a) * len / 4;
+          x.lineTo(qx, qy);
         }
         x.stroke();
+        if (Math.random() < 0.55) branch(qx, qy, a + (Math.random() - 0.5) * 1.2, len * 0.55, width * 0.6);
+        branch(qx, qy, a, len * 0.6, width * 0.7);
+      };
+      const n = 7 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < n; i++) branch(cx, cy, (i / n) * Math.PI * 2 + Math.random() * 0.4, 40 + Math.random() * 40, 1.1);
+      // one broken ring, not a spider web
+      x.strokeStyle = "rgba(225,232,236,0.22)";
+      x.lineWidth = 0.7;
+      x.beginPath();
+      for (let k = 0; k <= 9; k++) {
+        const a = (k / 12) * Math.PI * 2 + 0.4;
+        const rr = 14 + (Math.random() - 0.5) * 6;
+        if (k === 0) x.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+        else x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
       }
-      for (const r of [9, 20, 34]) {
-        x.beginPath();
-        for (let k = 0; k <= 12; k++) {
-          const a = (k / 12) * Math.PI * 2;
-          const rr = r + (Math.random() - 0.5) * 6;
-          if (k === 0) x.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
-          else x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
-        }
-        x.stroke();
-      }
+      x.stroke();
     }
+    x.filter = "none";
     smudgeTex.needsUpdate = true;
   }
   put(bus, box(2.4, 0.42, 0.7, trim), 0, 1.15, 5.62);
@@ -154,6 +165,9 @@ export function buildBus(scene) {
     const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.36, 14, 1, true, 0, Math.PI), archMat);   // the top half, over the tire
     arch.rotation.z = Math.PI / 2;
     put(bus, arch, s * 1.14, 0.5, z);
+    // inside, the wheel sits under a raised housing, like a real low-floor bus
+    put(bus, box(0.42, 0.72, 1.42, mat({ color: 0x3a3c40 })), s * 1.0, 0.8, z);
+    put(bus, box(0.44, 0.03, 1.44, mat({ color: 0x8a6a1e })), s * 1.0, 1.17, z);      // worn yellow edge
   }
 
   // outside details: bumpers, lights, mirrors, roof unit
@@ -201,14 +215,23 @@ export function buildBus(scene) {
   // steering wheel: rim, three spokes, hub, column
   const wheelG = put(bus, new THREE.Group(), 0.7, 1.42, 5.32);
   wheelG.rotation.x = -1.1;
-  wheelG.add(new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.028, 6, 18), mat({ color: 0x16171a })));
+  wheelG.add(new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.022, 6, 24), mat({ color: 0x3a3b40 })));
+  // worn grip wrap at ten and two
+  for (const a of [0.55, Math.PI - 0.55]) {
+    const grip = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.026, 6, 6, 0.7), mat({ color: 0x25262a }));
+    grip.rotation.z = a - 0.35;
+    wheelG.add(grip);
+  }
   for (const a of [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3]) {
-    const spoke = box(0.2, 0.03, 0.02, mat({ color: 0x2a2c30 }));
+    const spoke = box(0.2, 0.026, 0.016, mat({ color: 0x7a8086 }));
     spoke.position.set(Math.cos(a - Math.PI / 2) * 0.1, Math.sin(a - Math.PI / 2) * 0.1, 0);
     spoke.rotation.z = a - Math.PI / 2;
     wheelG.add(spoke);
   }
-  wheelG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.05, 10).rotateX(Math.PI / 2), mat({ color: 0x2a2c30 })));
+  wheelG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.05, 12).rotateX(Math.PI / 2), mat({ color: 0x2a2c30 })));
+  const badge = new THREE.Mesh(new THREE.CircleGeometry(0.03, 12), mat({ color: 0xa8a090 }));
+  badge.position.z = 0.027;
+  wheelG.add(badge);
   put(bus, box(0.06, 0.06, 0.4, trim), 0.7, 1.3, 5.45);
   // fare box: body, coin slot, glowing display, ticket slot
   const fare = put(bus, new THREE.Group(), -0.05, 0, 5.05);

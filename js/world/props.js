@@ -137,7 +137,7 @@ export function buildProps(scene) {
     d: null,
     place(d) { this.d = d; rq.visible = d !== null; if (d !== null) place(rq, d, CURB - 1.0); },
     // where something would stand, waiting, in the light
-    spot() { return rq.localToWorld(new THREE.Vector3(0.45, 0, -0.55)); },
+    spot() { rq.updateMatrixWorld(true); return rq.localToWorld(new THREE.Vector3(0.45, 0, -0.55)); },
     light(on) { rqLight.visible = on; rqPool.opacity = on ? 0.5 : 0; rqHead.material.color.set(on ? 0xffd9a0 : 0x1a1a1a); },
   };
 

@@ -18,6 +18,19 @@ function smokeTexture() {
   x.fillRect(0, 0, 64, 64);
   return new THREE.CanvasTexture(c);
 }
+// a soft white glow (tinted by the material): the haze behind it that makes its outline readable
+function glowTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const x = c.getContext("2d");
+  const grd = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, "rgba(255,255,255,1)");
+  grd.addColorStop(0.5, "rgba(255,255,255,0.45)");
+  grd.addColorStop(1, "rgba(255,255,255,0)");
+  x.fillStyle = grd;
+  x.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
 
 // a limb hanging down from its joint
 function limb(len, r0, r1) {
@@ -50,29 +63,29 @@ export function createShade(scene) {
   const hips = joint(root, 0, 1.02, 0);
   const legs = [-1, 1].map((s) => {
     const hip = joint(hips, s * 0.09, 0, 0);
-    hip.add(limb(0.5, 0.06, 0.042));
+    hip.add(limb(0.5, 0.07, 0.05));
     const knee = joint(hip, 0, -0.5, 0);
-    knee.add(limb(0.5, 0.042, 0.026));
+    knee.add(limb(0.5, 0.05, 0.032));
     const foot = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 0.2).translate(0, -0.515, 0.06), VOID);
     knee.add(foot);
     return { hip, knee, s };
   });
   const spine = joint(hips, 0, 0, 0);
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.1, 0.62, 7).translate(0, 0.31, 0), VOID);
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.12, 0.62, 10).translate(0, 0.31, 0), VOID);
   torso.scale.z = 0.55;
   spine.add(torso);
   const arms = [-1, 1].map((s) => {
     const sh = joint(spine, s * 0.2, 0.58, 0);
-    sh.add(new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 4), VOID));
-    sh.add(limb(0.48, 0.038, 0.03));
+    sh.add(new THREE.Mesh(new THREE.SphereGeometry(0.07, 7, 5), VOID));
+    sh.add(limb(0.48, 0.052, 0.04));
     const el = joint(sh, 0, -0.48, 0);
-    el.add(limb(0.46, 0.03, 0.022));
+    el.add(limb(0.46, 0.04, 0.03));
     const hand = joint(el, 0, -0.46, 0);
-    hand.add(new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.1, 0.022).translate(0, -0.05, 0), VOID));
+    hand.add(new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.03).translate(0, -0.055, 0), VOID));
     // long fingers, slightly spread
     for (let i = 0; i < 4; i++) {
-      const f = limb(0.15, 0.008, 0.004);
-      f.position.set((i - 1.5) * 0.019, -0.095, 0);
+      const f = limb(0.16, 0.011, 0.006);
+      f.position.set((i - 1.5) * 0.022, -0.1, 0);
       f.rotation.z = (i - 1.5) * 0.12;
       hand.add(f);
     }
@@ -103,6 +116,13 @@ export function createShade(scene) {
     parent.add(sp);
     wisps.push(sp);
   }
+
+  // a cold haze behind it, so its outline reads against the dark
+  const hazeMat = new THREE.SpriteMaterial({ map: glowTexture(), color: 0x7f8c96, transparent: true, depthWrite: false, fog: false, opacity: 0.3, blending: THREE.AdditiveBlending });
+  const haze = new THREE.Sprite(hazeMat);
+  haze.position.set(0, 1.15, -0.9);
+  haze.scale.set(2.6, 3.4, 1);
+  root.add(haze);
 
   // ---- posing
   let pose = { ...POSES.stand };
@@ -151,6 +171,7 @@ export function createShade(scene) {
     root.scale.setScalar(1);
     root.visible = true;
     smokeMat.opacity = 0.75;
+    hazeMat.opacity = 0.3;
   }
   const faceYaw = (from, to) => Math.atan2(to.x - from.x, to.z - from.z);
 
@@ -267,6 +288,7 @@ export function createShade(scene) {
         root.scale.set(1 + k * 0.6, 1 + k * 0.25, 1 + k * 0.6);
         root.position.y += dt * 0.25;
         smokeMat.opacity = 0.75 * (1 - k);
+        hazeMat.opacity = 0.3 * (1 - k);
         for (const w of wisps) w.scale.multiplyScalar(1 + k * 2.5);
         torso.visible = skull.visible = k < 0.55;
         for (const a of arms) a.sh.visible = k < 0.35;
