@@ -296,6 +296,24 @@ async function bridge(g) {
   g.release();
   await closeDoorsAndGo(g);
 
+  // ---------- the long way to Northgate: Dana breaks through, and something rides in the back
+  await g.wait(5000);
+  g.sfx("static", 1.4);
+  await g.wait(800);
+  await g.say("dana", "Route 9, if you can hear this, it's Dana. Don't answer. Just listen.");
+  await g.say("dana", "I pulled Harold Rhee's file. After the inquiry he never went home. He slept in the dispatch office.");
+  await g.say("dana", "Every night at twelve nineteen he read out the Route 9 stops on channel 9. To nobody. Elm and Fourth. Market. St. Agnes. Canal Row. Northgate. Ashgrove.");
+  await g.say("dana", "The night he died, he got as far as Ashgrove and stopped. Like he couldn't say what came after.");
+  g.sfx("static", 0.8);
+  await g.say("rhee", "That's enough, Dana.");
+  g.mood("dread");
+  await g.wait(2500);
+  await g.think("Someone's standing at the back of the bus. I can see them in the mirror.");
+  await g.shadeCreep();
+  await g.think("Nobody. Nothing. But the air back here smells like a struck match.");
+  await g.say("rhee", "Eyes front, driver. You've got a schedule to keep.");
+  g.mood("uneasy");
+
   // the rest of the run, then Northgate
   await g.arrive("Northgate");
   await openUp(g, 25000);

@@ -408,6 +408,29 @@ export function createDirector(w) {
     if (wasControl === "player" && !keepParked) drive.release();   // (or the script lets go when it is ready)
   };
 
+  // the shadow in the aisle: only in the mirror, a few rows closer every time you look
+  g.shadeCreep = async () => {
+    const face = new THREE.Vector3(0.7, 1.7, 4.8);
+    shade.mirrorOnly(true);
+    for (const [x, z] of [[0, -4.6], [0, -1.6], [0.15, 2.3]]) {
+      shade.standIn(bus.group, new THREE.Vector3(x, 0.47, z), face);
+      g.hint("Check your mirror");
+      await until(() => g.lookingAtMirror(), 14000);
+      ui.hint(null);
+      Sound.sfx(z > 0 ? "breath" : "drip");
+      await g.wait(z > 0 ? 1500 : 2300);
+      bus.setInterior("flicker");
+      Sound.sfx("lightsout");
+      await g.wait(500);
+      bus.setInterior("on");
+    }
+    shade.hide();
+    g.hint("Turn around");
+    await until(() => g.lookingBack() || g.gazing(bus.group.localToWorld(new THREE.Vector3(0.3, 1.4, 2.6)), 35), 12000);
+    ui.hint(null);
+    shade.mirrorOnly(false);
+  };
+
   // something walks up the aisle, a little closer every time you check the mirror
   g.creepMirror = async (look = "drowned") => {
     g.spawn("creep", look, { ghost: true, mirrorOnly: true });

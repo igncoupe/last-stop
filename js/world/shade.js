@@ -3,6 +3,7 @@
 // won't hold still. It stands at stops and watches. It runs. It jumps.
 // (It's what's left of Harold Rhee. Dispatch is watching.)
 import * as THREE from "three";
+import { MIRROR_ONLY } from "./bus.js";
 
 const VOID = new THREE.MeshBasicMaterial({ color: 0x000000, fog: false });
 
@@ -189,6 +190,22 @@ export function createShade(scene) {
       watch = true;
     },
     crouchAt(pos, faceTo) { this.standAt(pos, faceTo, "crouch"); },
+    // stand inside something that moves (the bus aisle), facing a point in its space
+    standIn(parent, localPos, faceLocal, poseName = "stand") {
+      parent.add(root);
+      root.position.copy(localPos);
+      root.rotation.set(0, Math.atan2(faceLocal.x - localPos.x, faceLocal.z - localPos.z), 0);
+      root.scale.setScalar(1);
+      root.visible = true;
+      smokeMat.opacity = 0.75;
+      hazeMat.opacity = 0;                // no haze indoors
+      setPose(poseName);
+      applyPose(1);
+      mode = "still";
+      watch = true;
+    },
+    // only visible in the rear-view mirror
+    mirrorOnly(on) { root.traverse((o) => o.layers.set(on ? MIRROR_ONLY : 0)); },
     // run, impossibly fast; place(dt) returns { pos, yaw } each frame
     runWith(place) {
       const p = place(0);
