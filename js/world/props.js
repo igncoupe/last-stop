@@ -80,9 +80,9 @@ export function buildProps(scene) {
 
   // ---- the stop with no name
   const m = shelter("???", { old: true });
-  const mLight = new THREE.PointLight(0xffc860, 30, 16, 1.4);
-  mLight.position.set(0, 2.2, 0);
-  m.group.add(mLight);
+  // its light stays in the scene and just dims while the stop isn't there
+  const mLight = new THREE.PointLight(0xffc860, 0, 16, 1.4);
+  scene.add(mLight);
   const mRain = rainBox(260, 1.8, 2.6, 4.4, 0x9fb4d0);
   mRain.position.set(-0.1, 1.3, 0);
   m.group.add(mRain);
@@ -96,8 +96,11 @@ export function buildProps(scene) {
       this.d = d;
       m.group.visible = d !== null;
       if (this.box) { this.box.removeFromParent(); this.box = null; }
+      mLight.intensity = d !== null ? 30 : 0;
       if (d !== null) {
         place(m.group, d, CURB - 1.4);
+        m.group.updateMatrixWorld(true);
+        mLight.position.copy(m.group.localToWorld(new THREE.Vector3(0, 2.2, 0)));
         this.box = stopBox(d);
         scene.add(this.box);
       }
@@ -125,10 +128,9 @@ export function buildProps(scene) {
   put(rq, box(0.1, 5.4, 0.1, mat({ color: 0x2a2c30 })), -0.4, 2.7, -1.6);
   put(rq, box(1.1, 0.08, 0.1, mat({ color: 0x2a2c30 })), 0.1, 5.4, -1.6);
   const rqHead = put(rq, box(0.5, 0.14, 0.32, glow(0xffd9a0)), 0.6, 5.32, -1.6);
-  const rqLight = new THREE.SpotLight(0xffd9a0, 40, 14, 0.6, 0.6, 1.3);
-  rqLight.position.set(0.6, 5.2, -1.6);
-  rqLight.target.position.set(0.5, 0, -0.6);
-  rq.add(rqLight, rqLight.target);
+  const rqLight = new THREE.SpotLight(0xffd9a0, 0, 14, 0.6, 0.6, 1.3);   // in the scene, dimmed until the stop is placed
+  scene.add(rqLight, rqLight.target);
+  let rqOn = true;
   const rqPool = decal(new THREE.MeshBasicMaterial({ map: radialTexture(), color: 0xffd696, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }), 2);
   const pool = put(rq, new THREE.Mesh(new THREE.PlaneGeometry(4.5, 4.5), rqPool), 0.5, 0.03, -0.6);
   pool.rotation.x = -Math.PI / 2;
@@ -137,10 +139,21 @@ export function buildProps(scene) {
   props.requestStop = {
     group: rq,
     d: null,
-    place(d) { this.d = d; rq.visible = d !== null; if (d !== null) place(rq, d, CURB - 1.0); },
+    place(d) {
+      this.d = d;
+      rq.visible = d !== null;
+      if (d !== null) {
+        place(rq, d, CURB - 1.0);
+        rq.updateMatrixWorld(true);
+        rqLight.position.copy(rq.localToWorld(new THREE.Vector3(0.6, 5.2, -1.6)));
+        rqLight.target.position.copy(rq.localToWorld(new THREE.Vector3(0.5, 0, -0.6)));
+        rqLight.target.updateMatrixWorld();
+      }
+      rqLight.intensity = d !== null && rqOn ? 40 : 0;
+    },
     // where something would stand, waiting, in the light
     spot() { rq.updateMatrixWorld(true); return rq.localToWorld(new THREE.Vector3(0.45, 0, -0.55)); },
-    light(on) { rqLight.visible = on; rqPool.opacity = on ? 0.5 : 0; rqHead.material.color.set(on ? 0xffd9a0 : 0x1a1a1a); },
+    light(on) { rqOn = on; rqLight.intensity = on && this.d !== null ? 40 : 0; rqPool.opacity = on ? 0.5 : 0; rqHead.material.color.set(on ? 0xffd9a0 : 0x1a1a1a); },
   };
 
   // ---- the canal on the left of Canal Row

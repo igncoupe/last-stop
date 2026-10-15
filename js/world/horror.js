@@ -89,6 +89,11 @@ export function createHorror(camera) {
   const f = face();
   f.visible = false;
   rig.add(f);
+  // the face's under-light lives on the rig and only dims, so showing the face never changes the light count
+  const faceLight = f.userData.light;
+  f.remove(faceLight);
+  rig.add(faceLight);
+  faceLight.intensity = 0;
   const hands = [hand(-1), hand(1)];
   hands.forEach((h) => { h.visible = false; rig.add(h); });
   const eyeGlow = new THREE.Group();
@@ -125,9 +130,11 @@ export function createHorror(camera) {
         // facing the camera (its front is +z), twitching
         f.rotation.set(-0.08 + (Math.random() - 0.5) * 0.18, (Math.random() - 0.5) * 0.22, (Math.random() - 0.5) * 0.3);
         f.userData.jaw.scale.y = 1 + Math.min(1, k / 0.25) * 1.6;
-        f.userData.light.intensity = 0.55 * (Math.random() < 0.15 ? 0.15 : 1);
+        faceLight.position.set(f.position.x, f.position.y - 0.3, f.position.z + 0.3);
+        faceLight.intensity = 0.55 * (Math.random() < 0.15 ? 0.15 : 1);
         if (k > 0.75) {
           f.visible = false;
+          faceLight.intensity = 0;
           finish();
         }
       }

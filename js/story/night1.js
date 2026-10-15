@@ -98,7 +98,8 @@ export async function night1(g) {
   stopped = await g.arrive("Market St");
   await maraChat;
   if (stopped && (await openUp(g))) {
-    await jun.walk([doorOutside(), g.bus.group.localToWorld(g.bus.boardPath[1].clone())], { speed: 1.3 });
+    await jun.walk([doorOutside()], { speed: 1.3 });
+    await jun.walk([g.bus.boardPath[1]], { speed: 1.3, parent: g.bus.group, ground: g.bus.groundAt });   // up the steps
     await g.say("jun", "I don't... I don't have the fare. I just need to get to Northgate. Please. I'll pay you back tomorrow, I swear.");
     await g.say("rhee", "Reminder, driver. No. Free. Rides.");
     const c = await g.choose(["“Sit down. This one's on me.”", "“Sorry, kid. Rules.”"]);
@@ -112,7 +113,8 @@ export async function night1(g) {
       await g.say("rhee", "I saw that, driver. That's your one warning.");
     } else {
       f.junLeft = true;
-      await jun.walk([curb("Market St", 1)], { speed: 1 });
+      await jun.walk([g.bus.boardPath[0]], { speed: 1, ground: g.bus.groundAt });   // back down the steps
+      await jun.walk([curb("Market St", 1)], { speed: 1, parent: jun.scene });
       await g.think("He nodded like he'd heard it before. It's six miles to Northgate.");
     }
   } else {

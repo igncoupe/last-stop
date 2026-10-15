@@ -53,14 +53,19 @@ function carModel() {
   const hazardMat = glow(0xffa32a);
   const hazards = [];
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) hazards.push(put(g, box(0.1, 0.08, 0.06, hazardMat), sx * 0.85, 0.72, sz * 2.12));
-  // headlight beams: soft cones out across the road, and a pool of light on the asphalt
-  const beamMat = new THREE.MeshBasicMaterial({ color: 0xfff0d0, transparent: true, opacity: 0.06, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: true });
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 2.8, 16, 10, 1, true).rotateX(Math.PI / 2), beamMat);
-  put(g, beam, 0, 0.75, 10.2);
-  const poolMat = new THREE.MeshBasicMaterial({ map: glowTex, color: 0xffe2b0, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
-  const pool = new THREE.Mesh(new THREE.PlaneGeometry(5, 12), poolMat);
+  // headlights: a bright glow at each lamp (it blooms when it's pointed at you), and the light they throw on the road
+  const beamMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xfff1d8, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
+  const beam = new THREE.Group();
+  for (const x of [-0.62, 0.62]) {
+    const halo = new THREE.Sprite(beamMat);
+    halo.scale.set(1.1, 0.8, 1);
+    put(beam, halo, x, 0.7, 2.25);
+  }
+  g.add(beam);
+  const poolMat = new THREE.MeshBasicMaterial({ map: glowTex, color: 0xffe2b0, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false });
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 10), poolMat);
   pool.rotation.x = -Math.PI / 2;
-  put(g, pool, 0, 0.04, 9);
+  put(g, pool, 0, 0.04, 7.5);
   // the inside: dome light, a driver, a back-seat passenger, an opening driver's door
   const dome = put(g, box(0.3, 0.03, 0.2, glow(0xfff2c8)), 0, 1.36, -0.2);
   const figureMat = mat({ color: 0x15161a });
@@ -96,8 +101,8 @@ export function createTraffic(scene, sfx) {
     c.heads.forEach((h) => { h.material = on ? c.headOn : c.headOff; });
     c.beam.visible = on;
     c.pool.visible = on;
-    c.beam.material.opacity = 0.06 * bright;
-    c.pool.material.opacity = 0.3 * bright;
+    c.beam.children.forEach((h) => h.scale.set(1.1 * bright, 0.8 * bright, 1));
+    c.pool.material.opacity = 0.22 * Math.min(bright, 1.6);
   }
   function spawn(mode, busD) {
     const m = carModel();
@@ -150,6 +155,13 @@ export function createTraffic(scene, sfx) {
   const okAt = (d, L) => d > 90 && d < L - 140 && !nearCorner(d, 35) && !Object.values(STOPS).some((s) => Math.abs(s - d) < 25);
 
   return {
+    // add a car for a moment so its shaders get compiled while the game loads
+    warmCar() {
+      const m = carModel();
+      m.g.position.set(0, -50, 0);
+      scene.add(m.g);
+      return () => scene.remove(m.g);
+    },
     get count() { return cars.length; },
     // scripted scenes can ask for an empty road for a while
     hold(seconds) { hold = Math.max(hold, seconds); },
@@ -217,7 +229,7 @@ export function createTraffic(scene, sfx) {
       }
       domeShared.intensity = domeCar ? 2.6 : 0;
       if (domeCar) domeShared.position.copy(domeCar.g.localToWorld(tmp.set(0, 1.22, -0.35)));
-      headShared.intensity = headCar ? 22 * (headCar.beam.material.opacity / 0.06) : 0;
+      headShared.intensity = headCar ? 22 * (headCar.beam.children[0].scale.x / 1.1) : 0;
       if (headCar) headShared.position.copy(headCar.g.localToWorld(tmp.set(0, 1.4, 7)));
     },
   };

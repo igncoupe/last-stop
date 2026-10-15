@@ -172,16 +172,69 @@ const SFX = {
     out(tone(t, dur, "sawtooth", 58, 196), 0.05, t, dur * 0.85, 0.2, 0.4);
     out(noise(t, dur, "bandpass", 600, 0.8), 0.25, t, dur * 0.9, 0.15, 0.5);
   },
+  // a scream, right in your ear: not quite human. Formants over a sliding, wavering pitch,
+  // driven into distortion, with a breath of noise and a body-blow underneath. Everything else ducks.
+  scream(t, dur = 1.5) {
+    const g = gainNode(0);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(1.6, t + 0.03);
+    g.gain.setValueAtTime(1.6, t + dur * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const drive = ctx.createWaveShaper();
+    const curve = new Float32Array(512);
+    for (let i = 0; i < 512; i++) { const x = i / 256 - 1; curve[i] = Math.tanh(x * 5); }
+    drive.curve = curve;
+    const formants = [[850, 6, 1], [1250, 7, 0.8], [2700, 9, 0.5], [3600, 10, 0.3]].map(([f, q, level]) => {
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = f;
+      bp.Q.value = q;
+      const lvl = gainNode(level);
+      bp.connect(lvl);
+      lvl.connect(drive);
+      return bp;
+    });
+    const vib = ctx.createOscillator();
+    vib.frequency.value = 7.5;
+    const vibAmt = gainNode(22);
+    vib.connect(vibAmt);
+    vib.start(t);
+    vib.stop(t + dur + 0.1);
+    for (const [detune, type] of [[0, "sawtooth"], [14, "sawtooth"], [-11, "square"], [1200, "sawtooth"]]) {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.detune.value = detune;
+      o.frequency.setValueAtTime(420, t);
+      o.frequency.exponentialRampToValueAtTime(780, t + dur * 0.35);
+      o.frequency.exponentialRampToValueAtTime(610, t + dur);
+      vibAmt.connect(o.frequency);
+      formants.forEach((bp) => o.connect(bp));
+      o.start(t);
+      o.stop(t + dur + 0.1);
+    }
+    drive.connect(g);
+    out(noise(t, dur, "bandpass", 3000, 1.2), 0.5, t, 0.02, dur * 0.9, 0.3);        // the rasp of breath in it
+    out(tone(t, 0.9, "sine", 70, 28), 1.4, t, 0.002, 0.85, 0.3);                     // body blow
+    g.connect(master);
+    send(g, 0.5);
+    // everything else drops away for a moment
+    for (const b of [musicBus, ambBus]) {
+      b.gain.cancelScheduledValues(t);
+      b.gain.setValueAtTime(b.gain.value, t);
+      b.gain.linearRampToValueAtTime(b.gain.value * 0.25, t + 0.05);
+      b.gain.linearRampToValueAtTime(b.gain.value, t + dur + 1.5);
+    }
+  },
   // a car horn, held down, off to the left where the other lane is
   horn(t, dur = 1) {
     const g = gainNode(0);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
-    g.gain.setValueAtTime(0.2, t + dur);
+    g.gain.exponentialRampToValueAtTime(0.6, t + 0.02);         // loud enough to cut through the engine and the rain
+    g.gain.setValueAtTime(0.6, t + dur);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.12);
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 1800;
+    lp.frequency.value = 3200;
     for (const f of [349, 440]) tone(t, dur + 0.15, "square", f).connect(lp);
     lp.connect(g);
     let last = g;
@@ -455,10 +508,14 @@ function engine(level, rev) {
 const clips = new Map();
 function loadClip(id) {
   if (!clips.has(id)) {
-    clips.set(id, fetch(`voices/${id}.mp3`)
+    // a stalled download must never hold up the story: give up after 8 s and show the subtitle alone
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
+    clips.set(id, fetch(`voices/${id}.mp3`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.arrayBuffer() : null))
       .then((buf) => (buf && ctx ? ctx.decodeAudioData(buf) : null))
-      .catch(() => null));
+      .catch(() => null)
+      .finally(() => clearTimeout(timer)));
   }
   return clips.get(id);
 }

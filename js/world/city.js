@@ -318,7 +318,7 @@ export function buildCity(scene) {
         .slice(0, lights.length);
       lights.forEach((l, i) => {
         const n = near[i];
-        l.visible = lampsOn.value && !!n && n.lamp.on;
+        l.intensity = lampsOn.value && n && n.lamp.on ? 40 : 0;     // dim, never hide (hiding recompiles shaders)
         if (n) l.position.copy(n.lamp.pos);
       });
     },

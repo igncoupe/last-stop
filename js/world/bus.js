@@ -98,11 +98,11 @@ export function buildBus(scene) {
     }
   }
   // what's left on the outside of the windshield after something hits it: ash handprints, a crack
-  const smudgeCanvas = document.createElement("canvas");
-  smudgeCanvas.width = 512;
-  smudgeCanvas.height = 300;
-  const smudgeTex = new THREE.CanvasTexture(smudgeCanvas);
-  smudgeTex.colorSpace = THREE.SRGBColorSpace;
+  // both versions are drawn now, while loading, so a hit on the glass never stalls on drawing them
+  const smudgeCanvases = [1, 2].map(() => { const c = document.createElement("canvas"); c.width = 512; c.height = 300; return c; });
+  const smudgeTexes = smudgeCanvases.map((c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; });
+  let smudgeCanvas = smudgeCanvases[0];
+  const smudgeTex = smudgeTexes[0];
   const smudge = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.5),
     new THREE.MeshBasicMaterial({ map: smudgeTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })), 0, 2.1, 6.025);
   smudge.rotation.y = Math.PI;          // reads the right way round from the driver's seat
@@ -181,8 +181,10 @@ export function buildBus(scene) {
       x.stroke();
     }
     x.filter = "none";
-    smudgeTex.needsUpdate = true;
   }
+  smudgeCanvas = smudgeCanvases[0]; drawSmudge(1);
+  smudgeCanvas = smudgeCanvases[1]; drawSmudge(2);
+  smudgeTexes.forEach((t) => { t.needsUpdate = true; });
   // the dash: full depth in front of the driver, a shallow shelf on the door side so the front door can fold
   put(bus, box(1.42, 0.45, 0.535, trim), 0.49, 1.165, 5.7175);       // driver's side: x -0.22..1.2, z 5.45..5.985
   put(bus, box(0.98, 0.45, 0.315, trim), -0.71, 1.165, 5.8275);      // door side: x -1.2..-0.22, z 5.67..5.985
@@ -205,23 +207,23 @@ export function buildBus(scene) {
   const lipMat = mat({ color: 0x1a1b1d });
   const disc = (r0, r1, h, seg, material) => new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg).rotateZ(Math.PI / 2), material);
   for (const z of WHEELS_Z) for (const s of [1, -1]) {
-    const wheelG = put(bus, new THREE.Group(), s * 1.09, 0.5, z);
-    wheelG.add(disc(0.5, 0.5, 0.3, 20, tireMat));
-    put(wheelG, disc(0.48, 0.48, 0.012, 20, sidewallMat), s * 0.151, 0, 0);       // sidewall
-    put(wheelG, disc(0.32, 0.32, 0.016, 18, rimMat), s * 0.156, 0, 0);            // rim
-    put(wheelG, disc(0.24, 0.24, 0.01, 16, rimDark), s * 0.163, 0, 0);            // dished centre
+    const wheelG = put(bus, new THREE.Group(), s * 1.11, 0.5, z);
+    wheelG.add(disc(0.5, 0.5, 0.26, 20, tireMat));
+    put(wheelG, disc(0.48, 0.48, 0.012, 20, sidewallMat), s * 0.131, 0, 0);       // sidewall
+    put(wheelG, disc(0.32, 0.32, 0.016, 18, rimMat), s * 0.136, 0, 0);            // rim
+    put(wheelG, disc(0.24, 0.24, 0.01, 16, rimDark), s * 0.143, 0, 0);            // dished centre
     for (let i = 0; i < 8; i++) {                                                 // vent holes
       const a = (i / 8) * Math.PI * 2 + 0.2;
-      put(wheelG, disc(0.035, 0.035, 0.01, 8, tireMat), s * 0.165, Math.sin(a) * 0.27, Math.cos(a) * 0.27);
+      put(wheelG, disc(0.035, 0.035, 0.01, 8, tireMat), s * 0.145, Math.sin(a) * 0.27, Math.cos(a) * 0.27);
     }
     for (let i = 0; i < 10; i++) {                                                // lug nuts
       const a = (i / 10) * Math.PI * 2;
-      put(wheelG, disc(0.017, 0.017, 0.035, 6, nutMat), s * 0.17, Math.sin(a) * 0.16, Math.cos(a) * 0.16);
+      put(wheelG, disc(0.017, 0.017, 0.035, 6, nutMat), s * 0.15, Math.sin(a) * 0.16, Math.cos(a) * 0.16);
     }
-    put(wheelG, disc(s > 0 ? 0.1 : 0.075, s > 0 ? 0.075 : 0.1, 0.06, 12, nutMat), s * 0.18, 0, 0);   // hub cap, narrow end out
+    put(wheelG, disc(s > 0 ? 0.1 : 0.075, s > 0 ? 0.075 : 0.1, 0.06, 12, nutMat), s * 0.16, 0, 0);   // hub cap, narrow end out
     // the dark wheel well inside the arch
-    const well = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.44, 16, 1, true, 0, Math.PI).rotateZ(Math.PI / 2), wellMat);
-    put(bus, well, s * 1.05, 0.5, z);
+    const well = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.27, 16, 1, true, 0, Math.PI).rotateZ(Math.PI / 2), wellMat);
+    put(bus, well, s * 1.115, 0.5, z);
     // a black rubber lip around the edge of the arch
     const lip = new THREE.Mesh(new THREE.TorusGeometry(0.635, 0.028, 6, 18, Math.PI), lipMat);
     lip.rotation.y = Math.PI / 2;
@@ -229,9 +231,9 @@ export function buildBus(scene) {
     for (const e of [-1, 1]) put(bus, box(0.06, 0.22, 0.056, lipMat), s * (W + 0.045), 0.39, z + e * 0.635);
     // mud flaps behind the rear wheels
     if (z < 0) put(bus, box(0.3, 0.34, 0.025, lipMat), s * 1.08, 0.22, z - 0.66);
-    // inside, the wheel sits under a raised housing, like a real low-floor bus
-    put(bus, box(0.42, 0.66, 1.1, mat({ color: 0x2c2e32 })), s * 1.0, 0.77, z);
-    put(bus, box(0.44, 0.02, 1.12, mat({ color: 0x1e1f22 })), s * 1.0, 1.11, z);      // rubber edge
+    // inside, the wheel sits under a slim hump along the wall, beside the seats
+    put(bus, box(0.26, 0.66, 1.1, mat({ color: 0x2c2e32 })), s * 1.08, 0.77, z);
+    put(bus, box(0.28, 0.02, 1.12, mat({ color: 0x1e1f22 })), s * 1.08, 1.11, z);     // rubber edge
   }
 
   // outside details: bumpers, lights, mirrors, roof unit
@@ -270,37 +272,35 @@ export function buildBus(scene) {
 
   // seats: rows on both sides, plus a full back bench
   const seatSlots = {};
-  const RAISE = 0.4;
+  // rows over the wheels are a little narrower, so the wheel hump fits along the wall beside them
   const overWheel = (z) => WHEELS_Z.some((wz) => Math.abs(z - wz) < 0.95);
   const shellMat = mat({ color: 0x2a2c31 });
   const legMat = mat({ color: 0x45484e });
-  // a pair of seats (window + aisle) centred at x, facing forward (+z); `up` lifts it onto a platform
+  // a pair of seats (window + aisle) facing forward (+z), every row at the same height
   const seat = (x, z, name) => {
-    const up = overWheel(z) ? RAISE : 0;
     const out = Math.sign(x);                   // toward the window
-    const g = put(bus, new THREE.Group(), x, up, z);
-    for (const sx of [-0.225, 0.225]) {
-      put(g, box(0.42, 0.04, 0.44, shellMat), sx, 0.8, 0);                 // plastic seat shell
-      put(g, box(0.39, 0.065, 0.41, fabric), sx, 0.852, 0.01);             // cushion
+    const narrow = overWheel(z);
+    const cx = narrow ? out * 0.58 : x;         // pair centre
+    const half = narrow ? 0.185 : 0.225;        // seat centre offset
+    const sw = narrow ? 0.35 : 0.42;            // seat width
+    const g = put(bus, new THREE.Group(), cx, 0, z);
+    for (const sx of [-half, half]) {
+      put(g, box(sw, 0.04, 0.44, shellMat), sx, 0.8, 0);                  // plastic seat shell
+      put(g, box(sw - 0.03, 0.065, 0.41, fabric), sx, 0.852, 0.01);       // cushion
       const back = put(g, new THREE.Group(), sx, 0.82, -0.2);
       back.rotation.x = -0.16;                                             // leans back a little
-      put(back, box(0.42, 0.62, 0.04, shellMat), 0, 0.31, -0.03);
-      put(back, box(0.39, 0.56, 0.045, fabric), 0, 0.3, 0.01);
+      put(back, box(sw, 0.62, 0.04, shellMat), 0, 0.31, -0.03);
+      put(back, box(sw - 0.03, 0.56, 0.045, fabric), 0, 0.3, 0.01);
     }
-    put(g, box(0.06, 0.3, 0.06, legMat), -out * 0.36, 0.62, -0.02);        // leg on the aisle side
-    put(g, box(0.95, 0.04, 0.05, legMat), out * 0.095, 0.76, -0.02);       // beam under the seats, into the wall
+    const reach = 1.21 - Math.abs(cx) + half * 2;                        // from the aisle seat's edge to the wall
+    put(g, box(0.06, 0.3, 0.06, legMat), -out * (half + sw / 2 - 0.05), 0.62, -0.02);   // leg on the aisle side
+    put(g, box(reach, 0.04, 0.05, legMat), out * (1.21 - Math.abs(cx) - reach / 2), 0.76, -0.02);   // beam into the wall
     // grab handle across the top of the aisle seat's back
-    put(g, new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.3, 8).rotateZ(Math.PI / 2), yellow), -out * 0.225, 1.45, -0.31);
-    for (const hx of [-0.11, 0.11]) put(g, box(0.025, 0.06, 0.025, yellow), -out * 0.225 + hx, 1.41, -0.3);
+    put(g, new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, sw - 0.12, 8).rotateZ(Math.PI / 2), yellow), -out * half, 1.45, -0.31);
+    for (const hx of [-(sw / 2 - 0.08), sw / 2 - 0.08]) put(g, box(0.025, 0.06, 0.025, yellow), -out * half + hx, 1.41, -0.3);
     // passengers sit in the window seat
-    if (name) seatSlots[name] = new THREE.Vector3(x + out * 0.225, 0.45 + up, z);
+    if (name) seatSlots[name] = new THREE.Vector3(cx + out * half, 0.45, z);
   };
-  // the platforms over the wheels: the same floor, with a yellow safety edge along the aisle
-  const platformMat = mat({ map: tex.busFloor() });
-  for (const [z0, z1] of [[1.95, 3.6], [-4.95, -2.45]]) for (const sx of [1, -1]) {
-    put(bus, box(1.0, 0.4, z1 - z0, platformMat), sx * 0.71, 0.67, (z0 + z1) / 2);
-    put(bus, box(0.045, 0.02, z1 - z0, yellow), sx * 0.235, 0.875, (z0 + z1) / 2);
-  }
   let row = 0;
   for (let z = 3.1; z > -4.9; z -= 0.86, row++) {
     seat(0.66, z, `L${row}`);
@@ -600,6 +600,15 @@ export function buildBus(scene) {
     radioMesh: radio,
     // points (local) people walk through to get on: outside, steps, aisle
     boardPath: [new THREE.Vector3(-2.3, 0, 4.6), new THREE.Vector3(-0.9, 0.45, 4.6), new THREE.Vector3(-0.1, 0.45, 3.6)],
+    // the height of whatever you're standing on, in bus space: the road, the two steps, the floor
+    groundAt(x, z) {
+      if (z > 3.62 && z < 5.68) {
+        if (x < -1.25) return 0;          // the road outside the door
+        if (x < -0.75) return 0.2;        // lower step
+        if (x < -0.47) return 0.34;       // upper step
+      }
+      return x < -1.29 ? 0 : 0.45;        // the floor
+    },
     driverEye: new THREE.Vector3(0.7, 1.72, 4.78),
     get doorsOpen() { return state.doorsOpen; },
     setDoors(open) {
@@ -616,13 +625,14 @@ export function buildBus(scene) {
     // the folded clipping tucked into the visor strap
     setClipping(on) { tucked.visible = on; },
     // 0 = clean glass, 1 = ash handprints, 2 = handprints and a crack
-    setSmudge(level) { drawSmudge(level); smudge.visible = level > 0; },
+    setSmudge(level) { if (level) smudge.material.map = smudgeTexes[level - 1]; smudge.visible = level > 0; },
+    smudgeTextures: smudgeTexes,
     // where something lands on the windshield (bus space, feet of a 2 m figure)
     windshieldLanding: new THREE.Vector3(0.3, 0.55, 6.17),
     setInterior(mode) { state.interior = mode; },
     get interiorMode() { return state.interior; },
     get passengers() { return bus.children.filter((c) => c.userData.person).length; },
-    setHeadlights(on) { head.visible = on; },
+    setHeadlights(on) { head.intensity = on ? 160 : 0; },
     // 0 = dry, 1 = up to the seats
     setWater(level) { waterIn.visible = level > 0; waterIn.position.y = 0.48 + level * 0.45; },
     update(dt, info) {

@@ -37,7 +37,7 @@ export function createDirector(w) {
   let routeOverride = null;
   let stormT = 0;
   let storm = false;
-  const s = { flags: {}, kind: 0, late: 0, warn: 0, lateAtNight: 0, night: 1 };
+  const s = { flags: {}, kind: 0, late: 0, warn: 0, lateAtNight: 0, night: 1, waiting: "" };
 
   // wait until test(dt) is true. Frame-based, so pausing the game pauses scripts too.
   function until(test, timeoutMs = 0) {
@@ -72,6 +72,7 @@ export function createDirector(w) {
     // run fn(dt) every frame until it returns true (for hand-made animations)
     frames(fn) { return until(fn); },
     until(test, timeoutMs) {
+      s.waiting = "until " + String(test).replace(/\s+/g, " ").slice(0, 90);
       let t = 0;
       return until((dt) => {
         t += dt;
@@ -82,6 +83,7 @@ export function createDirector(w) {
 
     // ---------- talking ----------
     async say(who, text, { keep = false, after = 260 } = {}) {
+      s.waiting = `line (${who})`;
       const c = CAST[who];
       ui.subtitle(nameOf(who), c.color, text);
       const played = await Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) });
@@ -118,6 +120,7 @@ export function createDirector(w) {
     // ---------- the bus ----------
     // wait until the bus stops at a stop (true) or drives past it (false)
     async arrive(name, { hint = true } = {}) {
+      s.waiting = "arrive " + name;
       const d = name === "???" ? props.mystery.d : STOPS[name];
       if (hint) nav = { stop: { d, name: name === "???" ? "???" : name } };
       await until(() => drive.stoppedNear(d) || drive.passed(d));
@@ -129,6 +132,7 @@ export function createDirector(w) {
     navTo(point) { nav = point ? { point: point.clone() } : null; },
     // wait for the doors (F) to be opened/closed, or for a timeout. Returns true if they did.
     async doors(open, timeoutMs = 0, hintText = null) {
+      s.waiting = "doors " + (open ? "open" : "closed");
       if (hintText !== false) ui.hint(hintText || (open ? "Open the doors  [F]" : "Close the doors  [F]"));
       let t = 0;
       const ok = await until((dt) => {
@@ -145,7 +149,10 @@ export function createDirector(w) {
     lockDoors(locked) { doorControl = !locked; },
     get doorControl() { return doorControl; },
     // wait until the bus is moving again (the player drove off)
-    departed() { return until(() => drive.moving); },
+    departed() {
+      s.waiting = "drive off";
+      return until(() => drive.moving || drive.d >= drive.state.endD - 1.5);
+    },
     auto(speed, stopAtD = null) { drive.auto(speed, stopAtD); },
     release() { drive.release(); },
     park() { drive.park(); },
@@ -163,6 +170,7 @@ export function createDirector(w) {
       while (clash(d)) d += 20;
       d = Math.min(d, route.length - 110);
       d = Math.max(d, drive.d + 70);          // and never behind you, however late in the run it is
+      d = Math.min(d, route.length - 45);     // ...and never off the end of the road
       props.mystery.place(d);
       return d;
     },
@@ -199,10 +207,10 @@ export function createDirector(w) {
       // someone already up on the steps (they came to the door to ask) just carries on in
       if (at.distanceTo(step) >= at.distanceTo(outside)) await p.walk([outside], { speed, parent: scene });
       const seatPos = bus.seatSlots[seatName];
-      await p.walk([bus.boardPath[1], bus.boardPath[2]], { speed, parent: bus.group });
+      await p.walk([bus.boardPath[1], bus.boardPath[2]], { speed, parent: bus.group, ground: bus.groundAt });
       Sound.sfx("coin");
       // the last step is up to the seat's own height (seats over the wheels sit on a platform)
-      await p.walk([new THREE.Vector3(0, 0.45, seatPos.z + 0.4), new THREE.Vector3(seatPos.x * 0.6, seatPos.y, seatPos.z + 0.1)], { speed, parent: bus.group });
+      await p.walk([new THREE.Vector3(0, 0.45, seatPos.z + 0.4), new THREE.Vector3(seatPos.x * 0.6, seatPos.y, seatPos.z + 0.1)], { speed, parent: bus.group, ground: bus.groundAt });
       p.sit(bus.group, seatPos, 0);
     },
     // get off the bus and walk somewhere (a world position), then vanish
@@ -211,7 +219,7 @@ export function createDirector(w) {
       if (!p) return;
       const z = p.root.position.z;
       p.stand();
-      await p.walk([new THREE.Vector3(0, 0.45, z), bus.boardPath[2], bus.boardPath[1], bus.boardPath[0]], { speed, parent: bus.group });
+      await p.walk([new THREE.Vector3(0, 0.45, z), bus.boardPath[2], bus.boardPath[1], bus.boardPath[0]], { speed, parent: bus.group, ground: bus.groundAt });
       if (to) await p.walk([to], { speed, parent: scene });
       if (vanish) g.despawn(key);
     },
@@ -251,6 +259,7 @@ export function createDirector(w) {
       bus.setInterior("flicker");
       Sound.sfx(kind === "hands" ? "bang" : "sting");
       if (kind === "hands") Sound.sfx("sting");
+      Sound.sfx("scream", kind === "hands" ? 1.1 : 1.5);
       player.shake(kind === "hands" ? 1.4 : 2.2);
       document.body.classList.add("scare-flash");
       setTimeout(() => document.body.classList.remove("scare-flash"), 110);
@@ -265,6 +274,7 @@ export function createDirector(w) {
     card(opts) { return ui.card(opts); },
     // wait for the player to press E on something. The promise has cancel().
     interact(mesh, label, { arrow = true } = {}) {
+      s.waiting = "press E: " + label;
       if (arrow) nav = { mesh };
       let entry = null;
       const p = new Promise((done) => {
@@ -399,6 +409,7 @@ export function createDirector(w) {
     Sound.sfx("slam");
     if (crack) Sound.sfx("crack");
     Sound.sfx("sting");
+    Sound.sfx("scream", 1.7);
     player.shake(2.6);
     bus.setInterior("flicker");
     bus.setSmudge(crack ? 2 : 1);
@@ -500,6 +511,7 @@ export function createDirector(w) {
 
   // show a hint and wait for a key press
   g.pressKey = async (code, text, timeoutMs = 0) => {
+    s.waiting = "key: " + text;
     ui.hint(text);
     await until(() => w.input.hit(code), timeoutMs);      // with a timeout, it carries on by itself
     ui.hint(null);

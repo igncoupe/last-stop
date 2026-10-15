@@ -18,6 +18,7 @@ import { createHorror } from "./world/horror.js";
 import { createShade } from "./world/shade.js";
 import { createTraffic } from "./world/traffic.js";
 import { NIGHTS, ENDINGS, CREDITS } from "./story/nights.js";
+import { KIND_ENOUGH } from "./story/common.js";
 
 const $ = (id) => document.getElementById(id);
 const SAVE = "laststop3d-save";
@@ -133,6 +134,40 @@ const nextFrame = TEST ? (cb) => setTimeout(() => cb(performance.now()), 33) : (
 const FAST = TEST ? Number(params.get("fast")) || 1 : 1;   // ?test&fast=6 plays 6x faster
 if (FAST > 1) Sound.setVoices(false);                       // subtitles only, timed by the game clock
 
+// Never a dead end at Northgate. If you're stopped there and the story has nothing on screen for
+// ten seconds, "End your shift [E]" comes up (with a note of what the story was waiting on).
+let rescue = null;
+function northgateRescue(n) {
+  return new Promise((done) => { rescue = { n, idle: 0, offered: false, done }; });
+}
+function watchNorthgate(dt) {
+  if (!rescue || !playing) return;
+  const atEnd = player.mode === "seat" && drive.stoppedNear(STOPS["Northgate"]);
+  const story = $("subtitle").classList.contains("on") || !!document.querySelector("#choices .choice") ||
+    !!document.querySelector(".paper.on") || horror.playing || (!rescue.offered && $("cta").classList.contains("on"));
+  rescue.idle = atEnd && !story ? rescue.idle + dt : 0;
+  const note = $("stuck-note");
+  if (!rescue.offered && rescue.idle > 10) {
+    rescue.offered = true;
+    ui.hint("End your shift  [E]");
+    note.textContent = `(story was waiting on: ${director.state.waiting || "nothing"})`;
+    note.hidden = false;
+    console.warn("Northgate rescue offered; story was waiting on:", director.state.waiting);
+  } else if (rescue.offered && story) {
+    rescue.offered = false;                  // the story picked up again by itself
+    note.hidden = true;
+  }
+  if (rescue.offered && input.hit("KeyE")) {
+    const r = rescue;
+    rescue = null;
+    ui.hint(null);
+    note.hidden = true;
+    Sound.sfx("punch");
+    const f = director.state.flags;
+    r.done(r.n < 5 ? null : f.ripped ? "deadair" : director.state.kind >= KIND_ENOUGH ? "home" : "ontime");
+  }
+}
+
 function frame(now) {
   nextFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000) * FAST;
@@ -149,6 +184,7 @@ function frame(now) {
   }
   horror.update(dt);
   shade.update(dt, camera);
+  watchNorthgate(dt);
   traffic.update(dt, { busD: drive.d, speed: drive.speed, active: playing && player.mode === "seat" && !drive.state.detached, night: g.state.night, camera, player });
   drive.update(dt, input, playing && player.mode === "seat" && !player.state.locked);
   Sound.engine(0.3 + (drive.speed / 14) * 0.6, drive.speed / 14);
@@ -173,6 +209,21 @@ function frame(now) {
   input.endFrame();
 }
 
+// Compile every shader the game will ever need now, while it loads, instead of in the middle of a
+// jumpscare: everything in the scene (hidden things too), a car, the mirror's view.
+function warmUp() {
+  const removeCar = traffic.warmCar();
+  try {
+    renderer.compile(scene, camera);
+    bus.smudgeTextures.forEach((t) => renderer.initTexture(t));
+    renderer.setRenderTarget(bus.mirrorRT);
+    renderer.compile(scene, bus.mirrorCam);
+  } finally {
+    renderer.setRenderTarget(null);
+    removeCar();
+  }
+}
+
 /* ---------- pause ---------- */
 input.init(canvas);
 // while a night card or ending card is up, letting go of the mouse is not a pause
@@ -192,7 +243,7 @@ $("btn-quit").addEventListener("click", () => location.reload());
 
 /* ---------- the game ---------- */
 async function loadManifest() {
-  try { return await (await fetch("voices/manifest.json")).json(); } catch { return null; }
+  try { return await (await fetch("voices/manifest.json", { cache: "no-cache" })).json(); } catch { return null; }
 }
 let manifest = null;
 
@@ -256,8 +307,14 @@ async function play(startNight, saved) {
     // if the browser didn't hand over the mouse, show Resume so one click fixes it
     if (!TEST) setTimeout(() => { if (playing && !inMenu && !input.locked) setPaused(true); }, 700);
     ui.fade(0, 1500);
+    let alive = true;
+    const gNight = new Proxy(g, { get(target, key) { if (!alive) throw new Error("night over"); return target[key]; } });
+    const run = info.run(gNight);
+    run.catch(() => {});
     try {
-      ending = await info.run(g);
+      ending = await Promise.race([run, northgateRescue(n)]);
+      if (rescue) rescue = null;
+      if (n === 5 && !ending) ending = "notyet";
     } catch (err) {
       // a broken script must never leave you stranded on a dark road: say so, and go on to the next night
       console.error(`Night ${n} stopped:`, err);
@@ -267,6 +324,9 @@ async function play(startNight, saved) {
       await ui.card({ kicker: `Night ${n}`, title: "Something went wrong", sub: "The night couldn't carry on, so the shift ends here.", note: String(err && err.message || err).slice(0, 160), actions: [{ label: "Continue" }] });
       ending = ending || "notyet";
     }
+    alive = false;
+    rescue = null;
+    $("stuck-note").hidden = true;
   }
   // the end
   store.del(SAVE);
@@ -340,6 +400,7 @@ addEventListener("resize", () => resize(camera));
 resize(camera);
 if (!camera.aspect || !Number.isFinite(camera.aspect)) { camera.aspect = 16 / 9; camera.updateProjectionMatrix(); }
 resetWorld(1);
+warmUp();
 nextFrame(frame);
 if (TEST) {
   window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input, horror, shade, places, traffic };

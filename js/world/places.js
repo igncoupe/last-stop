@@ -155,15 +155,26 @@ function buildBridge(scene) {
       put(g, p, 2.6, 0.07, z);
     }
   }
-  for (const z of [50, 110, 170]) put(g, new THREE.PointLight(0xffc27a, 40, 34, 1.5), 2.6, 5.4, z);
-  // a cold light out over the water, so you can see where the bridge ends
-  put(g, new THREE.PointLight(0x8fb0c8, 25, 60, 1.2), 0, 8, 262);
+  // the bridge's lights live in the scene (the bridge is hidden most of the time, and a hidden light
+  // would change the light count and recompile every shader the moment the bridge appears)
+  const bridgeLights = [];
+  for (const [x, y, z, color, intensity, dist, decay] of [[2.6, 5.4, 50, 0xffc27a, 40, 34, 1.5], [2.6, 5.4, 110, 0xffc27a, 40, 34, 1.5],
+    [2.6, 5.4, 170, 0xffc27a, 40, 34, 1.5], [0, 8, 262, 0x8fb0c8, 25, 60, 1.2]]) {
+    const l = new THREE.PointLight(color, 0, dist, decay);      // a cold light out over the water marks where the bridge ends
+    l.position.set(X + x, y, z);
+    l.userData.base = intensity;
+    scene.add(l);
+    bridgeLights.push(l);
+  }
   return {
     group: g,
     start: new THREE.Vector3(X + 2.3, 0, 4),
     edge: 268,          // where the deck ends
     origin: X,
     water,
-    update(dt) { water.material.map.offset.y += dt * 0.01; },
+    update(dt) {
+      water.material.map.offset.y += dt * 0.01;
+      for (const l of bridgeLights) l.intensity = g.visible ? l.userData.base : 0;
+    },
   };
 }

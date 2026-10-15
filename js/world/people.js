@@ -155,8 +155,10 @@ export class Person {
     return this;
   }
   // walk through points given in `parent` space (default: the current parent)
-  walk(points, { speed = 1.3, parent = null } = {}) {
+  // ground(x, z), if given, is the height underfoot in the parent's space (the bus steps)
+  walk(points, { speed = 1.3, parent = null, ground = null } = {}) {
     if (parent && this.root.parent !== parent) parent.attach(this.root);
+    this.ground = ground;
     this.stand();
     this.mode = "walk";
     this.speed = speed;
@@ -199,7 +201,10 @@ export class Person {
         const dz = target.z - p.z;
         const dist = Math.hypot(dx, dz);
         const step = this.speed * dt;
-        p.y += (target.y - p.y) * Math.min(1, dt * 8);
+        // on steps, the height follows what's underfoot: a quick lift at each edge, not a ramp
+        const gy = this.ground ? this.ground(p.x + (dx / (dist || 1)) * 0.12, p.z + (dz / (dist || 1)) * 0.12) : target.y;
+        const climbing = gy - p.y;
+        p.y += climbing * Math.min(1, dt * (this.ground ? 12 : 8));
         if (dist <= step) {
           p.x = target.x;
           p.z = target.z;
@@ -218,6 +223,12 @@ export class Person {
         this.hips[1].rotation.x = -s * 0.5;
         this.knees[0].rotation.x = Math.max(0, -s) * 0.6;
         this.knees[1].rotation.x = Math.max(0, s) * 0.6;
+        if (Math.abs(climbing) > 0.025) {
+          // the leading leg lifts high onto the next step
+          const lead = s > 0 ? 0 : 1;
+          this.hips[lead].rotation.x = -0.9;
+          this.knees[lead].rotation.x = 1.25;
+        }
         if (!this.look.gift) {
           this.arms[0].rotation.x = -s * 0.4;
           this.arms[1].rotation.x = s * 0.4;
