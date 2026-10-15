@@ -339,7 +339,10 @@
         <path d="M148 232 C 146 260 150 290 144 330 M252 232 C 254 262 250 300 256 340" stroke="#0b0b0b" stroke-width="5" fill="none"/>
         <path d="M200 228 l-13 36 h26z" fill="#2a2824" opacity=".7"/>
         <ellipse cx="200" cy="318" rx="40" ry="62" fill="#000"/>
-        <path d="M84 150 C 92 50 308 50 316 150 L 312 360 C 300 270 290 190 270 150 L 262 380 C 250 280 236 180 214 140 L 206 210 C 196 160 186 150 176 145 L 150 390 C 146 280 140 200 128 160 L 96 370 C 92 290 88 210 84 150 Z" fill="#040404"/>
+        <path d="M96 150 C 104 40 296 40 304 150 C 262 96 138 96 96 150 Z" fill="#040404"/>
+        <path d="M86 160 C 92 70 196 50 200 92 C 160 100 126 118 116 176 L 106 390 C 96 300 88 230 86 160 Z" fill="#040404"/>
+        <path d="M314 160 C 308 70 204 50 200 92 C 240 100 274 118 284 176 L 294 390 C 304 300 312 230 314 160 Z" fill="#040404"/>
+        <path d="M168 100 C 158 170 172 240 158 330 M236 104 C 248 176 232 250 248 340 M200 96 C 204 150 194 200 200 236" stroke="#040404" stroke-width="7" fill="none"/>
       </g></svg>`,
     hands: `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><defs>
       <filter id="rough2"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="10"/></filter>
