@@ -319,33 +319,6 @@ export function createDirector(w) {
     const a = actors.get(key);
     return !!a && g.gazing(a.root.localToWorld(new THREE.Vector3(0, a.look.height - 0.3, 0)), deg);
   };
-  // someone standing in the road ahead, lit by the headlights.
-  // Stop in time and they stare, then vanish. Hit them and... you'll see.
-  g.roadFigure = async (look = "drowned", ahead = 75) => {
-    const d0 = drive.d + ahead;
-    g.spawn("roadfig", look, { ghost: true, at: route.at(d0, 2.3, 0), yaw: route.heading(d0) + Math.PI });
-    // resolves when you reach them, or after you've sat stopped in sight of them for a few seconds
-    let stoppedFor = 0;
-    await until((dt) => {
-      if (drive.d > d0 - 8) return true;
-      stoppedFor = drive.speed < 0.3 ? stoppedFor + dt : 0;
-      return stoppedFor > (drive.d > d0 - 45 ? 0.5 : 4);
-    });
-    if (drive.d > d0 - 8 && drive.speed > 1.5) {
-      g.despawn("roadfig");
-      Sound.sfx("bang");
-      await g.scare("face");
-      player.shake(2.2);
-      return "hit";
-    }
-    await g.wait(1800);
-    bus.setInterior("flicker");
-    Sound.sfx("lightsout");
-    await g.wait(900);
-    g.despawn("roadfig");
-    bus.setInterior("on");
-    return "stopped";
-  };
   // ---------- the shadow: what's left of Rhee. It watches from stops, it runs, it jumps ----------
   const shade = w.shade;
   const camPos = () => camera.getWorldPosition(new THREE.Vector3());

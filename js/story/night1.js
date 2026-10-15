@@ -170,22 +170,6 @@ export async function night1(g) {
   await g.wait(800);
   g.props.requestStop.light(true);
   await g.think("Its head turned to follow me. Then the light went out. And it was gone.");
-  if (!g.drive.moving) {
-    g.hint("Drive  ·  W gas");
-    await g.until(() => g.drive.moving, 15000);
-    g.hint(null);
-  }
-  await g.wait(2200);
-  await g.shadeLeap({ ahead: 42, keepParked: true });
-  g.mood("terror");
-  if (f.junRode) await g.say("jun", "What was that? What WAS that?");
-  await g.think("It hit the glass. It was on the glass, pressed flat, looking in at me. It doesn't have a face. It doesn't have anything.");
-  await g.say("rhee", "Eyes on the road, driver. You'll see all sorts of things on nights.");
-  await g.think("There are handprints on the windshield. On the outside. They're not wet. They're ash.");
-  g.release();
-  g.hint("Drive  ·  W gas");
-  await g.departed();
-  g.hint(null);
   g.mood("uneasy");
 
   // ---------- Canal Row
@@ -243,22 +227,19 @@ export async function night1(g) {
   g.amb({ water: 0 });
   g.dread(true);
 
-  // ---------- someone standing in the road
-  await g.until(() => g.d > 2180);
+  // ---------- the shadow again: crouched in the road, and then it jumps
+  await g.until(() => g.d > 2130);
   g.mood("dread");
-  const fig = await g.roadFigure("drowned", 85);
-  if (fig === "hit") {
-    await g.think("I hit someone. Oh god. I hit someone.");
-    g.hint("Check your mirror");
-    await g.until(() => g.lookingAtMirror(), 12000);
-    g.hint(null);
-    await g.think("There's nobody on the road behind me. Nothing. Not even a dent.");
-    await g.say("rhee", "Something wrong, driver? You're slowing down.");
-  } else {
-    await g.think("Someone was just standing there. In the headlights. Soaking wet. Not even blinking.");
-    await g.think("And then they weren't.");
-    await g.say("rhee", "Why are you stopped, driver? There's no stop there.");
-  }
+  await g.shadeLeap({ ahead: 48, keepParked: true });
+  g.mood("terror");
+  if (f.junRode) await g.say("jun", "What was that? What WAS that?");
+  await g.think("It hit the glass. It was on the glass, pressed flat, looking in at me. It doesn't have a face. It doesn't have anything.");
+  await g.say("rhee", "Eyes on the road, driver. You'll see all sorts of things on nights.");
+  await g.think("There are handprints on the windshield. On the outside. They're not wet. They're ash.");
+  g.release();
+  g.hint("Drive  ·  W gas");
+  await g.departed();
+  g.hint(null);
   g.mood("uneasy");
 
   // ---------- the last stretch: Rhee has opinions

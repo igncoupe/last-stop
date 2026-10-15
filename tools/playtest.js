@@ -176,9 +176,9 @@ export function startBot(strategy = "kind") {
             else { w = false; s = true; }
           }
         }
-        // a figure in the road: the kind driver brakes
-        const fig = g.actor("roadfig");
-        if (fig && strategy !== "cold" && fig.root.position.distanceTo(bus.group.position) < 45) { w = false; s = true; }
+        // the shadow crouched in the road: the kind driver brakes (it comes for you anyway)
+        const shade = L.shade;
+        if (shade && shade.visible && shade.mode === "still" && strategy === "kind" && shade.root.position.distanceTo(bus.group.position) < 45) { w = false; s = true; }
         // the flood on night 2: go slow unless you're careless
         if (g.state.night === 2 && drive.d > 1590 && drive.d < 1700 && strategy !== "cold" && drive.speed > 5) { w = false; s = true; }
         if (/drive on|drive away/.test(h) && strategy !== "cold") { w = false; }
