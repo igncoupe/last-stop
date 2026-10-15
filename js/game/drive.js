@@ -9,7 +9,7 @@ const BRAKE = 7;
 const DRAG = 0.35;
 // a stop counts when the bus is stopped with its door near the shelter
 export const STOP_BEFORE = 18;
-export const STOP_AFTER = 5;
+export const STOP_AFTER = 7;      // a little forgiving if you roll past the box
 
 export function createDrive(bus) {
   const s = {
@@ -42,7 +42,7 @@ export function createDrive(bus) {
       return s.speed < 0.35 && s.d > stopD - STOP_BEFORE && s.d < stopD + STOP_AFTER;
     },
     inZone(stopD) { return s.d > stopD - STOP_BEFORE && s.d < stopD + STOP_AFTER; },
-    passed(stopD) { return s.d > stopD + STOP_AFTER + 2; },
+    passed(stopD) { return s.d >= stopD + STOP_AFTER; },    // no gap: you are always at a stop, short of it, or past it
     // scripts: drive yourself at a speed, optionally stopping at a distance
     auto(speed, stopAt = null) { s.control = "auto"; s.autoSpeed = speed; s.autoStopAt = stopAt; },
     release() { s.control = "player"; s.autoStopAt = null; },
