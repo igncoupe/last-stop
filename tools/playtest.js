@@ -71,6 +71,8 @@ export function startBot(strategy = "kind") {
 
   let lastSig = "";
   let sameFor = 0;
+  let lastSub = "";
+  let lastHint = "";
   let holding = false;
   let holdFor = 0;
   let lastNav = null;
@@ -92,6 +94,12 @@ export function startBot(strategy = "kind") {
       }
       const credits = document.querySelector(".credits");
       if (credits) { credits.click(); report.done = true; log("credits"); clearInterval(timer); pedals(false, false); return; }
+
+      // transcript of everything said
+      const subEl = document.getElementById("subtitle");
+      if (subEl.classList.contains("on") && subEl.textContent !== lastSub) { lastSub = subEl.textContent; log(`say ${lastSub}`); }
+      const hintNow = hint();
+      if (hintNow && hintNow !== lastHint) { lastHint = hintNow; log(`hint ${hintNow}`); }
 
       // dialogue options
       const opts = [...document.querySelectorAll("#choices .choice")].map((b) => b.innerText.replace(/^\d\.\s*/, ""));
