@@ -219,18 +219,20 @@ export async function night3(g) {
   await g.think("Something hit the windshield. Hands. Two gray hands, pressed flat. Then the rain washed them away.");
   await g.say("rhee", "Keep driving, driver. You don't stop for weather.");
 
-  // ---------- Canal Row is a river
-  g.flood(true, 0.55);
-  g.amb({ water: 0.9 });
-  await g.until(() => g.d > 1700);
-  g.drive.setLimit(5);
-  await g.think("Canal Row is a river now. The water's up to the second step.");
-  await g.wait(3000);
-  await g.think("In the lightning, there are faces under the water. Looking up.");
-  await g.until(() => g.d > 1915);
-  g.drive.setLimit(14);
-  g.flood(false);
-  g.amb({ water: 0 });
+  // ---------- Canal Row is a river (only if it's still ahead of you)
+  if (g.d < 1690) {
+    g.flood(true, 0.55);
+    g.amb({ water: 0.9 });
+    await g.until(() => g.d > 1700);
+    g.drive.setLimit(5);
+    await g.think("Canal Row is a river now. The water's up to the second step.");
+    await g.wait(3000);
+    await g.think("In the lightning, there are faces under the water. Looking up.");
+    await g.until(() => g.d > 1915);
+    g.drive.setLimit(14);
+    g.flood(false);
+    g.amb({ water: 0 });
+  }
   g.dread(false);
   g.mood("uneasy");
 
