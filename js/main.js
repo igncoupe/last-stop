@@ -119,6 +119,7 @@ const TEST = params.has("test");
 const nextFrame = TEST ? (cb) => setTimeout(() => cb(performance.now()), 33) : (cb) => requestAnimationFrame(cb);
 
 const FAST = TEST ? Number(params.get("fast")) || 1 : 1;   // ?test&fast=6 plays 6x faster
+if (FAST > 1) Sound.setVoices(false);                       // subtitles only, timed by the game clock
 
 function frame(now) {
   nextFrame(frame);

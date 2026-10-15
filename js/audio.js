@@ -409,8 +409,9 @@ function fxChain(fx) {
 }
 
 // plays a voice clip; resolves when it ends (or right away if it's missing)
+let voicesOn = true;
 async function voice(id, { fx = "dry", at = null } = {}) {
-  if (!ctx) return false;
+  if (!ctx || !voicesOn) return false;
   if (ctx.state === "suspended") { try { await ctx.resume(); } catch { /* no permission yet */ } }
   if (ctx.state !== "running") return false;   // no sound allowed: subtitles carry the line
   const buf = await loadClip(id);
@@ -474,7 +475,9 @@ export const Sound = {
   ambience,
   engine,
   voice,
-  prefetch(ids) { if (ctx) ids.forEach((id) => loadClip(id)); },
+  prefetch(ids) { if (ctx && voicesOn) ids.forEach((id) => loadClip(id)); },
+  // fast automated tests can't wait for real-time voice clips
+  setVoices(on) { voicesOn = on; },
   stopVoices() { live.forEach((e) => e.stop && e.stop()); },
   sfx(name, ...args) { if (ctx && SFX[name]) SFX[name](ctx.currentTime + 0.02, ...args); },
   // keep 3D voices and the listener in sync with the camera
