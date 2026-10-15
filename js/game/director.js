@@ -39,6 +39,17 @@ export function createDirector(w) {
   let storm = false;
   const s = { flags: {}, kind: 0, late: 0, warn: 0, lateAtNight: 0, night: 1, waiting: "" };
 
+  let speech = Promise.resolve();
+  async function speak(who, text, { keep = false, after = 260 } = {}) {
+    s.waiting = `line (${who})`;
+    const c = CAST[who];
+    ui.subtitle(nameOf(who), c.color, text);
+    const played = await Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) });
+    if (!played) await g.wait(Math.max(1500, text.length * 60 + 500));
+    if (!keep) ui.clearSubtitle();
+    if (after) await g.wait(after);
+  }
+
   // wait until test(dt) is true. Frame-based, so pausing the game pauses scripts too.
   function until(test, timeoutMs = 0) {
     return new Promise((done) => {
@@ -82,14 +93,11 @@ export function createDirector(w) {
     },
 
     // ---------- talking ----------
-    async say(who, text, { keep = false, after = 260 } = {}) {
-      s.waiting = `line (${who})`;
-      const c = CAST[who];
-      ui.subtitle(nameOf(who), c.color, text);
-      const played = await Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) });
-      if (!played) await g.wait(Math.max(1500, text.length * 60 + 500));
-      if (!keep) ui.clearSubtitle();
-      if (after) await g.wait(after);
+    // lines never talk over each other: if someone is already speaking, this one waits its turn
+    say(who, text, opts = {}) {
+      const turn = speech.then(() => speak(who, text, opts));
+      speech = turn.catch(() => {});
+      return turn;
     },
     think(text, opts) { return g.say("you", text, opts); },
     // hold a document up close (null puts it away)
@@ -519,6 +527,7 @@ export function createDirector(w) {
 
   function clear() {
     waiters.clear();
+    speech = Promise.resolve();          // a night that's over doesn't hold up the next one's lines
     g.despawnAll();
     routeOverride = null;
     doorControl = true;

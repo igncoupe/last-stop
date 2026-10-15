@@ -50,7 +50,7 @@ export async function night1(g) {
     const mara = g.spawn("mara", "mara", { at: curb("Elm & 4th", -55), yaw: route.heading(STOPS["Elm & 4th"]) });
     let reached = false;
     mara.walk([doorOutside()], { speed: 3.3 }).then(() => { reached = true; });
-    g.say("rhee", "You're exactly on schedule, driver. Let's keep it that way.");
+    await g.say("rhee", "You're exactly on schedule, driver. Let's keep it that way.");
     await g.think("Someone's running for the bus. A nurse, I think. She's a long way back.");
     await g.until(() => reached || !g.bus.doorsOpen || g.drive.moving, 30000);
     if (reached && g.bus.doorsOpen && !g.drive.moving) {
