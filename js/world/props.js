@@ -32,8 +32,10 @@ function shelter(name, { old = false } = {}) {
   put(g, box(0.45, 0.08, 3, mat({ color: 0x4a4038 })), -0.55, 0.5, 0);
   const strip = put(g, box(0.6, 0.04, 3.2, glow(old ? 0xffd27a : 0xdfe8ff)), -0.1, 2.53, 0);
   const plateTex = tex.sign(name, old ? { bg: "#d8b24a", fg: "#1a1206" } : {});
-  put(g, box(0.08, 2.8, 0.08, frame), 0.75, 1.4, 2.95);
+  put(g, box(0.08, 2.5, 0.08, frame), 0.75, 1.25, 2.95);                      // pole, up to the sign
   const plate = put(g, box(0.06, 0.5, 1.0, [glow(0xffffff, { map: plateTex }), glow(0xffffff, { map: plateTex }), frame, frame, frame, frame]), 0.75, 2.75, 2.95);
+  for (const sy of [-1, 1]) put(g, box(0.08, 0.04, 1.08, frame), 0.75, 2.75 + sy * 0.27, 2.95);   // a frame round it
+  for (const sz of [-1, 1]) put(g, box(0.08, 0.58, 0.04, frame), 0.75, 2.75, 2.95 + sz * 0.52);
   return { group: g, plate, strip };
 }
 

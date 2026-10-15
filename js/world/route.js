@@ -4,7 +4,7 @@ import * as THREE from "three";
 
 const CORNERS = [
   [0, -40], [0, 320], [360, 320], [360, 760], [760, 760],
-  [760, 1260], [1160, 1260], [1160, 1700],
+  [760, 1260], [960, 1260], [960, 1440],
 ];
 const RADIUS = 18;
 
@@ -85,7 +85,7 @@ export const STOPS = {
   "Northgate": ROUTE_LENGTH - 30,
 };
 // where the stop with no name is each night (null = not on the road yet)
-export const MYSTERY = { 1: null, 2: 2290, 3: 1630, 4: 1085, 5: 660 };
+export const MYSTERY = { 1: null, 2: 2190, 3: 1630, 4: 1085, 5: 660 };
 // neighborhoods, by distance
 export const DISTRICTS = [
   { from: 0, to: 360, kind: "industrial" },
@@ -93,7 +93,7 @@ export const DISTRICTS = [
   { from: 760, to: 1160, kind: "shops" },
   { from: 1160, to: 1560, kind: "hospital" },
   { from: 1560, to: 2060, kind: "canal" },
-  { from: 2060, to: 2460, kind: "empty" },
-  { from: 2460, to: 99999, kind: "terminal" },
+  { from: 2060, to: 2260, kind: "empty" },
+  { from: 2260, to: 99999, kind: "terminal" },
 ];
 export const districtAt = (d) => DISTRICTS.find((z) => d >= z.from && d < z.to).kind;

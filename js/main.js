@@ -16,6 +16,7 @@ import { createPlayer } from "./game/player.js";
 import { createDirector } from "./game/director.js";
 import { createHorror } from "./world/horror.js";
 import { createShade } from "./world/shade.js";
+import { createTraffic } from "./world/traffic.js";
 import { NIGHTS, ENDINGS, CREDITS } from "./story/nights.js";
 
 const $ = (id) => document.getElementById(id);
@@ -81,7 +82,8 @@ const player = createPlayer(camera, scene);
 const settings = Object.assign({ volume: 0.8, mouse: 1, scares: true, subs: true, warned: false }, store.get(SETTINGS) || {});
 const horror = createHorror(camera);
 const shade = createShade(scene);
-const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, lightning, input, horror, shade };
+const traffic = createTraffic(scene, (name, ...args) => Sound.sfx(name, ...args));
+const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, lightning, input, horror, shade, traffic };
 const director = createDirector(world);
 const g = director.g;
 
@@ -147,6 +149,7 @@ function frame(now) {
   }
   horror.update(dt);
   shade.update(dt, camera);
+  traffic.update(dt, { busD: drive.d, speed: drive.speed, active: playing && player.mode === "seat" && !drive.state.detached, night: g.state.night, camera, player });
   drive.update(dt, input, playing && player.mode === "seat" && !player.state.locked);
   Sound.engine(0.3 + (drive.speed / 14) * 0.6, drive.speed / 14);
   const rt = director.routeText(nextStopName());
@@ -207,6 +210,7 @@ function resetWorld(n) {
   bus.setClipping(n === 4);                       // Teodor's clipping waits in the visor
   bus.setSmudge(0);
   shade.hide();
+  traffic.clear();
   props.requestStop.place(null);
   props.requestStop.light(true);
   bus.group.getObjectByName("gift")?.removeFromParent();
@@ -252,7 +256,17 @@ async function play(startNight, saved) {
     // if the browser didn't hand over the mouse, show Resume so one click fixes it
     if (!TEST) setTimeout(() => { if (playing && !inMenu && !input.locked) setPaused(true); }, 700);
     ui.fade(0, 1500);
-    ending = await info.run(g);
+    try {
+      ending = await info.run(g);
+    } catch (err) {
+      // a broken script must never leave you stranded on a dark road: say so, and go on to the next night
+      console.error(`Night ${n} stopped:`, err);
+      inMenu = true;
+      input.unlock();
+      await ui.fade(1, 600);
+      await ui.card({ kicker: `Night ${n}`, title: "Something went wrong", sub: "The night couldn't carry on, so the shift ends here.", note: String(err && err.message || err).slice(0, 160), actions: [{ label: "Continue" }] });
+      ending = ending || "notyet";
+    }
   }
   // the end
   store.del(SAVE);
@@ -328,7 +342,7 @@ if (!camera.aspect || !Number.isFinite(camera.aspect)) { camera.aspect = 16 / 9;
 resetWorld(1);
 nextFrame(frame);
 if (TEST) {
-  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input, horror, shade, places };
+  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input, horror, shade, places, traffic };
   // ?bot=kind|cold|deadair|random: the automatic playtester plays the game
   if (params.get("bot")) {
     import("../tools/playtest.js").then((m) => {

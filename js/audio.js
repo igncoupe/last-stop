@@ -172,6 +172,38 @@ const SFX = {
     out(tone(t, dur, "sawtooth", 58, 196), 0.05, t, dur * 0.85, 0.2, 0.4);
     out(noise(t, dur, "bandpass", 600, 0.8), 0.25, t, dur * 0.9, 0.15, 0.5);
   },
+  // a car horn, held down, off to the left where the other lane is
+  horn(t, dur = 1) {
+    const g = gainNode(0);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.2, t + 0.02);
+    g.gain.setValueAtTime(0.2, t + dur);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.12);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 1800;
+    for (const f of [349, 440]) tone(t, dur + 0.15, "square", f).connect(lp);
+    lp.connect(g);
+    let last = g;
+    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = -0.5; g.connect(p); last = p; }
+    last.connect(sfxBus);
+    send(g, 0.25);
+  },
+  // tires screaming on wet asphalt
+  screech(t) {
+    const n = noise(t, 1.1, "bandpass", 2600, 12);
+    n.frequency.setValueAtTime(2900, t);
+    n.frequency.linearRampToValueAtTime(2100, t + 1.0);
+    out(n, 0.35, t, 0.02, 1.0, 0.2, -0.3);
+  },
+  // a car going past the other way
+  whoosh(t) {
+    const n = noise(t, 1.0, "bandpass", 400, 0.8);
+    n.frequency.setValueAtTime(300, t);
+    n.frequency.exponentialRampToValueAtTime(1400, t + 0.45);
+    n.frequency.exponentialRampToValueAtTime(250, t + 1.0);
+    out(n, 0.5, t, 0.35, 0.6, 0.1, -0.6);
+  },
   // bare feet, running, much too fast
   skitter(t, dur = 3) {
     for (let tt = t; tt < t + dur; tt += 0.13 + Math.random() * 0.03) {
@@ -466,7 +498,8 @@ function fxChain(fx) {
 let voicesOn = true;
 async function voice(id, { fx = "dry", at = null } = {}) {
   if (!ctx || !voicesOn) return false;
-  if (ctx.state === "suspended") { try { await ctx.resume(); } catch { /* no permission yet */ } }
+  // (resume can wait forever while the page is hidden, so it only gets a moment)
+  if (ctx.state === "suspended") { try { await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 300))]); } catch { /* no permission yet */ } }
   if (ctx.state !== "running") return false;   // no sound allowed: subtitles carry the line
   const buf = await loadClip(id);
   if (!buf) return false;
@@ -517,6 +550,8 @@ async function voice(id, { fx = "dry", at = null } = {}) {
       else setTimeout(check, 500);
     };
     setTimeout(check, (buf.duration + 0.5) * 1000);
+    // ...or if the audio clock stops altogether (tab hidden, audio device asleep): real time decides then
+    setTimeout(finish, (buf.duration + 2.5) * 1000);
     entry.stop = () => { try { srcs.forEach((x) => x.stop()); } catch { /* already stopped */ } };
   });
 }

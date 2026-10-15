@@ -177,7 +177,9 @@ export function buildBus(scene) {
     x.filter = "none";
     smudgeTex.needsUpdate = true;
   }
-  put(bus, box(2.4, 0.42, 0.7, trim), 0, 1.15, 5.62);
+  // the dash: full depth in front of the driver, a shallow shelf on the door side so the front door can fold
+  put(bus, box(1.42, 0.45, 0.535, trim), 0.49, 1.165, 5.7175);       // driver's side: x -0.22..1.2, z 5.45..5.985
+  put(bus, box(0.98, 0.45, 0.315, trim), -0.71, 1.165, 5.8275);      // door side: x -1.2..-0.22, z 5.67..5.985
   const destTex = tex.sign("9  NORTHGATE", { bg: "#120c02", fg: "#ffb54a", w: 128, h: 20, font: 15 });
   put(bus, new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.28), glow(0xffffff, { map: destTex })), 0, 2.83, 6.07);
 
@@ -262,11 +264,19 @@ export function buildBus(scene) {
 
   // seats: rows on both sides, plus a full back bench
   const seatSlots = {};
+  const RAISE = 0.4;
+  const overWheel = (z) => WHEELS_Z.some((wz) => Math.abs(z - wz) < 0.95);
   const seat = (x, z, name) => {
-    put(bus, box(0.9, 0.12, 0.46, fabric), x, 0.86, z);
-    put(bus, box(0.9, 0.62, 0.08, fabric), x, 1.22, z - 0.24);
-    if (name) seatSlots[name] = new THREE.Vector3(x, 0.45, z);
+    const up = overWheel(z) ? RAISE : 0;
+    put(bus, box(0.9, 0.12, 0.46, fabric), x, 0.86 + up, z);
+    put(bus, box(0.9, 0.62, 0.08, fabric), x, 1.22 + up, z - 0.24);
+    if (name) seatSlots[name] = new THREE.Vector3(x, 0.45 + up, z);
   };
+  // the platforms: floor-coloured, with a yellow safety edge along the aisle
+  for (const [z0, z1] of [[1.95, 3.6], [-4.95, -2.45]]) for (const sx of [1, -1]) {
+    put(bus, box(1.0, 0.4, z1 - z0, mat({ map: tex.busFloor(), color: 0x8a8c90 })), sx * 0.71, 0.67, (z0 + z1) / 2);
+    put(bus, box(0.04, 0.03, z1 - z0, yellow), sx * 0.23, 0.86, (z0 + z1) / 2);
+  }
   let row = 0;
   for (let z = 3.1; z > -4.9; z -= 0.86, row++) {
     seat(0.66, z, `L${row}`);
@@ -285,7 +295,7 @@ export function buildBus(scene) {
   put(bus, box(0.55, 0.12, 0.55, mat({ color: 0x1c1d20 })), 0.7, 0.95, 4.75);
   put(bus, box(0.55, 0.5, 0.1, mat({ color: 0x1c1d20 })), 0.7, 1.22, 4.45);   // low, so you can look back over it
   // steering wheel: rim, three spokes, hub, column
-  const wheelG = put(bus, new THREE.Group(), 0.7, 1.4, 5.3);
+  const wheelG = put(bus, new THREE.Group(), 0.7, 1.33, 5.18);
   wheelG.rotation.x = -2.39;          // face tilted up toward the driver, so you see the whole rim
   wheelG.add(new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.022, 6, 24), mat({ color: 0x3a3b40 })));
   // worn grip wrap at ten and two
@@ -304,7 +314,7 @@ export function buildBus(scene) {
   const badge = new THREE.Mesh(new THREE.CircleGeometry(0.03, 12), mat({ color: 0xa8a090 }));
   badge.position.z = 0.027;
   wheelG.add(badge);
-  const column = put(bus, box(0.07, 0.07, 0.42, trim), 0.7, 1.26, 5.45);
+  const column = put(bus, box(0.07, 0.07, 0.42, trim), 0.7, 1.204, 5.315);
   column.rotation.x = 0.75;            // runs down from the hub into the dash
   // fare box: body, coin slot, glowing display, ticket slot
   const fare = put(bus, new THREE.Group(), -0.05, 0, 5.05);
@@ -316,31 +326,37 @@ export function buildBus(scene) {
 
   // dashboard screen: speed, time, schedule (redrawn by update())
   const dash = tex.live(96, 40);
-  const dashScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.15), glow(0xffffff, { map: dash.texture })), 0.7, 1.37, 5.33);
-  dashScreen.rotation.set(-0.55, Math.PI, 0, "YXZ");
+  const binMat = mat({ color: 0x1f2023 });
+  put(bus, box(0.56, 0.2, 0.16, binMat), 0.7, 1.49, 5.55);           // binnacle: y 1.39..1.59, z 5.47..5.63
+  put(bus, box(0.6, 0.025, 0.21, binMat), 0.7, 1.6025, 5.525);        // its hood
+  const dashScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.15), glow(0xffffff, { map: dash.texture })), 0.7, 1.49, 5.466);
+  dashScreen.rotation.y = Math.PI;                                     // faces the driver
 
   // route display above the windshield, facing the passengers and you
   const route = tex.live(160, 24);
-  const routeScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.2), glow(0xffffff, { map: route.texture })), -0.3, 2.62, 5.9);
+  const routeScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.2), glow(0xffffff, { map: route.texture })), -0.75, 2.62, 5.9);
+  put(bus, box(0.86, 0.26, 0.04, trim), -0.75, 2.62, 5.925);           // its housing
   routeScreen.rotation.y = Math.PI;
 
   // the two-way radio: body, display, a channel knob and a handset on a hook
   const radioTex = tex.live(48, 16);
-  const radio = put(bus, box(0.22, 0.09, 0.15, [trim, trim, trim, trim, trim, glow(0xffffff, { map: radioTex.texture })]), 0.2, 1.4, 5.52);
+  put(bus, box(0.3, 0.12, 0.2, binMat), 0.12, 1.45, 5.6);             // console: x -0.03..0.27, y 1.39..1.51, z 5.5..5.7
+  const radio = put(bus, box(0.28, 0.09, 0.03, [trim, trim, trim, trim, trim, glow(0xffffff, { map: radioTex.texture })]), 0.12, 1.45, 5.49);
   radio.userData.interact = "radio";
-  const knob = put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.025, 10).rotateX(Math.PI / 2), mat({ color: 0x8a9096 })), 0.27, 1.4, 5.435);
-  put(knob, box(0.004, 0.018, 0.004, mat({ color: 0x111111 })), 0, 0.008, -0.013);
-  put(bus, box(0.05, 0.11, 0.04, mat({ color: 0x151618 })), 0.06, 1.46, 5.47);       // handset
-  put(bus, new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.005, 4, 10, Math.PI * 1.4), mat({ color: 0x151618 })), 0.06, 1.38, 5.45);  // curly cord
+  const knob = put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.025, 10).rotateX(Math.PI / 2), mat({ color: 0x8a9096 })), 0.225, 1.45, 5.467);
+  put(knob, box(0.004, 0.016, 0.004, mat({ color: 0x111111 })), 0, 0.007, -0.013);
+  put(bus, box(0.05, 0.12, 0.04, mat({ color: 0x151618 })), -0.06, 1.47, 5.58);      // handset, hung on the console's side
+  put(bus, box(0.03, 0.02, 0.03, binMat), -0.04, 1.535, 5.58);                         // its hook
+  put(bus, new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 4, 10, Math.PI * 1.4), mat({ color: 0x151618 })), -0.06, 1.42, 5.55);  // curly cord
 
   // door control panel: a labeled plate with a big lit button that clicks down
   const panelTex = tex.sign("DOORS", { bg: "#1b1c1f", fg: "#d8d8d8", w: 48, h: 16, font: 10 });
-  put(bus, box(0.13, 0.015, 0.1, [trim, trim, glow(0xffffff, { map: panelTex }), trim, trim, trim]), 0.36, 1.355, 5.37);
-  const doorBtn = put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.02, 12), glow(0x3fd06a)), 0.36, 1.37, 5.35);
+  put(bus, box(0.13, 0.015, 0.1, [trim, trim, glow(0xffffff, { map: panelTex }), trim, trim, trim]), 0.345, 1.3975, 5.52);
+  const doorBtn = put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.02, 12), glow(0x3fd06a)), 0.345, 1.415, 5.5);
   doorBtn.userData.interact = "doors";
 
   // sun visor above the driver; flips down
-  const visorPivot = put(bus, new THREE.Group(), 0.7, 2.72, 5.72);
+  const visorPivot = put(bus, new THREE.Group(), 0.7, 2.72, 5.6);
   const visorMat = mat({ color: 0x3a342b });
   const visor = put(visorPivot, box(0.6, 0.03, 0.3, visorMat), 0, 0, -0.16);
   visor.userData.interact = "visor";
@@ -401,7 +417,8 @@ export function buildBus(scene) {
   }
   put(bus, box(0.14, 0.14, DZ1 - DZ0 + 0.2, shell), -W, 2.54, (DZ0 + DZ1) / 2);
   put(bus, box(0.15, 0.03, DZ1 - DZ0, rubber), -W, 2.46, (DZ0 + DZ1) / 2);
-  put(bus, box(0.16, 0.05, DZ1 - DZ0 + 0.2, chrome), -W, 0.03, (DZ0 + DZ1) / 2);
+  put(bus, box(0.04, 0.2, DZ1 - DZ0, trim), -W + 0.02, 0.1, (DZ0 + DZ1) / 2);          // riser under the door
+  put(bus, box(0.1, 0.015, DZ1 - DZ0 + 0.1, chrome), -W + 0.03, 0.2075, (DZ0 + DZ1) / 2);  // threshold
   // a lit side sign above the door, like a real city bus
   const sideSign = tex.sign("9  NORTHGATE", { bg: "#120c02", fg: "#ffb54a", w: 128, h: 20, font: 15 });
   const sign = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.2), glow(0xffffff, { map: sideSign })), -W - 0.052, 2.76, (DZ0 + DZ1) / 2);
@@ -411,24 +428,40 @@ export function buildBus(scene) {
   // fat rubber seals where they meet, and a steel grab handle on the inside
   const doorFrame = mat({ color: 0x18191c });
   const doorGlass = new THREE.MeshLambertMaterial({ color: 0x34505e, transparent: true, opacity: 0.4, depthWrite: false });
+  // Each leaf is bi-fold, like real inward-folding bus doors: two glass halves hinged together.
+  // Opening, the outer half swings in from the post while the inner half folds back against it,
+  // so the whole leaf tucks up beside its post in the stairwell (half a leaf deep) and never
+  // reaches the dash or the handrails.
   const doorPanels = [];
   const leafW = (DZ1 - DZ0) / 2;
+  const half = leafW / 2;
+  const H = 2.215;
+  // one half-leaf, built out from its hinge edge (local z = 0) in direction dir
+  const doorHalf = (parent, dir, closing) => {
+    const g = put(parent, new THREE.Group(), 0, 0, 0);
+    const c = dir * half / 2;
+    put(g, box(0.055, 0.08, half, doorFrame), 0, H - 0.04, c);                    // top rail
+    put(g, box(0.055, 0.1, half, doorFrame), 0, 0.05, c);                         // bottom rail
+    put(g, box(0.055, 0.06, half, doorFrame), 0, 0.62, c);                        // kick-panel rail
+    put(g, box(0.03, 0.46, half - 0.06, metal), 0, 0.33, c);                      // brushed kick panel
+    put(g, box(0.055, H, 0.045, doorFrame), 0, H / 2, dir * 0.0225);              // stile, hinge edge
+    put(g, box(0.055, H, 0.045, doorFrame), 0, H / 2, dir * (half - 0.0225));     // stile, far edge
+    put(g, box(0.014, H - 0.79, half - 0.07, doorGlass), 0, (0.65 + H - 0.08) / 2, c);   // tall pane
+    if (closing) {
+      put(g, box(0.075, H - 0.06, 0.05, rubber), 0, H / 2, dir * (half + 0.018));   // the seal they close on
+      // grab handle on the inside, on two stand-offs
+      put(g, new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.85, 8), chrome), 0.075, 1.32, dir * (half - 0.12));
+      for (const hy of [0.92, 1.72]) put(g, box(0.07, 0.025, 0.025, chrome), 0.045, hy, dir * (half - 0.12));
+    }
+    return g;
+  };
   for (const [z, dir] of [[DZ0, 1], [DZ1, -1]]) {
-    const pivot = put(bus, new THREE.Group(), -W, 0.08, z);
-    const leaf = put(pivot, new THREE.Group(), 0, 0, dir * leafW / 2);
-    const H = 2.36;
-    put(leaf, box(0.055, 0.08, leafW, doorFrame), 0, H - 0.04, 0);                    // top rail
-    put(leaf, box(0.055, 0.1, leafW, doorFrame), 0, 0.05, 0);                         // bottom rail
-    put(leaf, box(0.055, 0.06, leafW, doorFrame), 0, 0.62, 0);                        // kick-panel rail
-    put(leaf, box(0.03, 0.46, leafW - 0.08, metal), 0, 0.33, 0);                      // brushed kick panel
-    put(leaf, box(0.055, H, 0.05, doorFrame), 0, H / 2, -dir * (leafW / 2 - 0.025));  // hinge stile
-    put(leaf, box(0.055, H, 0.05, doorFrame), 0, H / 2, dir * (leafW / 2 - 0.025));   // closing stile
-    put(leaf, box(0.075, H - 0.06, 0.05, rubber), 0, H / 2, dir * (leafW / 2 + 0.018)); // the seal they close on
-    put(leaf, box(0.014, H - 0.79, leafW - 0.09, doorGlass), 0, (0.65 + H - 0.08) / 2, 0); // one tall pane
-    // grab handle on the inside, on two stand-offs
-    put(leaf, new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.85, 8), chrome), 0.075, 1.32, dir * (leafW / 2 - 0.13));
-    for (const hy of [0.92, 1.72]) put(leaf, box(0.07, 0.025, 0.025, chrome), 0.045, hy, dir * (leafW / 2 - 0.13));
-    doorPanels.push({ pivot, dir });
+    const pivot = put(bus, new THREE.Group(), -W, 0.225, z);
+    doorHalf(pivot, dir, false);
+    const fold = put(pivot, new THREE.Group(), 0, 0, dir * half);
+    doorHalf(fold, dir, true);
+    put(fold, box(0.06, H - 0.12, 0.022, rubber), 0, H / 2, 0);                   // rubber fold joint
+    doorPanels.push({ pivot, fold, dir });
   }
   // stairwell: two steps with yellow safety edges, a step light, chrome handrails
   const stepMat = mat({ map: tex.busFloor(), color: 0x6b6d70 });
@@ -436,12 +469,11 @@ export function buildBus(scene) {
   put(bus, box(0.04, 0.03, DZ1 - DZ0, safety), -0.77, 0.21, (DZ0 + DZ1) / 2);
   put(bus, box(0.3, 0.06, DZ1 - DZ0, stepMat), -0.62, 0.31, (DZ0 + DZ1) / 2);  // upper step
   put(bus, box(0.04, 0.03, DZ1 - DZ0, safety), -0.49, 0.35, (DZ0 + DZ1) / 2);
-  put(bus, box(0.04, 0.03, DZ1 - DZ0, safety), -1.22, 0.06, (DZ0 + DZ1) / 2);
-  put(bus, box(0.6, 0.3, 0.05, trim), -0.95, 0.15, DZ0);                  // stairwell walls
-  put(bus, box(0.6, 0.3, 0.05, trim), -0.95, 0.15, DZ1);
+  put(bus, box(0.6, 0.3, 0.05, trim), -0.95, 0.15, DZ0 - 0.06);           // stairwell walls
+  put(bus, box(0.6, 0.3, 0.05, trim), -0.95, 0.15, DZ1 + 0.06);
   put(bus, box(0.02, 0.05, 0.3, glow(0xfff1c8)), -0.66, 0.38, DZ1 - 0.1);  // step light
-  for (const z of [DZ0 + 0.1, DZ1 - 0.1]) {
-    put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.6, 6), chrome), -0.9, 1.3, z);
+  for (const z of [DZ0 + 0.15, DZ1 - 0.15]) {
+    put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.54, 8), chrome), -0.6, 1.61, z);
   }
   put(bus, box(0.02, 0.1, 0.3, glow(0xffb54a)), -1.17, 2.5, DZ1 - 0.25);  // door warning light
   // the little corner of body between the door and the windshield
@@ -544,13 +576,16 @@ export function buildBus(scene) {
       state.doorAmt += Math.sign(target - state.doorAmt) * Math.min(Math.abs(target - state.doorAmt), dt * 2.2);
       // leaves fold inward into the stairwell (eased, like air doors)
       const eased = state.doorAmt * state.doorAmt * (3 - 2 * state.doorAmt);
-      doorPanels.forEach(({ pivot, dir }) => { pivot.rotation.y = dir * eased * 1.42; });
+      doorPanels.forEach(({ pivot, fold, dir }) => {
+        pivot.rotation.y = dir * eased * 1.45;        // the outer half swings in...
+        fold.rotation.y = -dir * eased * 2.9;         // ...and the inner half folds back against it
+      });
       visorPivot.rotation.x = THREE.MathUtils.lerp(visorPivot.rotation.x, state.visorDown ? -1.45 : 0, dt * 6);
       // the steering wheel turns into the corners
       wheelG.rotation.z = THREE.MathUtils.lerp(wheelG.rotation.z, THREE.MathUtils.clamp((info.steer || 0) * 9, -2.2, 2.2), Math.min(1, dt * 4));
       // door button: pressed in for a moment, green = closed, amber = open
       state.btnT = Math.max(0, (state.btnT || 0) - dt);
-      doorBtn.position.y = state.btnT > 0 ? 1.362 : 1.37;
+      doorBtn.position.y = state.btnT > 0 ? 1.408 : 1.415;
       doorBtn.material.color.set(state.doorsOpen ? 0xffa32a : 0x3fd06a);
       knob.rotation.z += ((state.knobTarget || 0) - knob.rotation.z) * Math.min(1, dt * 10);
       // interior lights

@@ -193,11 +193,15 @@ export function createDirector(w) {
     async board(key, seatName, speed = 1.4) {
       const p = actors.get(key);
       const outside = bus.group.localToWorld(bus.boardPath[0].clone());
-      await p.walk([outside], { speed, parent: scene });
+      const step = bus.group.localToWorld(bus.boardPath[1].clone());
+      const at = p.root.getWorldPosition(new THREE.Vector3());
+      // someone already up on the steps (they came to the door to ask) just carries on in
+      if (at.distanceTo(step) >= at.distanceTo(outside)) await p.walk([outside], { speed, parent: scene });
       const seatPos = bus.seatSlots[seatName];
       await p.walk([bus.boardPath[1], bus.boardPath[2]], { speed, parent: bus.group });
       Sound.sfx("coin");
-      await p.walk([new THREE.Vector3(0, 0.45, seatPos.z + 0.4), new THREE.Vector3(seatPos.x * 0.6, 0.45, seatPos.z + 0.1)], { speed, parent: bus.group });
+      // the last step is up to the seat's own height (seats over the wheels sit on a platform)
+      await p.walk([new THREE.Vector3(0, 0.45, seatPos.z + 0.4), new THREE.Vector3(seatPos.x * 0.6, seatPos.y, seatPos.z + 0.1)], { speed, parent: bus.group });
       p.sit(bus.group, seatPos, 0);
     },
     // get off the bus and walk somewhere (a world position), then vanish
@@ -329,6 +333,7 @@ export function createDirector(w) {
   g.shadeDissolve = (seconds) => shade.dissolve(seconds);
   // standing in the road ahead, only there for the length of a lightning flash
   g.shadeFlash = async (ahead) => {
+    w.traffic.hold(12);
     shade.standAt(route.at(drive.d + 6 + ahead, LANE, 0), camPos());
     w.lightning();
     setTimeout(() => Sound.sfx("thunder"), 300 + Math.random() * 500);
@@ -337,6 +342,7 @@ export function createDirector(w) {
   };
   // it runs along the sidewalk beside the bus, keeping up whatever you do, then cuts across the headlights
   g.shadeRun = async (seconds = 6) => {
+    w.traffic.hold(seconds + 10);
     let off = -8;                  // next to the back of the bus
     let lateral = 5.6;
     let t = 0;
@@ -365,6 +371,7 @@ export function createDirector(w) {
   };
   // crouched in the road ahead, in the headlights. When you get close it jumps onto the windshield.
   g.shadeLeap = async ({ ahead = 40, hold = 1400, crack = true, keepParked = false } = {}) => {
+    w.traffic.hold(30);
     const nose = () => drive.d + 6;
     const d0 = nose() + ahead;
     shade.crouchAt(route.at(d0, LANE, 0), bus.group.localToWorld(new THREE.Vector3(0, 1.6, 6)));
