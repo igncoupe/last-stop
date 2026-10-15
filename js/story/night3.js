@@ -263,6 +263,7 @@ export async function night3(g) {
 async function ward(g) {
   const H = g.places.hospital;
   await g.fade(1, 900);
+  g.storm(false);                      // no rain or lightning indoors
   g.sky("hospital");
   g.amb({ rain: 0.3, engine: 0, hum: 1 });
   g.mood("grief");
@@ -304,6 +305,7 @@ async function ward(g) {
   g.despawn("teodor4b");
   g.despawn("mara");
   g.sky("storm");
+  g.storm(true);
   g.amb({ rain: 1, engine: 0.3, hum: 0 });
   g.sitInBus();
   await g.fade(0, 1000);

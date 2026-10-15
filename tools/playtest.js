@@ -78,6 +78,7 @@ export function startBot(strategy = "kind") {
   let lastNav = null;
   let last = performance.now();
   const timer = setInterval(() => {
+    if (window.__botPaused) return;          // set to true to take over (for screenshots)
     const now = performance.now();
     const dtReal = (now - last) / 1000;
     last = now;
