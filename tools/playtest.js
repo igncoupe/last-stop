@@ -144,7 +144,8 @@ export function startBot(strategy = "kind") {
       if (seat && /Close the doors/.test(h) && bus.doorsOpen) press("KeyF");
       if (seat && /Open the doors/.test(h) && !bus.doorsOpen && drive.speed < 0.4) {
         const driveOn = /drive on|drive away/.test(h) && strategy === "cold";
-        if (!driveOn) press("KeyF");
+        const tearFirst = /tear out the radio/.test(h) && strategy === "deadair";
+        if (!driveOn && !tearFirst) press("KeyF");
       }
 
       // after pulling into a stop, wait there until the game says to drive

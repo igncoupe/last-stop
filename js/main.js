@@ -310,7 +310,9 @@ if (TEST) {
       settings.warned = true;
       showTitle();
       m.startBot(params.get("bot"));
-      begin(Number(params.get("night")) || 1, params.get("night") ? { flags: {}, kind: Number(params.get("kind")) || 0 } : null);
+      // &night=5&kind=9&flags=rheeTruth,maraHelped starts later with a chosen story so far
+      const flags = Object.fromEntries((params.get("flags") || "").split(",").filter(Boolean).map((k) => [k, true]));
+      begin(Number(params.get("night")) || 1, params.get("night") ? { flags, kind: Number(params.get("kind")) || 0 } : null);
     });
   }
 }
