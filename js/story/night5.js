@@ -1,0 +1,316 @@
+/* ===================================================================
+   NIGHT 5 — "Last stop."
+   Rosie. Teodor's confession. Ashgrove. Four endings:
+     On Schedule  keep driving                         (the bad ending)
+     Not Yet      open the doors, not kind enough      (the loop)
+     Home         open the doors, kind enough          (the good ending)
+     Dead Air     silence Rhee first, then open them   (the true ending; needs the clipping)
+   =================================================================== */
+const KIND_ENOUGH = 7;
+
+Object.assign(SCENES, {
+
+  n5_start: {
+    night: 5, stop: "Depot", mood: "dread", mirror: "empty", amb: { rain: 0.4, engine: 0.3 },
+    lines: (s) => [
+      { pause: 900 },
+      "11:40 PM. Route 9. Fifth night.",
+      "Last night.",
+      "You reach into your pocket for your keys and find coins instead. Four of them. Heavy. Worn smooth.",
+      "You don't remember keeping them.",
+      ...(s.flags.visitedVarga ? ["And the brass badge. T. VARGA — ROUTE 9. It's warm, like someone was just holding it."] : []),
+      "The back row is empty. The stain on the seat has spread across three seats now.",
+      "On the display, the stop with no name sits right after Elm & 4th. It isn't flickering anymore. It's waiting.",
+      { sfx: "static", args: [0.8] },
+      { who: "rhee", text: "Last run, driver. Big night. Full bus." },
+      { who: "rhee", text: "You know what to do. You make up the time." },
+    ],
+    choices: [{ text: "Pull out of the depot.", next: "n5_elm" }],
+  },
+
+  n5_elm: {
+    stop: "Elm & 4th",
+    mood: "grief",
+    lines: [
+      "Elm & 4th.",
+      "Two people are waiting at the stop tonight.",
+      "One is a woman, about forty, sitting on the bench in a good coat, holding a cup of coffee she isn't drinking. She looks like she's been here a while.",
+      "The other is standing under the streetlight in a faded brown driver's uniform, with a cap that has a cracked brim.",
+      { pause: 900 },
+      "It's the old man. But younger, somehow. Standing straight.",
+      "He doesn't get on. He nods at the woman on the bench, and waits.",
+    ],
+    choices: [{ text: "Open the doors.", next: "n5_rosie" }],
+  },
+
+  n5_rosie: {
+    stop: "Elm & 4th",
+    lines: (s) => [
+      { sfx: "door" },
+      "The woman looks up at the bus, surprised, like she forgot buses came here.",
+      { who: "rosie", text: "Sorry. I'm not riding. I just... come here. Every year, on this night. I don't even really know why." },
+      { who: "rosie", text: "My dad took the last bus home on this night. I was six. It was my birthday. He promised he'd be home before I fell asleep." },
+      { set: { metRosie: true }, who: "rosie", text: "I stayed awake all night. I'm Rosie, by the way. Sorry. You don't need my life story." },
+      ...(s.flags.keptPresent ? ["The small box is sitting on your dashboard, where you left it. FOR ROSIE. LOVE, DAD."] : []),
+      ...(s.flags.hasPresent && !s.flags.keptPresent ? ["You look at the dashboard where you left the box last night. It's gone."] : []),
+    ],
+    choices: [
+      { if: (s) => s.flags.keptPresent, text: "Give her the box.", kind: 1, set: { gaveRosie: true }, next: "n5_musicbox" },
+      { if: (s) => !s.flags.keptPresent && s.flags.knowsDaniel, text: "“Your dad's name was Daniel. He was trying to get home to you.”", kind: 1, set: { toldRosie: true }, next: "n5_told" },
+      { text: "“Happy birthday, Rosie.”", next: "n5_varga" },
+    ],
+  },
+
+  n5_musicbox: {
+    stop: "Elm & 4th",
+    mood: "silence",
+    lines: [
+      "You hold it out. She reads the tag, and her face does something complicated and terrible and beautiful.",
+      { who: "rosie", text: "That's his handwriting." },
+      "Her hands shake so badly you have to help her with the paper.",
+      "Inside is a music box. Cheap, painted, a little dancer with a chipped arm.",
+      "She winds it.",
+      { mood: "hope", pause: 4500 },
+      "It plays the same few notes you've been hearing in your head all week. Soft. A little out of tune.",
+      { who: "rosie", text: "He remembered. He got it for me. He was bringing it home." },
+      "She holds it against her chest and cries the way you cry when something finally ends.",
+      "Under the streetlight, the man in the faded uniform takes off his cap.",
+    ],
+    choices: [{ text: "Let her be. Turn to the driver.", next: "n5_varga" }],
+  },
+
+  n5_told: {
+    stop: "Elm & 4th",
+    lines: [
+      { pause: 900 },
+      { who: "rosie", text: "...How do you know his name?" },
+      { who: "you", text: "He rides this bus. He talks about you. You turned six. He was bringing you a present." },
+      "She should think you're crazy. She doesn't. She just nods, slowly, with her hand over her mouth.",
+      { who: "rosie", text: "I always felt like he was trying. Like he was out there, still trying to get home." },
+      "Under the streetlight, the man in the faded uniform takes off his cap.",
+    ],
+    choices: [{ text: "Turn to the driver.", next: "n5_varga" }],
+  },
+
+  n5_varga: {
+    stop: "Elm & 4th",
+    mood: "grief",
+    mirror: "uniform",
+    onEnter: (s) => { s.flags.knowsVarga = true; },
+    lines: (s) => [
+      "He climbs the steps. He drops a coin in the box. The last one.",
+      { sfx: "coin", pause: 400 },
+      "He sits in the seat right behind yours, the way a driver sits when he's riding off duty.",
+      { who: "teodor", text: "March fourteenth, 1994. I was eleven minutes late." },
+      { who: "teodor", text: "I asked to wait out the storm. Harold said no. Harold said make up the time. And I was scared of losing my job, and I had a schedule, and I did what I was told." },
+      { who: "teodor", text: "Fourteen people. Lena. Daniel. Little Ivy. Eleven more. I knew every one of their faces. I used to wave." },
+      { pause: 900 },
+      { who: "teodor", text: "They pulled me out of the river alive. Everyone said I survived." },
+      { who: "teodor", text: "I didn't. I've been riding this bus every night since. Waiting for a driver who would stop." },
+      { who: "teodor", text: "Every driver after me kept to the schedule. Harold made sure of that." },
+      ...(s.flags.maraHelped ? [{ who: "teodor", text: "Right now there's a nurse holding my hand in Room 4B. She's very kind. She tells me Route 9 is running." }] : []),
+      { who: "teodor", text: "It's my last night too. Tonight they get on, or they never do." },
+    ],
+    choices: [
+      { text: "“What do I have to do?”", next: "n5_what" },
+      { text: "“Why me?”", next: "n5_why" },
+    ],
+  },
+
+  n5_what: {
+    stop: "Elm & 4th",
+    lines: [
+      { who: "teodor", text: "Stop for them." },
+      { who: "teodor", text: "That's all. That's all it ever was. Stop for people." },
+      { who: "rhee", text: "Don't listen to him, driver. He's the one who drowned them." },
+    ],
+    choices: [{ text: "Drive to the next stop.", next: "n5_ashgrove" }],
+  },
+
+  n5_why: {
+    stop: "Elm & 4th",
+    lines: (s) => [
+      { who: "teodor", text: s.kind >= KIND_ENOUGH ? "Because you stop. I've watched you all week. You stop for people when it costs you." : "Because you're who's driving. And because I'm out of nights." },
+      { who: "teodor", text: "Whatever happens at the next stop, it's your bus. It always was going to be your choice." },
+      { who: "rhee", text: "Don't listen to him, driver. He's the one who drowned them." },
+    ],
+    choices: [{ text: "Drive to the next stop.", next: "n5_ashgrove" }],
+  },
+
+  n5_ashgrove: {
+    stop: "???",
+    fx: "storm",
+    mood: "terror",
+    mirror: "uniform",
+    amb: { rain: 1, engine: 0.4 },
+    onEnter: (s) => { s.flags.ashgroveNamed = true; },
+    lines: [
+      { sfx: "thunder", pause: 1200 },
+      "The bus slows on its own, one last time.",
+      "The route display stops flickering. For the first time, the stop has a name.",
+      { text: "ASHGROVE", big: true, after: 600 },
+      "The shelter is full. Fourteen people, standing in a rain that isn't falling anywhere else. The water at their feet is up to their ankles. Then their knees.",
+      "Lena is at the front. Daniel. Ivy in her yellow raincoat, holding Daniel's hand.",
+      "They aren't knocking. They aren't pressing their hands on the glass. They're just waiting. Like they've always waited.",
+      { sfx: "static", args: [1.4] },
+      { who: "rhee", text: "DRIVER." },
+      { who: "rhee", text: "You are ELEVEN MINUTES LATE. You will MAKE. UP. THE. TIME." },
+      { shake: true, sfx: "bang" },
+      "The radio is sparking. The speaker is bulging out of the dash like something is trying to push through it.",
+      { who: "rhee", text: "The schedule ALWAYS comes first. That's the JOB." },
+      { who: "teodor", text: "Please." },
+    ],
+    choices: [
+      { text: "Open the doors.", next: (s) => (s.kind >= KIND_ENOUGH ? "end_home" : "end_notyet") },
+      { if: (s) => s.flags.rheeTruth, text: "Tear the radio out of the dash.", next: "n5_rip" },
+      { text: "Keep driving. Stay on schedule.", next: "n5_drive_on" },
+    ],
+  },
+
+  n5_rip: {
+    stop: "???",
+    lines: [
+      "You get your fingers behind the radio's faceplate and you pull.",
+      { who: "rhee", text: "DON'T YOU—" },
+      { sfx: "bang", shake: true },
+      "Screws shriek out of the dash. The wires fight you like they're alive.",
+      { who: "rhee", text: "I DID MY JOB. I DID MY JOB. THE SCHEDULE—" },
+      "You think about the clipping in your pocket. STOP STOP STOP STOP.",
+      { sfx: "static", args: [2] },
+      { shake: true, pause: 400 },
+      "You rip it free.",
+      { mood: "silence", sfx: "lightsout", pause: 2400 },
+      { text: "Dead air.", big: true, after: 800 },
+      "It's the best sound you've ever heard.",
+      { pause: 900 },
+      "In the silence, from the very back of the bus, a man starts crying. A thin, gray man in a dispatcher's cardigan, with a headset around his neck.",
+      "Teodor looks at him for a long time.",
+    ],
+    choices: [{ text: "Open the doors.", next: (s) => (s.kind >= KIND_ENOUGH ? "end_deadair" : "end_notyet") }],
+  },
+
+  n5_drive_on: {
+    stop: "???",
+    mood: "dread",
+    lines: [
+      "You press the pedal. The yellow light slides along the windows and falls behind.",
+      { who: "rhee", text: "Good. GOOD. Back on schedule." },
+      "In the mirror, Teodor doesn't say anything. He just closes his eyes.",
+    ],
+    choices: [{ text: "Drive on.", next: "end_ontime" }],
+  },
+
+  /* ---------------- ENDINGS ---------------- */
+
+  end_ontime: {
+    stop: "Northgate",
+    mood: "terror",
+    mirror: "full",
+    fx: "flood",
+    amb: { rain: 0, water: 0.7 },
+    ending: { id: "ontime", title: "On Schedule", blurb: "Route 9 is never late. Not anymore.", hint: "Maybe stop next time." },
+    onEnter: (s) => { s.late = s.lateAtNightStart; },
+    lines: [
+      "At the last red light before Northgate, you glance at the mirror.",
+      "Every seat is full.",
+      "Fourteen people, soaked to the bone, staring straight ahead. Teodor among them, in his faded uniform.",
+      "Water creeps across the floor toward your shoes. You can't feel your feet.",
+      { pause: 900 },
+      "Route 9 pulls into Northgate. The clock on your dash flickers, and settles on 12:20 AM.",
+      "Exactly on time.",
+      { pause: 1200 },
+      "You look down at your hands on the wheel. They're gray. Wrinkled. Like they've been underwater for a very long time.",
+      { pause: 1000 },
+      { who: "rhee", text: "Evening, driver. See you tomorrow night." },
+      { who: "rhee", text: "And the night after that." },
+      { scare: "face" },
+      { text: "It always will be on time.", big: true },
+    ],
+  },
+
+  end_notyet: {
+    stop: "???",
+    mood: "grief",
+    ending: { id: "notyet", title: "Not Yet", blurb: "Ashgrove will be waiting again tomorrow night.", hint: "Try being the driver who stops. Every time." },
+    lines: (s) => [
+      { sfx: "door" },
+      "The doors fold open.",
+      "Nobody moves.",
+      !s.flags.maraHelped ? "They look at you the way the woman in scrubs did, that first night, under the streetlight." : "They look at you like they're trying to decide something about you.",
+      { who: "wet", text: "It isn't enough to stop once. You have to be the kind of driver who stops." },
+      { who: "woman", text: "We'll know when you are." },
+      { pause: 900 },
+      { sfx: "door" },
+      "The doors close on their own.",
+      { who: "teodor", text: "Tomorrow, then. And the night after. As long as it takes." },
+      "But tonight is his last night. You both know it.",
+      { pause: 900 },
+      "Ashgrove is still on your route display when you clock out.",
+      { text: "It will be there tomorrow, too.", big: true },
+    ],
+  },
+
+  end_home: {
+    stop: "???",
+    mood: "hope",
+    mirror: "full",
+    fx: "none",
+    amb: { rain: 0, engine: 0.3 },
+    ending: { id: "home", title: "Home", blurb: "Fourteen fares, paid at last. But Channel 9 is still on the air.", hint: "Something on the radio is still waiting for the next driver." },
+    lines: (s) => [
+      { sfx: "door" },
+      "The doors fold open.",
+      "For a moment, nobody moves. Then Daniel climbs the steps, and he isn't dripping anymore.",
+      "One by one, they board. Lena. Ivy, who rings the bell and giggles. Fourteen fares. Fourteen old coins in the box.",
+      { who: "woman", text: "Thank you for stopping." },
+      { who: "teodor", text: "Mind if I drive the last bit?" },
+      "You give him the seat. He settles into it like he never left.",
+      "The bus rolls past the end of the road, onto a bridge that isn't there anymore. Below it, the river is full of stars.",
+      { pause: 2500 },
+      "You wake up at Northgate. Dawn. The bus is empty and dry.",
+      "On the driver's seat: the coins. And a cap with a cracked brim.",
+      ...(s.flags.maraHelped ? ["Taped to the driver's window, a note in neat nurse handwriting:", "“Mr. Varga passed at 12:31. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Thought you'd want to know. — M.”"] : []),
+      ...(s.flags.gaveRosie ? ["Somewhere across town, a music box is playing on a kitchen table, and a woman is finally asleep."] : []),
+      ...((s.flags.junRode || s.flags.junFound) ? ["At the depot door, a kid with a huge backpack is waiting with exact change and two coffees. He doesn't say anything. He just hands you one."] : []),
+      { pause: 1500 },
+      { mood: "dread", text: "Three weeks later, a new driver starts on Route 7. First night. Last bus." },
+      { sfx: "static", args: [1] },
+      { who: "rhee", text: "Evening, new driver. This is Rhee, night dispatch. You'll be hearing a lot of me." },
+    ],
+  },
+
+  end_deadair: {
+    stop: "???",
+    mood: "hope",
+    mirror: "full",
+    fx: "none",
+    amb: { rain: 0, engine: 0.3 },
+    ending: { id: "deadair", title: "Dead Air", blurb: "Fifteen fares. Everyone gets a ride home.", hint: "The true ending. Thank you for stopping." },
+    lines: (s) => [
+      { sfx: "door" },
+      "The doors fold open.",
+      "Daniel climbs the steps first, and he isn't dripping anymore. Then Lena. Then Ivy, who rings the bell and giggles. Fourteen fares. Fourteen old coins.",
+      "Then the gray man in the dispatcher's cardigan stands up from the back row. Harold Rhee. He looks very small without the radio.",
+      { who: "harold", text: "I'm sorry. I'm so sorry. I thought the schedule was the job." },
+      { pause: 1300 },
+      "Nobody speaks. Then Lena moves over, and pats the seat next to her.",
+      { who: "woman", text: "Everyone gets a ride home. That's the job." },
+      { who: "teodor", text: "Mind if I drive the last bit?" },
+      "You give him the seat. He settles into it like he never left.",
+      "The bus rolls past the end of the road, onto a bridge that isn't there anymore. Below it, the river is full of stars.",
+      { pause: 2800 },
+      "You wake up at Northgate. Dawn. The bus is empty and dry. The radio hangs from its wires, quiet.",
+      "On the driver's seat: fifteen coins. And a cap with a cracked brim.",
+      ...(s.flags.maraHelped ? ["Taped to the driver's window, a note in neat nurse handwriting:", "“Mr. Varga passed at 12:31. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Thought you'd want to know. — M.”"] : []),
+      ...(s.flags.gaveRosie ? ["Somewhere across town, a music box is playing on a kitchen table, and a woman is finally asleep."] : []),
+      ...((s.flags.junRode || s.flags.junFound) ? ["At the depot door, a kid with a huge backpack is waiting with exact change and two coffees. He doesn't say anything. He just hands you one."] : []),
+      { pause: 1200 },
+      { who: "dana", text: "Route 9, this is Dana on Channel 4. You okay? I've got you back on GPS. Clean signal for the first time all week." },
+      "You tune the spare radio to Channel 9, just to check.",
+      { sfx: "static", args: [1.5], pause: 1600 },
+      { text: "Nothing. Just static. Just dead air.", big: true },
+      "You keep Route 9. Nobody else wants it anyway.",
+      { text: "And you always stop.", after: 500 },
+    ],
+  },
+});
