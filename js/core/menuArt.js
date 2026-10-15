@@ -54,6 +54,26 @@ export function createMenuArt(canvas) {
     c.fillRect(x - r, y - r, r * 2, r * 2);
   };
 
+  // the thing at the stop: too tall, head cocked, arms hanging past its knees. Drawn in street units
+  function figure(x, y, k) {
+    const P = (pts) => {
+      c.beginPath();
+      pts.forEach(([px, py], i) => (i ? c.lineTo(x + px * k, y + py * k) : c.moveTo(x + px * k, y + py * k)));
+      c.closePath();
+      c.fill();
+    };
+    c.fillStyle = "#000";
+    c.beginPath();
+    c.ellipse(x + 3 * k, y - 116 * k, 6.5 * k, 8.5 * k, 0.35, 0, Math.PI * 2);          // the head, tipped over
+    c.fill();
+    P([[-2, -108], [3, -110], [4, -100], [-3, -100]]);                                       // neck
+    P([[-14, -101], [14, -99], [9, -60], [-8, -60]]);                                        // shoulders to waist
+    P([[-14, -101], [-9, -99], [-11, -34], [-13, -30], [-16, -34]]);                        // the arms, too long
+    P([[9, -99], [14, -99], [15, -32], [13, -28], [11, -33]]);
+    P([[-8, -61], [-1, -61], [-3, 0], [-8, 0]]);                                             // legs
+    P([[1, -61], [8, -61], [8, 0], [3, 0]]);
+  }
+
   function flashLevel() {
     const s = time - bolt;
     if (s < 0 || s > 0.7) return 0;
@@ -71,7 +91,7 @@ export function createMenuArt(canvas) {
     c.fillStyle = sky;
     c.fillRect(0, 0, W, HOR + 1);
     for (const k of clouds) {
-      c.fillStyle = flash ? `rgba(150, 160, 190, ${0.15 + flash * 0.45})` : "rgba(26, 22, 24, .55)";
+      c.fillStyle = flash ? `rgba(130, 140, 170, ${0.12 + flash * 0.28})` : "rgba(26, 22, 24, .55)";
       c.beginPath();
       c.ellipse(k.x, k.y, k.rx, k.ry, 0, 0, Math.PI * 2);
       c.fill();
@@ -197,16 +217,11 @@ export function createMenuArt(canvas) {
     const shelterX = 96;
     const ad = Math.sin(time * 23) > -0.3 && Math.sin(time * 0.7 + 1) > -0.6 ? 1 : 0.2;     // a broken ad light
     stand(shelterX, fs, 84, 140, flash ? `rgba(130, 150, 175, ${0.1 + flash * 0.3})` : "rgba(70, 82, 96, .1)");
-    stand(shelterX + 58, fs, 22, 92, `rgba(190, 205, 220, ${0.1 + 0.32 * ad})`);                // the backlit ad
-    glow(gx(shelterX + 69, fs), gy(fs) - 50 * fs, 40, "rgba(170, 195, 220, A)", 0.13 * ad);
+    stand(shelterX + 58, fs, 22, 92, `rgba(150, 170, 190, ${0.05 + 0.13 * ad})`);                // the backlit ad, dying
+    stand(shelterX + 62, fs, 14, 70, `rgba(20, 24, 30, ${0.5 * ad})`);                             // the faded face on it
+    glow(gx(shelterX + 69, fs), gy(fs) - 50 * fs, 40, "rgba(170, 195, 220, A)", 0.08 * ad);
     // who's waiting: only a lightning flash shows it
-    if (flash > 0.1) {
-      const X = shelterX + 30;
-      stand(X, fs, 13, 104, "#000");
-      stand(X + 2, fs, 9, 124, "#000");
-      stand(X - 3, fs, 4, 60, "#000");
-      stand(X + 12, fs, 4, 64, "#000");
-    }
+    if (flash > 0.1) figure(gx(shelterX + 34, fs), gy(fs) - 4 * fs, fs);
     for (const X of [shelterX, shelterX + 82]) stand(X, fs, 3, 142, "#17181c");
     rect(gx(shelterX - 4, fs), gy(fs) - 146 * fs, 92 * fs, 6 * fs, "#17181c");      // the roof
     rect(gx(shelterX + 8, fs), gy(fs) - 40 * fs, 46 * fs, 4 * fs, "#141518");        // the bench
