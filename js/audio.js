@@ -366,6 +366,8 @@ function fxChain(fx) {
 // plays a voice clip; resolves when it ends (or right away if it's missing)
 async function voice(id, { fx = "dry", at = null } = {}) {
   if (!ctx) return false;
+  if (ctx.state === "suspended") { try { await ctx.resume(); } catch { /* no permission yet */ } }
+  if (ctx.state !== "running") return false;   // no sound allowed: subtitles carry the line
   const buf = await loadClip(id);
   if (!buf) return false;
   const { input, tail } = fxChain(fx);
@@ -401,11 +403,22 @@ async function voice(id, { fx = "dry", at = null } = {}) {
   const now = ctx.currentTime;
   srcs.forEach((x, i) => x.start(now + i * 0.03));
   return new Promise((done) => {
-    src.onended = () => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
       live.delete(entry);
       if (!live.size) ramp(musicBus.gain, 0.55, 0.8);
       done(true);
     };
+    src.onended = finish;
+    // never hang the story on a clip, even if the browser stops calling onended
+    const check = () => {
+      if (finished) return;
+      if (ctx.currentTime > now + buf.duration + 1.5) finish();
+      else setTimeout(check, 500);
+    };
+    setTimeout(check, (buf.duration + 0.5) * 1000);
     entry.stop = () => { try { srcs.forEach((x) => x.stop()); } catch { /* already stopped */ } };
   });
 }

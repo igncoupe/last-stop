@@ -187,7 +187,10 @@ function resetWorld(n) {
   setSky("night");
   g.storm(false);
   g.route(null);
-  g.walkAt(props.depot.spawn, Math.PI / 2, props.colliders);
+  // you start by the dispatch office, facing the bus; the bus is solid
+  bus.group.updateMatrixWorld(true);
+  const busBox = new THREE.Box3().setFromObject(bus.group).expandByScalar(-0.15);
+  g.walkAt(props.depot.spawn, 0.35, [...props.colliders, busBox]);
 }
 
 async function play(startNight, saved) {

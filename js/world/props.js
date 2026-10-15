@@ -162,21 +162,21 @@ function buildDepot(scene, props) {
   add(20.8, 0.3, 52.4, 0, 7.1, -26, mat({ color: 0x1a1b1e }));
   for (let z = -48; z < 0; z += 8) add(0.3, 0.08, 3, -2.3, 6.9, z, glow(0xe8f0ff));
   // dispatch office with a lit window
-  const office = add(4, 3.2, 7, 7.6, 1.6, -12, mat({ color: 0x55504a }));
+  const office = add(4, 3.2, 7, -7.6, 1.6, -12, mat({ color: 0x55504a }));
   const win = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.1), glow(0xfff1c8));
-  win.position.set(5.59, 1.9, -12);
-  win.rotation.y = -Math.PI / 2;
+  win.position.set(-5.59, 1.9, -12);
+  win.rotation.y = Math.PI / 2;
   g.add(win);
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(2, 0.45), glow(0xffffff, { map: tex.sign("DISPATCH", { w: 96, h: 24, font: 16 }) }));
-  sign.position.set(5.58, 2.9, -12);
-  sign.rotation.y = -Math.PI / 2;
+  sign.position.set(-5.58, 2.9, -12);
+  sign.rotation.y = Math.PI / 2;
   g.add(sign);
   // the time clock you punch at the start of every shift
-  const clock = add(0.3, 0.5, 0.4, 5.45, 1.4, -9.4, mat({ color: 0x9a9070 }));
+  const clock = add(0.3, 0.5, 0.4, -5.45, 1.4, -9.4, mat({ color: 0x9a9070 }));
   // a notice board for the night's notice
   const board = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.9), mat({ color: 0x6b4a2b }));
-  board.position.set(5.58, 1.6, -14.6);
-  board.rotation.y = -Math.PI / 2;
+  board.position.set(-5.58, 1.6, -14.6);
+  board.rotation.y = Math.PI / 2;
   g.add(board);
   const lights = [new THREE.PointLight(0xdfe8ff, 30, 30, 1.5), new THREE.PointLight(0xdfe8ff, 22, 26, 1.5)];
   lights[0].position.set(0, 6, -14);
@@ -185,7 +185,7 @@ function buildDepot(scene, props) {
   scene.add(g);
 
   props.colliders.push(...walls.map((w) => new THREE.Box3().setFromObject(w)), new THREE.Box3().setFromObject(office));
-  props.depot = { group: g, clock, board, lights, spawn: new THREE.Vector3(4.6, 1.7, -4.5) };
+  props.depot = { group: g, clock, board, lights, spawn: new THREE.Vector3(-4.4, 1.7, -5.5) };
 }
 
 // Northgate: the end of the line. A lit canopy, a terminal building, a barrier.
