@@ -1,392 +1,285 @@
-/* ===================================================================
-   NIGHT 2 — "The stop with no name has moved."
-   Second chances with Mara and Jun. The flood on Canal Row.
-   Daniel. The lights go out. The shelter full of wet people.
-   Kindness available: apologize to Mara (+1), Jun talk OR call his mom (+1),
-                       jacket for Daniel (+1), open the doors at ??? (+1)
-   =================================================================== */
-Object.assign(SCENES, {
+// NIGHT 2 — "The stop with no name has moved."
+// Kindness: apologize to Mara (+1), talk to Jun OR call his mom (+1),
+//           jacket for Daniel (+1), open the doors at ??? (+1)
+import * as THREE from "three";
+import { STOPS, route } from "../world/route.js";
+import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
 
-  n2_start: {
-    night: 2, stop: "Depot", mood: "uneasy", mirror: "oldman", amb: { engine: 0.3 },
-    lines: [
-      { pause: 600 },
-      "11:40 PM. Route 9. Second night.",
-      "You barely slept. Every time you closed your eyes you heard dripping.",
-      "The old man is in the back row again. Same seat. Same folded hands. Same wet shoes.",
-      "You checked the depot cameras before your shift. They show you getting on the bus alone.",
-      "On your route display, the stop with no name is still there. But it's moved.",
-      { text: "It's not past Northgate anymore. It's between Canal Row and Northgate.", after: 500 },
-      { who: "rhee", text: "Evening, driver. Northgate by 12:20. And your display is still broken, so don't look at it." },
-    ],
-    choices: [
-      { text: "Ask the old man about the new stop.", next: "n2_oldman" },
-      { text: "Don't look at him. Just drive.", next: "n2_elm" },
-    ],
-  },
+export async function night2(g) {
+  const f = g.flags;
+  const doorOutside = () => g.bus.group.localToWorld(g.bus.boardPath[0].clone());
+  const terminalDoor = () => g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20));
+  g.mood("uneasy");
+  await g.wait(800);
+  await g.think("I barely slept. Every time I closed my eyes I heard dripping.");
+  await clockIn(g, [
+    "NOTICE: DEPOT CAMERAS SHOW NO PASSENGERS BOARDING ROUTE 9 AT THE DEPOT.",
+    "I checked the tape before my shift. It shows me getting on alone.",
+  ]);
+  g.spawn("teodor", "oldman");
+  g.seat("teodor", "B3");
+  g.route("NEXT: ???  (BEFORE NORTHGATE)", true);
+  await g.wait(800);
+  await g.think("He's back. Same seat. Same wet shoes.");
+  await g.think("And the stop with no name moved. It's before Northgate now.");
+  await g.say("rhee", "Evening, driver. Northgate by twelve twenty. And your display is still broken, so don't look at it.");
+  g.route(null);
+  const ask = await g.choose(["“That stop on the display. What is it?”", "[Don't look at him. Just drive]"]);
+  if (ask === 0) {
+    f.knowsAshgrove = true;
+    await g.say("teodor", "You saw it, then.");
+    await g.say("teodor", "There was a stop past Northgate once. Ashgrove. Little houses by the river. Kids who'd wave at the bus.");
+    await g.say("teodor", "The bridge went down in March of ninety-four. In a storm. With the last bus of the night on it.");
+    await g.say("you", "Which route?");
+    await g.wait(1600);
+    await g.say("teodor", "This one.");
+  }
+  await closeDoorsAndGo(g);
 
-  n2_oldman: {
-    stop: "Depot",
-    onEnter: (s) => { s.flags.knowsAshgrove = true; },
-    lines: [
-      "You walk down the aisle. It's colder at the back. Your breath fogs.",
-      { who: "teodor", text: "You saw it, then." },
-      "He turns a coin over and over in his fingers. His knuckles are swollen and his nails are blue.",
-      { who: "teodor", text: "There was a stop past Northgate once. Ashgrove. Little houses by the river. Kids who'd wave at the bus." },
-      { who: "teodor", text: "The bridge went down in March of '94. In a storm. With the last bus of the night on it." },
-      { who: "you", text: "Which route?" },
-      { pause: 1200 },
-      "He looks at you for a long time. His eyes are wet.",
-      { who: "teodor", text: "This one." },
-    ],
-    choices: [{ text: "Go back to your seat. Pull out.", next: "n2_elm" }],
-  },
+  // ---------- Elm & 4th: Mara again
+  const mara = g.spawn("mara", "mara", { at: curb("Elm & 4th", 2), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
+  let stopped = await g.arrive("Elm & 4th");
+  if (stopped && (await openUp(g))) {
+    await g.board("mara", "L0");
+    f.maraAboard = true;
+    if (f.maraHelped) {
+      await g.say("mara", "Figured I owe you a coffee. It's terrible. Hospital coffee always is.");
+      await g.say("mara", "Heads up. A water main burst on Canal Row. It's deep. Take it slow, or you'll stall out in the middle of it.");
+      f.maraTip = true;
+    } else {
+      await g.say("mara", "I got written up. One more and I'm off nights. So thanks for that.");
+      const c = await g.choose(["“I'm sorry. I should have waited.”", "[Say nothing]"]);
+      if (c === 0) {
+        g.kind();
+        f.maraHelped = true;
+        f.maraForgave = true;
+        await g.wait(1500);
+        await g.say("mara", "Yeah. Okay. Everybody's got a schedule. I get it.");
+        await g.say("mara", "Canal Row's flooded tonight. Go slow or you'll stall in it.");
+        f.maraTip = true;
+      }
+    }
+  } else {
+    await g.think("Mara was at the stop. I didn't pick her up. Again.");
+    f.maraLeft = true;
+    g.despawn("mara");
+  }
+  await closeDoorsAndGo(g);
 
-  n2_elm: {
-    stop: "Elm & 4th",
-    lines: (s) => s.flags.maraHelped ? [
-      "Elm & 4th. Mara's already at the stop this time. Early. Holding two paper cups.",
-      { sfx: "door" },
-      { who: "mara", text: "Figured I owe you a coffee. It's terrible. Hospital coffee always is." },
-      { who: "mara", text: "Also, heads up. A water main burst on Canal Row. The whole street's flooded. Cut down Lindell Ave and you'll save yourself the trouble." },
-    ] : [
-      "Elm & 4th. Mara's at the stop. Early tonight. Arms crossed.",
-      { sfx: "door" },
-      "She gets on without looking at you and sits as far forward as she can.",
-      { who: "mara", text: "I got written up. One more and I'm off nights. So thanks for that." },
-      "She stares out the window. Her reflection stares back at you in the glass.",
-    ],
-    choices: [
-      { if: (s) => s.flags.maraHelped && !s.flags.maraForgave, text: "“Thanks. Same bus tomorrow?”", set: { maraTip: true }, next: "n2_mara" },
-      { if: (s) => !s.flags.maraHelped, text: "“I'm sorry. I should have waited.”", kind: 1, set: { maraHelped: true, maraForgave: true }, next: "n2_mara_sorry" },
-      { if: (s) => !s.flags.maraHelped, text: "Say nothing. Drive.", next: "n2_market" },
-    ],
-  },
+  const chat = f.maraAboard && f.maraHelped ? (async () => {
+    await g.wait(3000);
+    g.mood("grief");
+    await g.say("mara", "There's a man on my ward. Room four B. Ninety-one years old. No visitors. Ever.");
+    await g.say("mara", "He barely talks. But every night, right around this time, he opens his eyes and asks me two things.");
+    await g.say("mara", "What time is it. And is Route 9 running yet.");
+    await g.wait(1200);
+    await g.say("mara", "I always tell him yes. It seems to help.");
+    g.hint("Check your mirror");
+    await g.until(() => g.lookingAtMirror(), 9000);
+    g.hint(null);
+    await g.think("The old man has his eyes closed. He might be smiling.");
+    g.mood("uneasy");
+  })() : Promise.resolve();
 
-  n2_mara_sorry: {
-    stop: "Elm & 4th",
-    lines: [
-      "She doesn't answer for a whole block.",
-      { who: "mara", text: "...Yeah. Okay. Everybody's got a schedule. I get it." },
-      { who: "mara", text: "Hey. Canal Row's flooded tonight. Water main. Cut down Lindell if you don't want to sit in it." },
-      "It's not forgiveness exactly. But it's close.",
-    ],
-    onEnter: (s) => { s.flags.maraTip = true; },
-    choices: [{ text: "“Thanks, Mara.”", next: "n2_mara" }],
-  },
+  // ---------- Market St: Jun, or a poster
+  if (f.junRode) g.spawn("jun", "jun", { at: curb("Market St", 1), yaw: route.heading(STOPS["Market St"]) + Math.PI / 2 });
+  else g.props.missingPoster.visible = true;
+  stopped = await g.arrive("Market St");
+  await chat;
+  if (f.junRode) {
+    if (stopped && (await openUp(g))) {
+      await g.board("jun", "R2");
+      f.junAboard = true;
+      await g.say("jun", "I'm paying tonight. And here's yesterday's. Don't want you getting in trouble.");
+      const c = await g.choose(["“Why do you ride to Northgate every night?”", "[Nod]"]);
+      if (c === 0) {
+        f.junTalked = true;
+        g.kind();
+        await g.say("jun", "My mom cleans the Northgate depot. Nights. She works two jobs, so nights are kind of the only time I see her.");
+        await g.say("jun", "She gets off at twelve thirty. If I'm there before then, we walk home together.");
+        await g.wait(1200);
+        await g.say("jun", "Can I ask you something weird? Last night, when we got to Northgate. Did you count how many people got off?");
+        await g.say("you", "Just you.");
+        await g.wait(1200);
+        await g.say("jun", "There were six people in the back when I got off. All wet. All looking at you.");
+      }
+    } else {
+      await g.think("Jun was waiting with exact change. I left him there.");
+      g.despawn("jun");
+    }
+  } else if (stopped) {
+    await g.think("There's a poster on the shelter. MISSING. Jun Park, fifteen. Last seen Market Street, around midnight.");
+    await g.think("It's the kid from last night. There's a phone number. Underneath, someone wrote: please. anything.");
+    const c = await g.choose(["[Call the number]", "[It's not my business]"]);
+    if (c === 0) {
+      f.calledMom = true;
+      g.kind();
+      g.late(2);
+      g.sfx("ring");
+      await g.wait(2600);
+      await g.say("momcall", "Hello? Jun? Jun, is that you?");
+      await g.say("you", "No, I'm sorry. I'm the Route 9 driver. I saw him last night at Market Street. He was trying to get to Northgate.");
+      await g.wait(1400);
+      await g.say("momcall", "Northgate. He was coming to me. I work at the Northgate depot. He was walking to me.");
+      await g.say("momcall", "Thank you. I'll call the police. Thank you.");
+      await g.say("rhee", "Driver. Personal calls are not on the schedule.");
+    }
+  }
+  if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
-  n2_mara: {
-    stop: "Elm & 4th",
-    mood: "grief",
-    lines: [
-      { who: "mara", text: "Wouldn't miss it." },
-      "Somewhere between stops she starts talking, the way people do at midnight when they're too tired to stop themselves.",
-      { who: "mara", text: "There's a man on my ward. Room 4B. Ninety-one years old. No visitors. Ever." },
-      { who: "mara", text: "He barely talks. But every night, right around this time, he opens his eyes and asks me two things." },
-      { who: "mara", text: "What time is it. And is Route 9 running yet." },
-      { pause: 900 },
-      { who: "mara", text: "I always tell him yes. It seems to help." },
-      "You look in the mirror.",
-      "In the back row, the old man has his eyes closed.",
-      { text: "He might be smiling.", after: 400 },
-    ],
-    choices: [{ text: "Drive on.", next: "n2_market" }],
-  },
+  // ---------- St. Agnes
+  if (f.maraAboard) {
+    await g.until(() => g.d > STOPS["St. Agnes"] - 120);
+    g.sfx("bell");
+  }
+  stopped = await g.arrive("St. Agnes");
+  if (f.maraAboard && stopped && (await openUp(g))) {
+    if (f.maraHelped) {
+      await g.say("mara", "Hey. Weird question. If you ever see a stop that isn't supposed to be there...");
+      await g.say("mara", "My mom used to say the drowned don't want to scare you. They just want a ride home.");
+      await g.say("mara", "Forget it. I'm tired. See you tomorrow.");
+    }
+    await g.alight("mara", curb("St. Agnes", 4, 9));
+    f.maraAboard = false;
+  } else if (f.maraAboard) {
+    await g.say("mara", "Seriously? That was my stop.");
+  }
+  if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
-  n2_market: {
-    stop: "Market St",
-    lines: (s) => s.flags.junRode ? [
-      "Market St. Jun's on the bench again. This time he's holding exact change, counted out in his palm like it's precious.",
-      { sfx: "door" },
-      { sfx: "coin" },
-      { who: "jun", text: "I'm paying tonight. And here's yesterday's. Don't want you getting in trouble." },
-      "He sits closer to the front than last time. He doesn't look at the back row at all.",
-    ] : [
-      "Market St. The bench is empty.",
-      "On the shelter glass there's a new poster. The tape is still shiny.",
-      { text: "MISSING. JUN PARK, 15. LAST SEEN MARKET ST, AROUND MIDNIGHT.", big: true },
-      "In the photo he's smiling, wearing the same huge backpack.",
-      "There's a phone number at the bottom. Underneath it, in handwriting: PLEASE. ANYTHING.",
-    ],
-    choices: [
-      { if: (s) => s.flags.junRode, text: "“Why do you ride to Northgate every night?”", kind: 1, set: { junTalked: true }, next: "n2_jun" },
-      { if: (s) => s.flags.junRode, text: "Nod and drive on.", next: "n2_stagnes" },
-      { if: (s) => !s.flags.junRode, text: "Call the number.", hint: "+2 min", late: 2, kind: 1, set: { calledMom: true }, next: "n2_call" },
-      { if: (s) => !s.flags.junRode, text: "It's not your business. Drive on.", next: "n2_stagnes" },
-    ],
-  },
+  // ---------- Canal Row: the flood
+  g.flood(true, 0.45);
+  g.amb({ water: 0.6 });
+  g.mood("dread");
+  await g.until(() => g.d > 1690);
+  const fast = g.drive.speed > 6;
+  if (fast) {
+    g.sfx("splash");
+    g.shake(1.4);
+    g.park();
+    g.amb({ engine: 0 });
+    await g.think("Too fast. The engine's drowned. It won't turn over.");
+    g.late(4);
+    await g.wait(3500);
+  } else {
+    g.auto(2.5, Math.min(STOPS["Canal Row"], g.d + 25));
+    await g.until(() => g.drive.speed < 0.4, 15000);
+  }
+  g.spawn("daniel", "daniel", { at: doorOutside(), yaw: route.heading(g.d) + Math.PI / 2 });
+  g.sfx("knock");
+  await g.think("Someone's knocking on the doors.");
+  g.release();
+  if (fast) g.park();
+  g.hint("Open the doors  [F]  ·  or drive on");
+  const opened = await g.until(() => g.bus.doorsOpen || g.drive.moving, 20000);
+  g.hint(null);
+  if (opened && g.bus.doorsOpen) {
+    f.knowsDaniel = true;
+    await g.say("daniel", "Ashgrove, please.");
+    if (f.knowsAshgrove) await g.say("you", "The bridge is gone. It's been gone a long time.");
+    else await g.say("you", "This bus doesn't go there.");
+    await g.say("daniel", "Everyone keeps telling me.");
+    await g.board("daniel", "L0", 1.0);
+    await g.say("daniel", "I'm Daniel. My daughter's Rosie. She turns six tonight. I promised her I'd be home before she fell asleep.");
+    await g.say("daniel", "I think I'm very late.");
+    await g.think("He's shivering so hard his teeth click.");
+    const c = await g.choose(["[Give him your jacket]", "[Leave him be]"]);
+    if (c === 0) {
+      f.gaveJacket = true;
+      g.kind();
+      await g.say("daniel", "You're kind. He was kind too. The driver.");
+      await g.say("daniel", "He wanted to wait out the storm. But the man on the radio kept saying make up the time. Make up the time.");
+    } else {
+      await g.say("daniel", "The man on the radio told him to make up the time. Did you know that? He wanted to wait.");
+    }
+    await g.wait(800);
+    g.interior("off");
+    g.sfx("lightsout");
+    g.amb({ engine: 0 });
+    g.mood("terror");
+    await g.wait(1500);
+    g.sfx("breath");
+    await g.wait(2200);
+    await g.think("Something wet is touching the back of my neck.");
+    await g.scare("eyes");
+    g.vanish("daniel");
+    g.interior("on");
+    g.amb({ engine: 0.3 });
+    await g.think(f.gaveJacket ? "The lights are back. He's gone. My jacket is folded on his seat. Soaked through. Still warm." : "The lights are back. His seat is empty, and dark with water.");
+    if (g.bus.doorsOpen) g.setDoors(false);
+  } else {
+    await g.think("I'm not opening those doors.");
+    await g.wait(1500);
+    await g.scare("hands");
+    g.sfx("bang");
+    g.shake(1.5);
+    await g.think("Hands. All over the door glass. Gray and wrinkled from the water.");
+    g.vanish("daniel");
+  }
+  g.release();
+  g.hint("Drive  ·  W gas");
+  await g.departed();
+  g.hint(null);
+  await g.until(() => g.d > 1915);
+  g.flood(false);
+  g.amb({ water: 0 });
 
-  n2_jun: {
-    stop: "Market St",
-    lines: [
-      { who: "jun", text: "My mom cleans the Northgate depot. Nights. She works two jobs, so nights are... kind of the only time I see her." },
-      { who: "jun", text: "She gets off at 12:30. If I'm there before then, we walk home together." },
-      "He shrugs like it's nothing. It isn't nothing.",
-      { pause: 600 },
-      { who: "jun", text: "Can I ask you something weird?" },
-      { who: "jun", text: "Last night. When we got to Northgate. Did you count how many people got off?" },
-      { who: "you", text: "Just you." },
-      { pause: 900 },
-      { who: "jun", text: "Yeah. That's what I thought." },
-      { who: "jun", text: "There were six people in the back when I got off. All wet. All looking at you." },
-      { mirror: "full", sfx: "whisper", pause: 700 },
-      "You look in the mirror. For one frame, every seat is full.",
-      { mirror: "oldman", pause: 300 },
-      "Then it's just the old man.",
-    ],
-    choices: [{ text: "Drive on. Don't look again.", next: "n2_stagnes" }],
-  },
+  // ---------- the stop with no name
+  const md = g.props.mystery.d;
+  const crowd = [];
+  for (let i = 0; i < 8; i++) {
+    crowd.push(g.spawn(`drowned${i}`, i === 0 ? "lena" : i === 3 ? "ivy" : "drowned", { ghost: true, at: mysteryCurb(g, -1.8 + (i % 4) * 1.2, 6.4 + Math.floor(i / 4) * 0.6), yaw: route.heading(md) + Math.PI / 2 }));
+  }
+  await g.until(() => g.d > md - 120);
+  g.auto(6, md);
+  await g.think("I'm slowing down. I'm not touching the brake.");
+  await g.until(() => g.drive.speed < 0.3, 25000);
+  g.rain(true);
+  await g.think("There's a shelter where there's never been a shelter. Lit up yellow. It's raining inside it. Only inside it.");
+  await g.say("rhee", "Driver. Do NOT open those doors. They are not on the manifest.");
+  await g.say("teodor", "It's not their night yet. But you could let them see you.");
+  g.release();
+  g.hint("Open the doors  [F]  ·  or drive on");
+  const open2 = await g.until(() => g.bus.doorsOpen || g.drive.moving, 25000);
+  g.hint(null);
+  if (open2 && g.bus.doorsOpen) {
+    f.openedN2 = true;
+    f.knowsLena = true;
+    g.kind();
+    g.late(1);
+    g.mood("grief");
+    await g.wait(1500);
+    await g.think("Nobody's getting on.");
+    await g.say("lena", "Not yet. Not tonight.");
+    await g.say("lena", "I'm Lena. You're the first one who's opened the doors in a very long time.");
+    await g.say("lena", "He's still riding, isn't he? Every night. Tell him we don't blame him. We never did.");
+    await g.say("rhee", "Driver. Close. The. Doors.");
+    await g.doors(false);
+  } else {
+    await g.say("rhee", "Good. Good driver.");
+    await g.think("A little girl at the front of the shelter waved at the bus. The way kids used to wave at buses.");
+  }
+  crowd.forEach((_, i) => g.vanish(`drowned${i}`));
+  g.rain(false);
+  if (!g.drive.moving) await closeDoorsAndGo(g);
+  g.mood("uneasy");
 
-  n2_call: {
-    stop: "Market St",
-    lines: [
-      "You dial with the bus idling. It rings once.",
-      { who: "junmom", text: "Hello? Jun? Jun, is that you?" },
-      { who: "you", text: "No, I'm sorry. I'm the Route 9 driver. I saw him. Last night, at Market St. He was trying to get to Northgate." },
-      { pause: 900 },
-      "There's a sound on the line like someone sitting down very hard.",
-      { who: "junmom", text: "Northgate. He was coming to me. I work at the Northgate depot. He was walking to me." },
-      { who: "junmom", text: "Thank you. Thank you. I'll call the police, I'll tell them, thank you—" },
-      "She hangs up. Your hands are shaking a little.",
-      { who: "rhee", text: "Driver. Personal calls are not on the schedule." },
-    ],
-    choices: [{ text: "Drive on.", next: "n2_stagnes" }],
-  },
-
-  n2_stagnes: {
-    stop: "St. Agnes",
-    lines: (s) => s.flags.maraHelped ? [
-      "St. Agnes. Mara crumples her cup and stands.",
-      { who: "mara", text: "Hey. Weird question. If you ever see a stop that isn't supposed to be there..." },
-      "She hesitates on the bottom step.",
-      { who: "mara", text: "My mom used to say the drowned don't want to scare you. They just want a ride home." },
-      { who: "mara", text: "...Forget it. I'm tired. See you tomorrow." },
-      "Up on the fourth floor, one window is lit while the ones around it are dark.",
-    ] : [
-      "St. Agnes. Mara gets off without a word. She doesn't look back.",
-      "Up on the fourth floor, one window is lit while the ones around it are dark.",
-      "Someone is standing in it again. Very still. Very thin.",
-    ],
-    choices: [{ text: "Drive on.", next: "n2_canal" }],
-  },
-
-  n2_canal: {
-    stop: "Canal Row",
-    mood: "dread",
-    amb: { water: 0.6 },
-    fx: (s) => (s.flags.maraTip ? "none" : "flood"),
-    onEnter: (s) => { if (!s.flags.maraTip) s.late += 4; },
-    lines: (s) => s.flags.maraTip ? [
-      "Lindell Ave is coming up on the left.",
-      "Straight ahead, Canal Row shines like a river under the orange lights. The water's up past the curbs.",
-      "Something is standing in it. Far down the street. Not moving.",
-    ] : [
-      "You turn onto Canal Row and don't see the water until you're in it.",
-      { sfx: "splash", shake: true },
-      "The bus lurches. The engine coughs, chokes, and dies.",
-      { amb: { engine: 0 }, pause: 1200 },
-      "Silence. Just water lapping at the doors.",
-      "By the time the engine turns over again, you've lost four minutes.",
-      { amb: { engine: 0.3 }, pause: 800 },
-      { sfx: "knock" },
-      { text: "Someone knocks on the doors.", after: 500 },
-    ],
-    choices: [
-      { if: (s) => s.flags.maraTip, text: "Take Lindell. Stay on schedule.", next: "n2_lindell" },
-      { if: (s) => s.flags.maraTip, text: "Go down Canal Row anyway.", hint: "+3 min", late: 3, next: "n2_flood" },
-      { if: (s) => !s.flags.maraTip, text: "Open the doors.", next: "n2_wet" },
-      { if: (s) => !s.flags.maraTip, text: "Keep them shut.", next: "n2_wet_shut" },
-    ],
-  },
-
-  n2_flood: {
-    stop: "Canal Row",
-    fx: "flood",
-    lines: [
-      { sfx: "splash" },
-      "You ease the bus into the water. It's deeper than it looks. Black. Cold. It swallows the headlights.",
-      "You crawl along at walking speed. The figure in the street gets closer.",
-      "Then it isn't in the street anymore.",
-      { pause: 900 },
-      { sfx: "knock" },
-      { text: "Someone knocks on the doors.", after: 500 },
-    ],
-    choices: [
-      { text: "Open the doors.", next: "n2_wet" },
-      { text: "Keep them shut.", next: "n2_wet_shut" },
-    ],
-  },
-
-  n2_wet: {
-    stop: "Canal Row",
-    onEnter: (s) => { s.flags.knowsDaniel = true; },
-    lines: (s) => [
-      { sfx: "door" },
-      s.flags.metWet ? "It's him. The man from last night. His suit still soaked through, his hair plastered to his forehead." : "A man in a suit, soaked through. Water runs off him in sheets, though the flood only reaches your tires.",
-      "He's holding a small box wrapped in paper with balloons on it. The paper has gone soft and gray.",
-      { who: "wet", text: "Ashgrove, please." },
-      s.flags.knowsAshgrove ? { who: "you", text: "The bridge is gone. It's been gone a long time." } : { who: "you", text: "This bus doesn't go there." },
-      { who: "wet", text: "Everyone keeps telling me." },
-      { who: "wet", text: "I'm Daniel. My daughter's Rosie. She turns six tonight. I promised her I'd be home before she fell asleep." },
-      { who: "wet", text: "I think I'm very late." },
-      "He's shivering so hard his teeth click.",
-    ],
-    choices: [
-      { text: "Give him your jacket.", kind: 1, set: { gaveJacket: true }, next: "n2_jacket" },
-      { text: "Point him to a seat.", next: "n2_wet_sit" },
-    ],
-  },
-
-  n2_jacket: {
-    stop: "Canal Row",
-    lines: [
-      "He holds it like he's forgotten what a jacket is for. Then he puts it on, slowly, carefully, over the wet suit.",
-      { who: "wet", text: "You're kind. He was kind too, the driver." },
-      { who: "wet", text: "He wanted to wait out the storm. We could all hear him arguing on the radio." },
-      { who: "wet", text: "But the man on the radio kept saying make up the time. Make up the time. Make up the time." },
-      { pause: 1000 },
-      { fx: "dark", sfx: "lightsout", amb: { engine: 0 }, mood: "terror" },
-      { text: "The lights go out.", after: 800 },
-      { sfx: "breath", pause: 1600 },
-      "Something wet touches the back of your neck.",
-      { pause: 700 },
-      { scare: "eyes" },
-      { fx: "flood", sfx: "lightsout", amb: { engine: 0.3 }, mood: "dread", mirror: "oldman" },
-      "The lights flicker back on.",
-      "Daniel is gone. Your jacket is folded neatly on his seat. Soaked through. Still warm.",
-    ],
-    choices: [{ text: "Drive. Get out of the water.", next: "n2_mystery" }],
-  },
-
-  n2_wet_sit: {
-    stop: "Canal Row",
-    lines: [
-      "He sits where you point and stares straight ahead, dripping.",
-      { who: "wet", text: "The man on the radio told him to make up the time. Did you know that? He wanted to wait." },
-      { pause: 900 },
-      { fx: "dark", sfx: "lightsout", amb: { engine: 0 }, mood: "terror" },
-      { text: "The lights go out.", after: 900 },
-      { sfx: "drip" }, { sfx: "drip", pause: 500 }, { sfx: "drip", pause: 500 },
-      { scare: "eyes" },
-      { fx: "flood", sfx: "lightsout", amb: { engine: 0.3 }, mood: "dread", mirror: "oldman" },
-      "The lights come back. The seat is empty, and dark with water.",
-    ],
-    choices: [{ text: "Drive. Get out of the water.", next: "n2_mystery" }],
-  },
-
-  n2_wet_shut: {
-    stop: "Canal Row",
-    mood: "terror",
-    lines: [
-      "You keep your hand off the door lever.",
-      "The knocking stops.",
-      { pause: 1400 },
-      "Then a palm presses flat against the door glass. Gray. Wrinkled from the water.",
-      "Then another.",
-      { pause: 700 },
-      { scare: "hands" },
-      { sfx: "bang", shake: true },
-      "The glass shudders in its frame. You stamp on the pedal and the bus surges through the flood.",
-      "In the mirror, a man in a soaked suit stands in the middle of Canal Row with a small wrapped box in his hands, watching you go.",
-      { mood: "dread", text: "He doesn't look angry. He looks like he's been left behind before." },
-    ],
-    choices: [{ text: "Keep driving.", next: "n2_mystery" }],
-  },
-
-  n2_lindell: {
-    stop: "Canal Row",
-    lines: [
-      "You swing onto Lindell. Dry road. Right on time.",
-      "Just before the corner, you catch the side mirror.",
-      "A man in a soaked suit is standing knee-deep in the flood on Canal Row, holding a small wrapped box. Watching your bus go.",
-      { sfx: "whisper", pause: 800 },
-      { who: "voices", text: "...didn't stop..." },
-      { who: "rhee", text: "Nice time, driver. That's what I like to see." },
-    ],
-    choices: [{ text: "Drive on.", next: "n2_mystery" }],
-  },
-
-  n2_mystery: {
-    stop: "???",
-    fx: "none",
-    mood: "dread",
-    amb: { water: 0, rain: 0.5 },
-    lines: [
-      "The bus slows down.",
-      "You didn't touch the brake.",
-      { pause: 900 },
-      "There's a bus shelter on the right where there has never been a bus shelter. It's lit the yellow of old photographs.",
-      "It's raining inside it. Only inside it.",
-      "People are standing in the shelter. A dozen, maybe more. Coats dark with water. Hair stuck to their faces.",
-      "Waiting.",
-      { who: "rhee", text: "Driver. Do NOT open those doors." },
-      { who: "rhee", text: "They are not on the manifest." },
-      { pause: 600 },
-      "In the back row, the old man leans forward.",
-      { who: "teodor", text: "It's not their night yet. But you could let them see you." },
-    ],
-    choices: [
-      { text: "Open the doors.", hint: "+1 min", late: 1, kind: 1, set: { openedN2: true }, next: "n2_mystery_open" },
-      { text: "Do what dispatch says. Keep driving.", next: "n2_mystery_pass" },
-    ],
-  },
-
-  n2_mystery_open: {
-    stop: "???",
-    mood: "grief",
-    onEnter: (s) => { s.flags.knowsLena = true; },
-    lines: [
-      { sfx: "door" },
-      "The doors fold open. Cold, wet air rolls in. It smells like the river.",
-      "Nobody boards.",
-      "A woman at the front of the shelter looks at you for a long moment. She's wearing a nurse's cardigan from another decade.",
-      { who: "woman", text: "Not yet. Not tonight." },
-      { who: "woman", text: "I'm Lena. You're the first one who's opened the doors in a very long time." },
-      "She looks past you, at the back row.",
-      { who: "woman", text: "He's still riding, isn't he? Every night." },
-      { who: "woman", text: "Tell him we don't blame him. We never did." },
-      { pause: 1200 },
-      "In the mirror, the old man has his face in his hands.",
-      { who: "rhee", text: "Driver. Close. The. Doors." },
-    ],
-    choices: [{ text: "Close the doors.", next: "n2_northgate" }],
-  },
-
-  n2_mystery_pass: {
-    stop: "???",
-    lines: [
-      "You press the pedal. The yellow light slides along the windows.",
-      "Every face in the shelter turns to follow the bus. All at once. Like birds.",
-      "A little girl at the front raises her hand. Waving. The way kids used to wave at buses.",
-      "Then the light is gone.",
-      { pause: 700 },
-      { who: "rhee", text: "Good. Good driver." },
-      "In the back row, the old man watches the dark until there's nothing left to watch.",
-    ],
-    choices: [{ text: "Drive on.", next: "n2_northgate" }],
-  },
-
-  n2_northgate: {
-    stop: "Northgate",
-    mood: "uneasy",
-    amb: { rain: 0 },
-    lines: (s) => [
-      "Northgate.",
-      ...(s.flags.junRode ? [
-        { who: "jun", text: "Night, driver." },
-        s.flags.junTalked ? "He runs toward the depot, where a woman in a cleaning uniform is waiting by the door. She waves at the bus." : "He jogs off toward the depot lights.",
-      ] : []),
-      "The back row is empty again. Another coin on the seat. Another dark wet stain.",
-      { sfx: "coin" },
-      { who: "rhee", text: lateTonight(s) === 0 ? "On time again. You're getting the hang of Route 9." : `${minutes(lateTonight(s))} late tonight. That's adding up, driver.` },
-      { who: "rhee", text: "Storm's coming in off the river tomorrow. Big one. Like the old days." },
-      { who: "rhee", text: "You'll want to make up the time." },
-      { pause: 700 },
-      { sfx: "static", args: [1] },
-      "As you log out, the route display flickers.",
-      { text: "The stop with no name has moved again. Now it sits between St. Agnes and Canal Row.", after: 400 },
-      { text: "It's getting closer.", big: true },
-    ],
-    choices: [{ text: "End your shift.", next: "n3_start" }],
-  },
-});
+  // ---------- Northgate
+  await g.arrive("Northgate");
+  await openUp(g, 60000);
+  if (f.junAboard) {
+    await g.say("jun", "Night, driver.");
+    if (f.junTalked) g.spawn("junmom", "junmom", { at: terminalDoor() });
+    await g.alight("jun", terminalDoor());
+    f.junAboard = false;
+  }
+  g.vanish("teodor");
+  g.sfx("coin");
+  await g.think("The back row is empty again. Another coin. Another wet seat.");
+  await rheeLateness(g);
+  await g.say("rhee", "Storm's coming in off the river tomorrow. A big one. Like the old days.");
+  await g.say("rhee", "You'll want to make up the time.");
+  g.route("NEXT: ???", true);
+  g.sfx("static", 1);
+  await g.think("The display flickered. The stop with no name moved again. It's after St. Agnes now. It's getting closer.");
+  await endShift(g);
+}

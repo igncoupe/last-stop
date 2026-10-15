@@ -1,316 +1,308 @@
-/* ===================================================================
-   NIGHT 5 — "Last stop."
-   Rosie. Teodor's confession. Ashgrove. Four endings:
-     On Schedule  keep driving                         (the bad ending)
-     Not Yet      open the doors, not kind enough      (the loop)
-     Home         open the doors, kind enough          (the good ending)
-     Dead Air     silence Rhee first, then open them   (the true ending; needs the clipping)
-   =================================================================== */
-const KIND_ENOUGH = 7;
+// NIGHT 5 — "Last stop." Rosie. Teodor's confession. Ashgrove. The endings.
+// Kindness: give Rosie the present / tell her about her dad (+1)
+import * as THREE from "three";
+import { STOPS, route } from "../world/route.js";
+import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, KIND_ENOUGH } from "./common.js";
 
-Object.assign(SCENES, {
+export async function night5(g) {
+  const f = g.flags;
+  const doorOutside = () => g.bus.group.localToWorld(g.bus.boardPath[0].clone());
+  g.mood("dread");
+  g.amb({ rain: 0.4 });
+  await g.wait(900);
+  await g.think("Last night. I reached into my pocket for my keys and found coins instead. Four of them. Heavy. Worn smooth.");
+  if (f.hasBadge) await g.think("And the brass badge. T. Varga. It's warm, like someone was just holding it.");
+  await clockIn(g);
+  await g.think("The stain on the back seat has spread across three seats now.");
+  g.sfx("static", 0.8);
+  await g.say("rhee", "Last run, driver. Big night. Full bus.");
+  await g.say("rhee", "You know what to do. You make up the time.");
+  await closeDoorsAndGo(g);
 
-  n5_start: {
-    night: 5, stop: "Depot", mood: "dread", mirror: "empty", amb: { rain: 0.4, engine: 0.3 },
-    lines: (s) => [
-      { pause: 900 },
-      "11:40 PM. Route 9. Fifth night.",
-      "Last night.",
-      "You reach into your pocket for your keys and find coins instead. Four of them. Heavy. Worn smooth.",
-      "You don't remember keeping them.",
-      ...(s.flags.visitedVarga ? ["And the brass badge. T. VARGA — ROUTE 9. It's warm, like someone was just holding it."] : []),
-      "The back row is empty. The stain on the seat has spread across three seats now.",
-      "On the display, the stop with no name sits right after Elm & 4th. It isn't flickering anymore. It's waiting.",
-      { sfx: "static", args: [0.8] },
-      { who: "rhee", text: "Last run, driver. Big night. Full bus." },
-      { who: "rhee", text: "You know what to do. You make up the time." },
-    ],
-    choices: [{ text: "Pull out of the depot.", next: "n5_elm" }],
-  },
+  // ---------- Elm & 4th: Rosie, and Teodor in uniform
+  const elm = STOPS["Elm & 4th"];
+  g.spawn("rosie", "rosie", { at: curb("Elm & 4th", -1, 7.1), yaw: route.heading(elm) + Math.PI / 2 });
+  const teo = g.spawn("teodor", "uniform", { at: curb("Elm & 4th", 3, 6.2), yaw: route.heading(elm) + Math.PI / 2 });
+  await g.until(() => g.d > elm - 70);
+  await g.think("Two people at Elm and Fourth. A woman on the bench. And a man under the streetlight in an old brown driver's uniform.");
+  if (!g.drive.stoppedNear(elm)) {
+    g.auto(5, elm - 2);
+    await g.until(() => g.drive.speed < 0.3, 20000);
+    g.release();
+  }
+  await openUp(g, 60000);
+  f.knowsVarga = true;
+  await g.actor("rosie").walk([doorOutside()], { speed: 1 });
+  await g.say("rosie", "Sorry. I'm not riding. I just come here. Every year, on this night. I don't even really know why.");
+  await g.say("rosie", "My dad took the last bus home on this night. I was six. It was my birthday. He promised he'd be home before I fell asleep.");
+  f.metRosie = true;
+  await g.say("rosie", "I stayed awake all night. I'm Rosie, by the way. Sorry. You don't need my life story.");
+  const opts = [];
+  if (f.keptPresent) opts.push("[Give her the box]");
+  else if (f.knowsDaniel) opts.push("“Your dad's name was Daniel. He was trying to get home to you.”");
+  opts.push("“Happy birthday, Rosie.”");
+  const pick = await g.choose(opts);
+  if (pick === 0 && opts.length === 2) {
+    g.kind();
+    if (f.keptPresent) {
+      f.gaveRosie = true;
+      g.mood("silence");
+      await g.say("rosie", "That's his handwriting.");
+      await g.think("Her hands are shaking so much I have to help her with the paper. Inside is a music box. Cheap. Painted. A little dancer with a chipped arm.");
+      g.mood("hope");
+      await g.wait(5000);
+      await g.say("rosie", "He remembered. He got it for me. He was bringing it home.");
+      await g.think("It's playing the same notes I've been hearing in my head all week.");
+    } else {
+      f.toldRosie = true;
+      await g.say("rosie", "How do you know his name?");
+      await g.say("you", "He rides this bus. He talks about you. He was bringing you a present.");
+      await g.say("rosie", "I always felt like he was trying. Like he was out there, still trying to get home.");
+    }
+  }
+  g.actor("rosie").walk([curb("Elm & 4th", -1, 7.1)], { speed: 0.8 });
+  g.mood("grief");
+  await g.think("The man in the uniform took off his cap. He's getting on.");
+  await g.board("teodor", "L0", 1.1);
+  g.sfx("coin");
+  await g.say("teodor", "March fourteenth, nineteen ninety-four. I was eleven minutes late.");
+  await g.say("teodor", "I asked to wait out the storm. Harold said no. Harold said make up the time. And I was scared of losing my job, and I had a schedule, and I did what I was told.");
+  await g.say("teodor", "Fourteen people. Lena. Daniel. Little Ivy. Eleven more. I knew every one of their faces. I used to wave.");
+  await g.wait(1200);
+  await g.say("teodor", "They pulled me out of the river alive. Everyone said I survived.");
+  await g.say("teodor", "I didn't. I've been riding this bus every night since. Waiting for a driver who would stop.");
+  if (f.maraHelped) await g.say("teodor", "Right now there's a nurse holding my hand in Room four B. She's very kind. She tells me Route 9 is running.");
+  await g.say("teodor", "It's my last night too. Tonight they get on, or they never do.");
+  const q = await g.choose(["“What do I have to do?”", "“Why me?”"]);
+  if (q === 0) {
+    await g.say("teodor", "Stop for them. That's all. That's all it ever was. Stop for people.");
+  } else if (g.state.kind >= KIND_ENOUGH) {
+    await g.say("teodor", "Because you stop. I've watched you all week. You stop for people when it costs you.");
+  } else {
+    await g.say("teodor", "Because you're who's driving. And because I'm out of nights.");
+  }
+  await g.say("rhee", "Don't listen to him, driver. He's the one who drowned them.");
+  await closeDoorsAndGo(g);
 
-  n5_elm: {
-    stop: "Elm & 4th",
-    mood: "grief",
-    lines: [
-      "Elm & 4th.",
-      "Two people are waiting at the stop tonight.",
-      "One is a woman, about forty, sitting on the bench in a good coat, holding a cup of coffee she isn't drinking. She looks like she's been here a while.",
-      "The other is standing under the streetlight in a faded brown driver's uniform, with a cap that has a cracked brim.",
-      { pause: 900 },
-      "It's the old man. But younger, somehow. Standing straight.",
-      "He doesn't get on. He nods at the woman on the bench, and waits.",
-    ],
-    choices: [{ text: "Open the doors.", next: "n5_rosie" }],
-  },
+  // ---------- Ashgrove
+  const md = g.props.mystery.d;
+  const crowd = [];
+  for (let i = 0; i < 14; i++) {
+    const look = i === 0 ? "lena" : i === 1 ? "daniel" : i === 2 ? "ivy" : "drowned";
+    crowd.push(g.spawn(`g${i}`, look, { ghost: true, at: mysteryCurb(g, -2.4 + (i % 7) * 0.8, 6.0 + Math.floor(i / 7) * 0.8), yaw: route.heading(md) + Math.PI / 2 }));
+  }
+  await g.until(() => g.d > md - 80);
+  g.sky("storm");
+  g.storm(true);
+  g.mood("terror");
+  g.auto(6, md);
+  await g.until(() => g.drive.speed < 0.3, 25000);
+  g.props.mystery.named = true;
+  g.mysteryName("ASHGROVE");
+  g.route("ASHGROVE", false);
+  g.sfx("thunder");
+  await g.think("The display stopped flickering. For the first time, the stop has a name. Ashgrove.");
+  await g.think("Fourteen of them. Standing in a rain that isn't falling anywhere else. They're not knocking. They're just waiting. Like they always have.");
+  g.sfx("static", 1.4);
+  await g.say("rhee", "DRIVER.");
+  await g.say("rhee", "You are ELEVEN MINUTES LATE. You will MAKE. UP. THE. TIME.");
+  g.sfx("spark");
+  g.shake(1.4);
+  await g.say("rhee", "The schedule ALWAYS comes first. That's the JOB.");
+  await g.say("teodor", "Please.");
+  g.release();
 
-  n5_rosie: {
-    stop: "Elm & 4th",
-    lines: (s) => [
-      { sfx: "door" },
-      "The woman looks up at the bus, surprised, like she forgot buses came here.",
-      { who: "rosie", text: "Sorry. I'm not riding. I just... come here. Every year, on this night. I don't even really know why." },
-      { who: "rosie", text: "My dad took the last bus home on this night. I was six. It was my birthday. He promised he'd be home before I fell asleep." },
-      { set: { metRosie: true }, who: "rosie", text: "I stayed awake all night. I'm Rosie, by the way. Sorry. You don't need my life story." },
-      ...(s.flags.keptPresent ? ["The small box is sitting on your dashboard, where you left it. FOR ROSIE. LOVE, DAD."] : []),
-      ...(s.flags.hasPresent && !s.flags.keptPresent ? ["You look at the dashboard where you left the box last night. It's gone."] : []),
-    ],
-    choices: [
-      { if: (s) => s.flags.keptPresent, text: "Give her the box.", kind: 1, set: { gaveRosie: true }, next: "n5_musicbox" },
-      { if: (s) => !s.flags.keptPresent && s.flags.knowsDaniel, text: "“Your dad's name was Daniel. He was trying to get home to you.”", kind: 1, set: { toldRosie: true }, next: "n5_told" },
-      { text: "“Happy birthday, Rosie.”", next: "n5_varga" },
-    ],
-  },
+  let ripped = false;
+  let ripEntry = null;
+  if (f.rheeTruth) {
+    ripEntry = g.interact(g.bus.radioMesh, "Tear the radio out").then(() => { ripped = true; });
+  }
+  g.hint(f.rheeTruth ? "Open the doors  [F]   ·   tear out the radio  [E]   ·   or drive away  [W]" : "Open the doors  [F]   ·   or drive away  [W]");
+  await g.until(() => g.bus.doorsOpen || g.drive.moving || ripped);
+  g.hint(null);
+  void ripEntry;
 
-  n5_musicbox: {
-    stop: "Elm & 4th",
-    mood: "silence",
-    lines: [
-      "You hold it out. She reads the tag, and her face does something complicated and terrible and beautiful.",
-      { who: "rosie", text: "That's his handwriting." },
-      "Her hands shake so badly you have to help her with the paper.",
-      "Inside is a music box. Cheap, painted, a little dancer with a chipped arm.",
-      "She winds it.",
-      { mood: "hope", pause: 4500 },
-      "It plays the same few notes you've been hearing in your head all week. Soft. A little out of tune.",
-      { who: "rosie", text: "He remembered. He got it for me. He was bringing it home." },
-      "She holds it against her chest and cries the way you cry when something finally ends.",
-      "Under the streetlight, the man in the faded uniform takes off his cap.",
-    ],
-    choices: [{ text: "Let her be. Turn to the driver.", next: "n5_varga" }],
-  },
+  if (ripped) {
+    await ripRadio(g);
+    g.hint("Open the doors  [F]");
+    await g.until(() => g.bus.doorsOpen);
+    g.hint(null);
+    return g.state.kind >= KIND_ENOUGH ? endHome(g, crowd, true) : endNotYet(g);
+  }
+  if (g.bus.doorsOpen) return g.state.kind >= KIND_ENOUGH ? endHome(g, crowd, false) : endNotYet(g);
+  return endOnTime(g);
+}
 
-  n5_told: {
-    stop: "Elm & 4th",
-    lines: [
-      { pause: 900 },
-      { who: "rosie", text: "...How do you know his name?" },
-      { who: "you", text: "He rides this bus. He talks about you. You turned six. He was bringing you a present." },
-      "She should think you're crazy. She doesn't. She just nods, slowly, with her hand over her mouth.",
-      { who: "rosie", text: "I always felt like he was trying. Like he was out there, still trying to get home." },
-      "Under the streetlight, the man in the faded uniform takes off his cap.",
-    ],
-    choices: [{ text: "Turn to the driver.", next: "n5_varga" }],
-  },
+async function ripRadio(g) {
+  g.lockDoors(true);
+  g.sfx("rip");
+  await g.say("rhee", "DON'T YOU");
+  g.sfx("bang");
+  g.shake(2);
+  await g.say("rhee", "I DID MY JOB. I DID MY JOB. THE SCHEDULE");
+  g.sfx("spark");
+  g.sfx("static", 2);
+  g.shake(2);
+  await g.wait(1200);
+  g.radio("");
+  g.mood("silence");
+  g.storm(false);
+  g.amb({ rain: 0.2 });
+  await g.wait(2600);
+  await g.think("Dead air. It's the best sound I've ever heard.");
+  g.spawn("harold", "harold", { ghost: true });
+  g.seat("harold", "B2");
+  g.sfx("breath");
+  await g.think("Someone's crying in the back row. A thin, gray man in a dispatcher's cardigan, with a headset around his neck.");
+  g.flags.ripped = true;
+  g.lockDoors(false);
+}
 
-  n5_varga: {
-    stop: "Elm & 4th",
-    mood: "grief",
-    mirror: "uniform",
-    onEnter: (s) => { s.flags.knowsVarga = true; },
-    lines: (s) => [
-      "He climbs the steps. He drops a coin in the box. The last one.",
-      { sfx: "coin", pause: 400 },
-      "He sits in the seat right behind yours, the way a driver sits when he's riding off duty.",
-      { who: "teodor", text: "March fourteenth, 1994. I was eleven minutes late." },
-      { who: "teodor", text: "I asked to wait out the storm. Harold said no. Harold said make up the time. And I was scared of losing my job, and I had a schedule, and I did what I was told." },
-      { who: "teodor", text: "Fourteen people. Lena. Daniel. Little Ivy. Eleven more. I knew every one of their faces. I used to wave." },
-      { pause: 900 },
-      { who: "teodor", text: "They pulled me out of the river alive. Everyone said I survived." },
-      { who: "teodor", text: "I didn't. I've been riding this bus every night since. Waiting for a driver who would stop." },
-      { who: "teodor", text: "Every driver after me kept to the schedule. Harold made sure of that." },
-      ...(s.flags.maraHelped ? [{ who: "teodor", text: "Right now there's a nurse holding my hand in Room 4B. She's very kind. She tells me Route 9 is running." }] : []),
-      { who: "teodor", text: "It's my last night too. Tonight they get on, or they never do." },
-    ],
-    choices: [
-      { text: "“What do I have to do?”", next: "n5_what" },
-      { text: "“Why me?”", next: "n5_why" },
-    ],
-  },
+// they get on; Teodor drives them home
+async function endHome(g, crowd, deadAir) {
+  const f = g.flags;
+  g.mood("hope");
+  g.storm(false);
+  g.rain(false);
+  g.lockDoors(true);
+  await g.wait(1500);
+  await g.think("For a moment, nobody moves. Then Daniel climbs the steps. He isn't dripping anymore.");
+  const order = [["g1", "L1"], ["g0", "R1"], ["g2", "R0"], ["g3", "L2"]];
+  for (const [k, seat] of order) g.board(k, seat, 1.5);
+  await g.wait(5000);
+  ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "R6", "B0", "B1"].forEach((seat, i) => { g.despawn(`g${i + 4}`); g.spawn(`s${i}`, "drowned", { ghost: true }); g.seat(`s${i}`, seat); });
+  g.sfx("bell");
+  await g.think("Fourteen fares. Fourteen old coins in the box. Ivy rang the bell and giggled.");
+  await g.say("lena", "Thank you for stopping.");
+  if (deadAir) {
+    await g.say("harold", "I'm sorry. I'm so sorry. I thought the schedule was the job.");
+    await g.wait(1500);
+    await g.say("lena", "Everyone gets a ride home. That's the job.");
+  }
+  await g.say("teodor", "Mind if I drive the last bit?");
+  // you give him the seat
+  await g.fade(1, 1000);
+  const P = g.places.bridge;
+  g.drive.detach(true);
+  P.group.visible = true;
+  g.sky("void");
+  g.bus.group.position.copy(P.start);
+  g.bus.group.rotation.set(0, 0, 0);
+  g.despawn("teodor");
+  g.spawn("teodor", "uniform");
+  g.actor("teodor").sit(g.bus.group, new THREE.Vector3(0.7, 0.5, 4.75), 0);
+  // you ride in the front passenger seat now
+  g.fixedCamera(g.bus.group, new THREE.Vector3(-0.6, 1.5, 2.6), new THREE.Euler(-0.05, Math.PI + 0.2, 0, "YXZ"));
+  const stars = starField();
+  P.group.add(stars);
+  await g.fade(0, 1400);
+  await g.think("He drives like he never left. The road ends. The bridge isn't there anymore. We just keep going.");
+  await g.frames((dt) => {
+    g.bus.group.position.z += 9 * dt;
+    return g.bus.group.position.z > P.edge + 120;
+  });
+  await g.think("Below us, the river is full of stars.");
+  await g.fade(1, 2500, true);
+  await dawn(g, deadAir);
+  return deadAir ? "deadair" : "home";
+}
 
-  n5_what: {
-    stop: "Elm & 4th",
-    lines: [
-      { who: "teodor", text: "Stop for them." },
-      { who: "teodor", text: "That's all. That's all it ever was. Stop for people." },
-      { who: "rhee", text: "Don't listen to him, driver. He's the one who drowned them." },
-    ],
-    choices: [{ text: "Drive to the next stop.", next: "n5_ashgrove" }],
-  },
+function starField() {
+  const n = 1500;
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * 300;
+    pos[i * 3 + 1] = -6 - Math.random() * 40;
+    pos[i * 3 + 2] = 180 + Math.random() * 400;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xfff4d8, size: 2, sizeAttenuation: false, fog: false }));
+}
 
-  n5_why: {
-    stop: "Elm & 4th",
-    lines: (s) => [
-      { who: "teodor", text: s.kind >= KIND_ENOUGH ? "Because you stop. I've watched you all week. You stop for people when it costs you." : "Because you're who's driving. And because I'm out of nights." },
-      { who: "teodor", text: "Whatever happens at the next stop, it's your bus. It always was going to be your choice." },
-      { who: "rhee", text: "Don't listen to him, driver. He's the one who drowned them." },
-    ],
-    choices: [{ text: "Drive to the next stop.", next: "n5_ashgrove" }],
-  },
+// morning at Northgate. The bus is empty.
+async function dawn(g, deadAir) {
+  const f = g.flags;
+  g.despawnAll();
+  g.places.bridge.group.visible = false;
+  g.drive.detach(false);
+  g.drive.d = route.length - 32;
+  g.setDoors(true);
+  g.lamps(false);
+  g.sky("dawn");
+  g.amb({ engine: 0, rain: 0, water: 0 });
+  const busDoor = g.bus.group.localToWorld(new THREE.Vector3(-3.2, 1.7, 3.5));
+  g.walkAt(busDoor, route.heading(route.length - 32) + Math.PI);
+  g.mood("grief");
+  await g.fade(0, 3000, true);
+  await g.think("Northgate. Morning. The bus is empty, and dry.");
+  if (f.maraHelped) await g.think("There's a note taped to the driver's window. Mr. Varga passed at twelve thirty-one. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Mara.");
+  if (f.gaveRosie) await g.think("Somewhere across town, a music box is playing on a kitchen table. And a woman is finally asleep.");
+  if (f.junRode || f.junFound) {
+    const jun = g.spawn("jun", "jun", { at: g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)) });
+    jun.walk([busDoor.clone().setY(0).add(new THREE.Vector3(1.2, 0, 0))], { speed: 1.1 });
+    await g.wait(5000);
+    await g.think("Jun is here with two coffees. He doesn't say anything. He just hands me one.");
+  }
+  if (deadAir) {
+    g.sfx("static", 0.8);
+    await g.say("dana", "Route 9, this is Dana on channel 4. You okay? I've got you back on GPS. Clean signal for the first time all week.");
+    await g.think("I tuned the spare radio to channel 9, just to check. Nothing. Just static. Just dead air.");
+    await g.think("I'm keeping Route 9. Nobody else wants it anyway. And I always stop.");
+    await g.wait(2500);
+  } else {
+    await g.think("I'm keeping Route 9. Somebody has to stop.");
+    await g.fade(1, 2500);
+    await g.think("Three weeks later. A new driver starts on Route 7. First night. Last bus.");
+    g.sfx("static", 1);
+    await g.say("rhee", "Evening, new driver. This is Rhee, night dispatch. You'll be hearing a lot of me.");
+  }
+  await g.fade(1, 2000);
+}
 
-  n5_ashgrove: {
-    stop: "???",
-    fx: "storm",
-    mood: "terror",
-    mirror: "uniform",
-    amb: { rain: 1, engine: 0.4 },
-    onEnter: (s) => { s.flags.ashgroveNamed = true; },
-    lines: [
-      { sfx: "thunder", pause: 1200 },
-      "The bus slows on its own, one last time.",
-      "The route display stops flickering. For the first time, the stop has a name.",
-      { text: "ASHGROVE", big: true, after: 600 },
-      "The shelter is full. Fourteen people, standing in a rain that isn't falling anywhere else. The water at their feet is up to their ankles. Then their knees.",
-      "Lena is at the front. Daniel. Ivy in her yellow raincoat, holding Daniel's hand.",
-      "They aren't knocking. They aren't pressing their hands on the glass. They're just waiting. Like they've always waited.",
-      { sfx: "static", args: [1.4] },
-      { who: "rhee", text: "DRIVER." },
-      { who: "rhee", text: "You are ELEVEN MINUTES LATE. You will MAKE. UP. THE. TIME." },
-      { shake: true, sfx: "bang" },
-      "The radio is sparking. The speaker is bulging out of the dash like something is trying to push through it.",
-      { who: "rhee", text: "The schedule ALWAYS comes first. That's the JOB." },
-      { who: "teodor", text: "Please." },
-    ],
-    choices: [
-      { text: "Open the doors.", next: (s) => (s.kind >= KIND_ENOUGH ? "end_home" : "end_notyet") },
-      { if: (s) => s.flags.rheeTruth, text: "Tear the radio out of the dash.", next: "n5_rip" },
-      { text: "Keep driving. Stay on schedule.", next: "n5_drive_on" },
-    ],
-  },
+async function endNotYet(g) {
+  g.mood("grief");
+  g.lockDoors(true);
+  await g.wait(1600);
+  await g.think("Nobody moves.");
+  await g.say("daniel", "It isn't enough to stop once. You have to be the kind of driver who stops.");
+  await g.say("lena", "We'll know when you are.");
+  g.setDoors(false);
+  await g.say("teodor", "Tomorrow, then. And the night after. As long as it takes.");
+  await g.think("But tonight is his last night. We both know it.");
+  g.auto(8);
+  await g.wait(4000);
+  await g.fade(1, 2500);
+  await g.think("Ashgrove is still on my route display when I clock out. It'll be there tomorrow, too.");
+  return "notyet";
+}
 
-  n5_rip: {
-    stop: "???",
-    lines: [
-      "You get your fingers behind the radio's faceplate and you pull.",
-      { who: "rhee", text: "DON'T YOU—" },
-      { sfx: "bang", shake: true },
-      "Screws shriek out of the dash. The wires fight you like they're alive.",
-      { who: "rhee", text: "I DID MY JOB. I DID MY JOB. THE SCHEDULE—" },
-      "You think about the clipping in your pocket. STOP STOP STOP STOP.",
-      { sfx: "static", args: [2] },
-      { shake: true, pause: 400 },
-      "You rip it free.",
-      { mood: "silence", sfx: "lightsout", pause: 2400 },
-      { text: "Dead air.", big: true, after: 800 },
-      "It's the best sound you've ever heard.",
-      { pause: 900 },
-      "In the silence, from the very back of the bus, a man starts crying. A thin, gray man in a dispatcher's cardigan, with a headset around his neck.",
-      "Teodor looks at him for a long time.",
-    ],
-    choices: [{ text: "Open the doors.", next: (s) => (s.kind >= KIND_ENOUGH ? "end_deadair" : "end_notyet") }],
-  },
-
-  n5_drive_on: {
-    stop: "???",
-    mood: "dread",
-    lines: [
-      "You press the pedal. The yellow light slides along the windows and falls behind.",
-      { who: "rhee", text: "Good. GOOD. Back on schedule." },
-      "In the mirror, Teodor doesn't say anything. He just closes his eyes.",
-    ],
-    choices: [{ text: "Drive on.", next: "end_ontime" }],
-  },
-
-  /* ---------------- ENDINGS ---------------- */
-
-  end_ontime: {
-    stop: "Northgate",
-    mood: "terror",
-    mirror: "full",
-    fx: "flood",
-    amb: { rain: 0, water: 0.7 },
-    ending: { id: "ontime", title: "On Schedule", blurb: "Route 9 is never late. Not anymore.", hint: "Maybe stop next time." },
-    onEnter: (s) => { s.late = s.lateAtNightStart; },
-    lines: [
-      "At the last red light before Northgate, you glance at the mirror.",
-      "Every seat is full.",
-      "Fourteen people, soaked to the bone, staring straight ahead. Teodor among them, in his faded uniform.",
-      "Water creeps across the floor toward your shoes. You can't feel your feet.",
-      { pause: 900 },
-      "Route 9 pulls into Northgate. The clock on your dash flickers, and settles on 12:20 AM.",
-      "Exactly on time.",
-      { pause: 1200 },
-      "You look down at your hands on the wheel. They're gray. Wrinkled. Like they've been underwater for a very long time.",
-      { pause: 1000 },
-      { who: "rhee", text: "Evening, driver. See you tomorrow night." },
-      { who: "rhee", text: "And the night after that." },
-      { scare: "face" },
-      { text: "It always will be on time.", big: true },
-    ],
-  },
-
-  end_notyet: {
-    stop: "???",
-    mood: "grief",
-    ending: { id: "notyet", title: "Not Yet", blurb: "Ashgrove will be waiting again tomorrow night.", hint: "Try being the driver who stops. Every time." },
-    lines: (s) => [
-      { sfx: "door" },
-      "The doors fold open.",
-      "Nobody moves.",
-      !s.flags.maraHelped ? "They look at you the way the woman in scrubs did, that first night, under the streetlight." : "They look at you like they're trying to decide something about you.",
-      { who: "wet", text: "It isn't enough to stop once. You have to be the kind of driver who stops." },
-      { who: "woman", text: "We'll know when you are." },
-      { pause: 900 },
-      { sfx: "door" },
-      "The doors close on their own.",
-      { who: "teodor", text: "Tomorrow, then. And the night after. As long as it takes." },
-      "But tonight is his last night. You both know it.",
-      { pause: 900 },
-      "Ashgrove is still on your route display when you clock out.",
-      { text: "It will be there tomorrow, too.", big: true },
-    ],
-  },
-
-  end_home: {
-    stop: "???",
-    mood: "hope",
-    mirror: "full",
-    fx: "none",
-    amb: { rain: 0, engine: 0.3 },
-    ending: { id: "home", title: "Home", blurb: "Fourteen fares, paid at last. But Channel 9 is still on the air.", hint: "Something on the radio is still waiting for the next driver." },
-    lines: (s) => [
-      { sfx: "door" },
-      "The doors fold open.",
-      "For a moment, nobody moves. Then Daniel climbs the steps, and he isn't dripping anymore.",
-      "One by one, they board. Lena. Ivy, who rings the bell and giggles. Fourteen fares. Fourteen old coins in the box.",
-      { who: "woman", text: "Thank you for stopping." },
-      { who: "teodor", text: "Mind if I drive the last bit?" },
-      "You give him the seat. He settles into it like he never left.",
-      "The bus rolls past the end of the road, onto a bridge that isn't there anymore. Below it, the river is full of stars.",
-      { pause: 2500 },
-      "You wake up at Northgate. Dawn. The bus is empty and dry.",
-      "On the driver's seat: the coins. And a cap with a cracked brim.",
-      ...(s.flags.maraHelped ? ["Taped to the driver's window, a note in neat nurse handwriting:", "“Mr. Varga passed at 12:31. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Thought you'd want to know. — M.”"] : []),
-      ...(s.flags.gaveRosie ? ["Somewhere across town, a music box is playing on a kitchen table, and a woman is finally asleep."] : []),
-      ...((s.flags.junRode || s.flags.junFound) ? ["At the depot door, a kid with a huge backpack is waiting with exact change and two coffees. He doesn't say anything. He just hands you one."] : []),
-      { pause: 1500 },
-      { mood: "dread", text: "Three weeks later, a new driver starts on Route 7. First night. Last bus." },
-      { sfx: "static", args: [1] },
-      { who: "rhee", text: "Evening, new driver. This is Rhee, night dispatch. You'll be hearing a lot of me." },
-    ],
-  },
-
-  end_deadair: {
-    stop: "???",
-    mood: "hope",
-    mirror: "full",
-    fx: "none",
-    amb: { rain: 0, engine: 0.3 },
-    ending: { id: "deadair", title: "Dead Air", blurb: "Fifteen fares. Everyone gets a ride home.", hint: "The true ending. Thank you for stopping." },
-    lines: (s) => [
-      { sfx: "door" },
-      "The doors fold open.",
-      "Daniel climbs the steps first, and he isn't dripping anymore. Then Lena. Then Ivy, who rings the bell and giggles. Fourteen fares. Fourteen old coins.",
-      "Then the gray man in the dispatcher's cardigan stands up from the back row. Harold Rhee. He looks very small without the radio.",
-      { who: "harold", text: "I'm sorry. I'm so sorry. I thought the schedule was the job." },
-      { pause: 1300 },
-      "Nobody speaks. Then Lena moves over, and pats the seat next to her.",
-      { who: "woman", text: "Everyone gets a ride home. That's the job." },
-      { who: "teodor", text: "Mind if I drive the last bit?" },
-      "You give him the seat. He settles into it like he never left.",
-      "The bus rolls past the end of the road, onto a bridge that isn't there anymore. Below it, the river is full of stars.",
-      { pause: 2800 },
-      "You wake up at Northgate. Dawn. The bus is empty and dry. The radio hangs from its wires, quiet.",
-      "On the driver's seat: fifteen coins. And a cap with a cracked brim.",
-      ...(s.flags.maraHelped ? ["Taped to the driver's window, a note in neat nurse handwriting:", "“Mr. Varga passed at 12:31. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Thought you'd want to know. — M.”"] : []),
-      ...(s.flags.gaveRosie ? ["Somewhere across town, a music box is playing on a kitchen table, and a woman is finally asleep."] : []),
-      ...((s.flags.junRode || s.flags.junFound) ? ["At the depot door, a kid with a huge backpack is waiting with exact change and two coffees. He doesn't say anything. He just hands you one."] : []),
-      { pause: 1200 },
-      { who: "dana", text: "Route 9, this is Dana on Channel 4. You okay? I've got you back on GPS. Clean signal for the first time all week." },
-      "You tune the spare radio to Channel 9, just to check.",
-      { sfx: "static", args: [1.5], pause: 1600 },
-      { text: "Nothing. Just static. Just dead air.", big: true },
-      "You keep Route 9. Nobody else wants it anyway.",
-      { text: "And you always stop.", after: 500 },
-    ],
-  },
-});
+async function endOnTime(g) {
+  await g.say("rhee", "Good. GOOD. Back on schedule.");
+  g.storm(false);
+  g.mood("dread");
+  for (let i = 0; i < 14; i++) {
+    g.despawn(`g${i}`);
+    g.spawn(`m${i}`, i === 1 ? "daniel" : "drowned", { ghost: true, mirrorOnly: true });
+    g.seat(`m${i}`, ["L1", "R1", "L2", "R2", "L3", "R3", "L4", "R4", "L5", "R5", "B0", "B1", "B2", "B3"][i]);
+  }
+  await g.wait(4000);
+  g.hint("Check your mirror");
+  await g.until(() => g.lookingAtMirror(), 12000);
+  g.hint(null);
+  await g.think("Every seat is full. Fourteen people, soaked to the bone, staring straight ahead.");
+  g.bus.setWater(0.2);
+  await g.wait(2000);
+  g.bus.setWater(0.5);
+  await g.think("Water is creeping across the floor. I can't feel my feet.");
+  g.auto(14);
+  await g.arrive("Northgate", { hint: false });
+  g.mood("terror");
+  await g.think("Northgate. The clock on the dash settles on twelve twenty. Exactly on time.");
+  await g.think("My hands on the wheel are gray. Wrinkled. Like they've been underwater for a very long time.");
+  await g.say("rhee", "Evening, driver. See you tomorrow night.");
+  await g.say("rhee", "And the night after that.");
+  await g.scare("face");
+  await g.fade(1, 600);
+  return "ontime";
+}

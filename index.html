@@ -2,121 +2,99 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Last Stop</title>
-  <meta name="description" content="A horror story game about the last bus of the night.">
-  <meta name="theme-color" content="#050608">
+  <meta name="description" content="A first-person horror game about the last bus of the night.">
+  <meta name="theme-color" content="#000000">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚌</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
 </head>
 <body>
+  <canvas id="view"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
 
-  <!-- Content warning (shown once, before anything else) -->
-  <section id="warning-screen" class="screen warning" hidden>
-    <div class="screen-inner">
+  <!-- in-game overlays -->
+  <div id="hud" class="hud" hidden>
+    <div id="hint" class="hint"></div>
+    <div id="crosshair" class="crosshair"></div>
+    <div id="prompt" class="prompt"></div>
+    <div id="choices" class="choices"></div>
+    <div id="subtitle" class="subtitle"></div>
+  </div>
+  <div id="fade" class="fade"></div>
+  <div id="scare" class="scare" hidden></div>
+
+  <!-- screens -->
+  <section id="screen-warning" class="screen" hidden>
+    <div class="panel">
       <p class="kicker">Before you ride</p>
-      <p class="warning-text">
-        <strong>Last Stop</strong> is a horror story. It has jumpscares, loud sudden sounds,
-        flashing images, and themes of death, drowning and grief.
-      </p>
-      <p class="warning-text dim">Best played in the dark, with headphones. Five nights, four endings.</p>
-      <div class="actions">
-        <button id="btn-warning-ok" class="btn primary" type="button">I understand</button>
-      </div>
+      <p><strong>Last Stop</strong> is a horror game. It has jumpscares, loud sudden sounds, flashing lights, and themes of death, drowning and grief.</p>
+      <p class="dim">Play on a computer with a keyboard and mouse. Best in the dark, with headphones. About an hour long.</p>
+      <div class="actions"><button id="btn-warning" class="btn primary" type="button">I understand</button></div>
     </div>
   </section>
 
-  <!-- Title screen -->
-  <section id="title-screen" class="screen title" hidden>
-    <div class="screen-inner">
+  <section id="screen-title" class="screen" hidden>
+    <div class="panel">
       <p class="kicker">Route 9 · Last run of the night</p>
       <h1 class="logo">LAST STOP</h1>
-      <p class="tagline">You drive the last bus of the night.<br>Be careful who you stop for. Be more careful who you don't.</p>
       <div class="actions">
         <button id="btn-continue" class="btn primary" type="button" hidden>Continue</button>
         <button id="btn-new" class="btn" type="button">New game</button>
       </div>
       <div class="settings">
-        <label class="setting">
-          <span>Volume</span>
-          <input id="set-volume" type="range" min="0" max="100" value="80">
-        </label>
-        <label class="setting toggle">
-          <input id="set-scares" type="checkbox" checked>
-          <span>Jumpscares</span>
-        </label>
-        <label class="setting toggle">
-          <input id="set-flash" type="checkbox" checked>
-          <span>Flashing effects</span>
-        </label>
+        <label class="setting"><span>Volume</span><input id="set-volume" type="range" min="0" max="100" value="80"></label>
+        <label class="setting"><span>Mouse</span><input id="set-mouse" type="range" min="20" max="200" value="100"></label>
+        <label class="setting"><input id="set-scares" type="checkbox" checked><span>Jumpscares</span></label>
+        <label class="setting"><input id="set-subs" type="checkbox" checked><span>Subtitles</span></label>
       </div>
-      <p id="endings-found" class="endings-found"></p>
-      <p class="controls">Click or <kbd>Space</kbd> to skip text · <kbd>1</kbd>–<kbd>4</kbd> to choose · <kbd>M</kbd> mute</p>
+      <p id="endings-found" class="dim small"></p>
+      <p class="dim small">WASD move · Mouse look · E interact · W/S drive · 1–3 choose · Esc pause</p>
     </div>
   </section>
 
-  <!-- The game -->
-  <section id="game" class="game" hidden>
-    <header class="hud">
-      <span class="hud-route"><span class="hud-route-name">Route 9 · </span><span id="hud-night">Night 1</span></span>
-      <span id="hud-clock" class="hud-clock">11:40 PM</span>
-      <span id="hud-schedule" class="hud-schedule">On time</span>
-      <button id="btn-mute" class="hud-btn" type="button" aria-label="Mute sound">🔊</button>
-      <button id="btn-menu" class="hud-btn" type="button" aria-label="Back to title screen">Menu</button>
-    </header>
-
-    <!-- The windshield: everything here is drawn with CSS -->
-    <div id="view" class="view" data-mode="stopped" data-fx="none" data-mirror="empty" aria-hidden="true">
-      <div class="sky"></div>
-      <div class="city"></div>
-      <div class="lamps"></div>
-      <div class="road"></div>
-      <div class="water"></div>
-      <div class="shelter"></div>
-      <div class="stop-sign"><span id="stop-plate" class="plate">Depot</span><span class="pole"></span></div>
-      <div class="glass-rain"></div>
-      <div class="mirror"><div class="mirror-glass"><span class="fig fig-1"></span><span class="fig fig-2"></span><span class="fig fig-3"></span><span class="fig fig-4"></span><span class="fig fig-5"></span></div></div>
-      <div id="led-strip" class="led-strip">Depot</div>
-      <div class="grain"></div>
-      <div class="vignette"></div>
-      <div class="blackout"></div>
-    </div>
-
-    <nav class="route" aria-label="Route map">
-      <div class="track"><span id="bus-marker" class="bus-marker"></span><ol id="map-stops" class="map-stops"></ol></div>
-    </nav>
-
-    <main id="captions" class="captions"></main>
-    <p id="skip-hint" class="skip-hint" hidden>Click or press Space to skip</p>
-    <div id="choices" class="choices"></div>
-  </section>
-
-  <!-- Night cards and ending cards -->
-  <div id="card" class="card" role="dialog" aria-modal="true" aria-labelledby="card-title" hidden>
-    <div class="card-box">
+  <section id="screen-card" class="screen card" hidden>
+    <div class="panel">
       <p id="card-kicker" class="kicker"></p>
       <h2 id="card-title" class="card-title"></h2>
-      <p id="card-sub" class="card-sub"></p>
-      <p id="card-note" class="card-note"></p>
+      <p id="card-sub"></p>
+      <p id="card-note" class="dim small"></p>
       <div id="card-actions" class="actions"></div>
     </div>
-  </div>
+  </section>
 
-  <!-- Jumpscare layer -->
-  <div id="scare" class="scare" aria-hidden="true" hidden></div>
+  <section id="screen-pause" class="screen" hidden>
+    <div class="panel">
+      <h2 class="card-title">Paused</h2>
+      <div class="actions">
+        <button id="btn-resume" class="btn primary" type="button">Resume</button>
+        <button id="btn-quit" class="btn" type="button">Quit to title</button>
+      </div>
+      <p class="dim small">Progress saves at the start of each night.</p>
+    </div>
+  </section>
 
-  <pre id="debug" class="debug" hidden></pre>
+  <section id="screen-loading" class="screen" hidden>
+    <div class="panel">
+      <p class="kicker">Loading</p>
+      <p id="loading-text" class="dim">Warming up the engine…</p>
+    </div>
+  </section>
 
-  <script src="js/audio.js"></script>
-  <script src="js/story/setup.js"></script>
-  <script src="js/story/night1.js"></script>
-  <script src="js/story/night2.js"></script>
-  <script src="js/story/night3.js"></script>
-  <script src="js/story/night4.js"></script>
-  <script src="js/story/night5.js"></script>
-  <script src="js/engine.js"></script>
+  <section id="screen-mobile" class="screen" hidden>
+    <div class="panel">
+      <h1 class="logo">LAST STOP</h1>
+      <p>This game needs a keyboard and mouse. Open this page on a computer to play.</p>
+    </div>
+  </section>
+
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

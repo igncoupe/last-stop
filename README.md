@@ -1,70 +1,79 @@
 # Last Stop
 
-A horror story game about the last bus of the night.
+A first-person horror game about the last bus of the night.
 
-**▶ Play it: https://igncoupe.github.io/last-stop/**
+**▶ Play it: https://igncoupe.github.io/last-stop/** (on a computer with a keyboard and mouse)
 
-You're the new driver on Route 9, the last bus of the night. There's a rule: don't run late, and don't let anyone ride free. Every night, a stop with no name appears on your route display, a little closer than the night before.
+You're the new driver on Route 9, the last bus of the night. Two rules: don't run late, and don't let anyone ride free. Every night a stop with no name appears on your route display, a little closer than the night before.
 
 Be careful who you stop for. Be more careful who you don't.
 
-- 5 nights, 4 endings
-- Every choice is remembered
-- Generated horror score, rain, radio static and jumpscares (no audio files)
-- Best played in the dark, with headphones
+- 3D, first person, with a low-poly PS1 look
+- You really drive the bus. You choose who to stop for by pulling over and opening the doors.
+- Every character is voiced (AI voices made with Kokoro), with subtitles
+- 5 nights, about an hour, and 4 endings
+- A generated horror score, rain, radio static, jumpscares
 
-> Content warning: jumpscares, loud sounds, flashing images, and themes of death, drowning and grief. Jumpscares and flashing can be turned off on the title screen.
+> Content warning: jumpscares, loud sounds, flashing lights, and themes of death, drowning and grief. Jumpscares can be turned off on the title screen.
 
 ## Controls
 
 | Key | Does |
 | --- | --- |
-| Click / `Space` | Skip the typing |
-| `1`–`4` | Pick a choice |
-| `M` | Mute |
+| Mouse | Look around (click the game to grab the mouse) |
+| `W` / `S` | Gas / brake (walk when on foot) |
+| `F` | Open / close the bus doors |
+| `E` | Interact |
+| `1`–`3` | Pick a dialogue option |
+| `Esc` | Pause |
 
 ## How it's built
 
-Plain HTML, CSS and JavaScript. No build step, no installs.
+Plain HTML and JavaScript with [three.js](https://threejs.org) loaded from a CDN. No build step. Every model, texture and sound is generated in code; the only files are the voice lines.
 
 ```
-index.html          the page
-css/style.css       the look: windshield view, mirror, rain, grain, captions
-js/audio.js         all music and sound effects, generated with the Web Audio API
-js/engine.js        runs the story: captions, choices, jumpscares, saving
-js/story/setup.js   characters, routes, and the scene format (read this first)
-js/story/night1-5   the story, one file per night
+index.html             the page
+css/style.css          subtitles, menus, jumpscares
+js/main.js             starts everything and plays the nights in order
+js/core/               PS1-style rendering, generated textures, input, UI
+js/world/              the route, the city, stops, the bus, people, the hospital and bridge
+js/game/               driving, the player, and the director (the story toolbox)
+js/audio.js            generated music + sound effects, and the voice player
+js/story/cast.js       every character: subtitle color, voice effect, AI voice
+js/story/night1-5.js   the story, one file per night
+voices/                one MP3 per line, plus manifest.json
+tools/                 scripts that make the voices
 ```
 
 ## Editing the story
 
-Everything is in `js/story/`. The top of `setup.js` explains the scene format. The short version:
+Each night is a script. It reads like a screenplay:
 
 ```js
-n1_elm: {
-  stop: "Elm & 4th",
-  mood: "dread",
-  lines: [
-    "Narration is a plain string.",
-    { who: "mara", text: "Dialogue has a speaker." },
-    { scare: "face" },
-  ],
-  choices: [
-    { text: "Wait for her.", late: 2, kind: 1, set: { maraHelped: true }, next: "n1_mara" },
-  ],
-},
+const stopped = await g.arrive("Elm & 4th");      // wait until the bus stops there (or drives past)
+if (stopped && (await openUp(g))) {
+  await g.say("mara", "Thank you. Oh my god, thank you.");
+  const c = await g.choose(["“Sit down.”", "[Say nothing]"]);
+  await g.scare("face");
+}
 ```
 
-You can edit right on GitHub without downloading anything. Press `.` on the repo page to open the web editor, change a file, and commit. The live game updates in about a minute.
+Lines in `g.say`, `g.think` and `g.choose` must be plain `"double-quoted"` strings so the voice tools can find them.
 
-**Testing tricks:** add `?debug` to the end of the game's URL to see the hidden state (kindness, lateness, flags). Use `?debug&scene=n3_start` to jump straight to a scene.
+## Making the voices
 
-## Adding voice acting
+The voices are generated with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx), a free open-source AI voice model. After changing any lines:
 
-Every line can have a recorded voice. Give a line a `vo` name:
-
-```js
-{ who: "mara", text: "Thank you. Oh my god, thank you.", vo: "n1_mara_1" },
+```bash
+node tools/extract-lines.mjs
+pip install kokoro-onnx soundfile
+python tools/make_voices.py path/to/kokoro-models
 ```
 
-Then upload the recording as `audio/vo/n1_mara_1.mp3`. The caption still shows, and the game waits for the clip to finish. Lines without a recording just show the caption.
+The model files (`kokoro-v1.0.int8.onnx`, `voices-v1.0.bin`) come from the kokoro-onnx GitHub releases. Only new or changed lines get generated; voice files for deleted lines are removed.
+
+Want real actors instead? Record a line and save it over its file in `voices/` (the file name is in `voices/manifest.json`).
+
+## Testing tricks
+
+Add `?night=3` to the URL and press New game to start on a later night.
