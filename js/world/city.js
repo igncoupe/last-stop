@@ -206,30 +206,30 @@ export function buildCity(scene) {
   const trunkGeo = new THREE.CylinderGeometry(0.07, 0.11, 1, 6).translate(0, 0.5, 0);
   const branchGeo = new THREE.CylinderGeometry(0.02, 0.05, 1, 5).translate(0, 0.5, 0);
   const pineGeo = new THREE.ConeGeometry(1, 1, 7).translate(0, 0.5, 0);
-  const barkMat = mat({ color: 0x2e2722 });
-  const needleMat = mat({ color: 0x152019 });
+  const barkMat = mat({ color: 0x6a625a });          // weathered grey, so lamplight picks the trees out
+  const needleMat = mat({ color: 0x24362a });
   const trunks = [], branches = [], cones = [];
   const M = (pos, rx, ry, rz, sx, sy, sz) => new THREE.Matrix4().compose(pos, new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz, "YXZ")), new THREE.Vector3(sx, sy, sz));
   const tipOf = (m) => new THREE.Vector3(0, 1, 0).applyMatrix4(m);
   function bareTree(base) {
     const h = range(3.2, 5.5);
     const lean = (rand() - 0.5) * 0.12;
-    const trunkM = M(base, lean, rand() * 6.28, 0, 1.8, h, 1.8);
+    const trunkM = M(base, lean, rand() * 6.28, 0, 2.6, h, 2.6);
     trunks.push(trunkM);
     const n = 4 + Math.floor(rand() * 3);
     for (let i = 0; i < n; i++) {
       const at = base.clone().add(new THREE.Vector3(0, h * range(0.45, 0.92), 0));
       const yaw = (i / n) * 6.28 + rand() * 0.8;
       const len = range(1.0, 2.2) * (1.15 - (at.y - base.y) / h * 0.4);
-      const bm = M(at, range(0.55, 1.1), yaw, 0, 1, len, 1);
+      const bm = M(at, range(0.55, 1.1), yaw, 0, 1.7, len, 1.7);
       branches.push(bm);
       // a crooked twig off the end of each branch
-      if (rand() < 0.8) branches.push(M(tipOf(bm), range(0.2, 1.3), yaw + range(-1, 1), 0, 0.7, len * range(0.35, 0.6), 0.7));
+      if (rand() < 0.8) branches.push(M(tipOf(bm), range(0.2, 1.3), yaw + range(-1, 1), 0, 1.1, len * range(0.35, 0.6), 1.1));
     }
   }
   function pine(base) {
     const h = range(4.5, 7.5);
-    trunks.push(M(base, 0, 0, 0, 1.6, 1.2, 1.6));
+    trunks.push(M(base, 0, 0, 0, 2.4, 1.2, 2.4));
     for (let i = 0; i < 3; i++) {
       const r = (1.7 - i * 0.45) * (h / 6);
       cones.push(M(base.clone().add(new THREE.Vector3(0, 0.9 + i * h * 0.24, 0)), 0, rand() * 6.28, 0, r, h * 0.42, r));
