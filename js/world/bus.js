@@ -23,7 +23,13 @@ export function buildBus(scene) {
   const yellow = mat({ color: 0xd9a52b });
 
   // floor, roof, ceiling
-  put(bus, box(2.5, 0.1, 12, mat({ map: tex.busFloor() }), [1, 1]), 0, 0.42, 0);
+  {
+    const floorMat = mat({ map: tex.busFloor() });
+    const SW0 = 3.66, SW1 = 5.64;          // the stairwell opening runs between the door posts
+    put(bus, box(2.5, 0.1, SW0 + 6, floorMat, [1, 1]), 0, 0.42, (SW0 - 6) / 2);
+    put(bus, box(1.72, 0.1, SW1 - SW0, floorMat, [1, 1]), 0.39, 0.42, (SW0 + SW1) / 2);
+    put(bus, box(2.5, 0.1, 6 - SW1, floorMat, [1, 1]), 0, 0.42, (SW1 + 6) / 2);
+  }
   put(bus, box(2.6, 0.1, 12.1, shell), 0, 3.02, 0);
   put(bus, box(2.48, 0.04, 11.9, mat({ color: 0xbdb6a6 })), 0, 2.9, 0);
   const strips = [];
@@ -86,9 +92,9 @@ export function buildBus(scene) {
     for (const sx of [-1, 1]) put(bus, box(0.09, 1.56, 0.07, surround), sx * 1.24, 2.12, 6.02);   // A-pillars
     // wipers, parked at the bottom of the glass
     for (const sx of [-1, 1]) {
-      const arm = put(bus, box(0.85, 0.022, 0.02, surround), sx * 0.42, 1.47, 6.045);
-      arm.rotation.z = sx * 0.1;
-      put(bus, box(0.05, 0.05, 0.04, surround), sx * 0.82, 1.42, 6.04);    // pivot
+      const arm = put(bus, box(0.85, 0.02, 0.02, surround), sx * 0.44, 1.428, 6.045);
+      arm.rotation.z = sx * 0.03;
+      put(bus, box(0.05, 0.04, 0.04, surround), sx * 0.84, 1.425, 6.04);    // pivot
     }
   }
   // what's left on the outside of the windshield after something hits it: ash handprints, a crack
@@ -340,14 +346,15 @@ export function buildBus(scene) {
 
   // the two-way radio: body, display, a channel knob and a handset on a hook
   const radioTex = tex.live(48, 16);
-  put(bus, box(0.3, 0.12, 0.2, binMat), 0.12, 1.45, 5.6);             // console: x -0.03..0.27, y 1.39..1.51, z 5.5..5.7
-  const radio = put(bus, box(0.28, 0.09, 0.03, [trim, trim, trim, trim, trim, glow(0xffffff, { map: radioTex.texture })]), 0.12, 1.45, 5.49);
+  const radio = put(bus, box(0.32, 0.11, 0.03, binMat), 0.13, 1.28, 5.437);           // faceplate, set into the dash face
   radio.userData.interact = "radio";
-  const knob = put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.025, 10).rotateX(Math.PI / 2), mat({ color: 0x8a9096 })), 0.225, 1.45, 5.467);
-  put(knob, box(0.004, 0.016, 0.004, mat({ color: 0x111111 })), 0, 0.007, -0.013);
-  put(bus, box(0.05, 0.12, 0.04, mat({ color: 0x151618 })), -0.06, 1.47, 5.58);      // handset, hung on the console's side
-  put(bus, box(0.03, 0.02, 0.03, binMat), -0.04, 1.535, 5.58);                         // its hook
-  put(bus, new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 4, 10, Math.PI * 1.4), mat({ color: 0x151618 })), -0.06, 1.42, 5.55);  // curly cord
+  const radioScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.06), glow(0xffffff, { map: radioTex.texture })), 0.07, 1.28, 5.42);
+  radioScreen.rotation.y = Math.PI;                                                   // faces the driver
+  const knob = put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.025, 10).rotateX(Math.PI / 2), mat({ color: 0x8a9096 })), 0.24, 1.28, 5.415);
+  put(knob, box(0.004, 0.016, 0.004, mat({ color: 0x111111 })), 0, 0.008, -0.013);
+  put(bus, box(0.05, 0.12, 0.04, mat({ color: 0x151618 })), -0.1, 1.27, 5.42);        // handset, on a hook beside it
+  put(bus, box(0.03, 0.02, 0.03, binMat), -0.1, 1.345, 5.435);                         // its hook
+  put(bus, new THREE.Mesh(new THREE.TorusGeometry(0.025, 0.005, 4, 10, Math.PI * 1.4), mat({ color: 0x151618 })), -0.1, 1.17, 5.43);  // curly cord
 
   // door control panel: a labeled plate with a big lit button that clicks down
   const panelTex = tex.sign("DOORS", { bg: "#1b1c1f", fg: "#d8d8d8", w: 48, h: 16, font: 10 });
@@ -465,17 +472,20 @@ export function buildBus(scene) {
   }
   // stairwell: two steps with yellow safety edges, a step light, chrome handrails
   const stepMat = mat({ map: tex.busFloor(), color: 0x6b6d70 });
-  put(bus, box(0.5, 0.06, DZ1 - DZ0, stepMat), -1.0, 0.17, (DZ0 + DZ1) / 2);   // lower step
-  put(bus, box(0.04, 0.03, DZ1 - DZ0, safety), -0.77, 0.21, (DZ0 + DZ1) / 2);
-  put(bus, box(0.3, 0.06, DZ1 - DZ0, stepMat), -0.62, 0.31, (DZ0 + DZ1) / 2);  // upper step
-  put(bus, box(0.04, 0.03, DZ1 - DZ0, safety), -0.49, 0.35, (DZ0 + DZ1) / 2);
-  put(bus, box(0.6, 0.3, 0.05, trim), -0.95, 0.15, DZ0 - 0.06);           // stairwell walls
-  put(bus, box(0.6, 0.3, 0.05, trim), -0.95, 0.15, DZ1 + 0.06);
-  put(bus, box(0.02, 0.05, 0.3, glow(0xfff1c8)), -0.66, 0.38, DZ1 - 0.1);  // step light
+  const SWL = 1.98, SWZ = 4.65;                                              // stairwell length and centre
+  put(bus, box(0.48, 0.2, SWL, stepMat), -0.99, 0.1, SWZ);                  // lower step, solid to the road
+  put(bus, box(0.04, 0.012, SWL, safety), -0.77, 0.206, SWZ);
+  put(bus, box(0.28, 0.34, SWL, stepMat), -0.61, 0.17, SWZ);                // upper step
+  put(bus, box(0.04, 0.012, SWL, safety), -0.49, 0.346, SWZ);
+  put(bus, box(0.03, 0.47, SWL, trim), -0.455, 0.235, SWZ);                 // riser up to the floor
+  put(bus, box(0.04, 0.012, SWL, safety), -0.455, 0.476, SWZ);              // yellow edge at the top
+  for (const z of [3.66, 5.64]) put(bus, box(0.8, 0.46, 0.04, trim), -0.86, 0.23, z);    // stairwell side walls
+  put(bus, box(0.02, 0.04, 0.3, glow(0xfff1c8)), -0.474, 0.4, DZ1 - 0.25);    // step light, in the riser
   for (const z of [DZ0 + 0.15, DZ1 - 0.15]) {
     put(bus, new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.54, 8), chrome), -0.6, 1.61, z);
   }
-  put(bus, box(0.02, 0.1, 0.3, glow(0xffb54a)), -1.17, 2.5, DZ1 - 0.25);  // door warning light
+  put(bus, box(0.05, 0.1, 0.34, trim), -1.18, 2.36, DZ1 - 0.3);             // door warning light: housing...
+  put(bus, box(0.02, 0.06, 0.28, glow(0xffb54a)), -1.15, 2.36, DZ1 - 0.3);   // ...and lens
   // the little corner of body between the door and the windshield
   put(bus, box(0.08, 2.1, 0.3, shell), -W, 1.4, 5.84);
 
