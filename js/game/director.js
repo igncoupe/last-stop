@@ -426,7 +426,10 @@ export function createDirector(w) {
         marker.visible = false;
       }
       // sitting still with nothing to do? point the way
-      const idleNow = !nav && player.mode === "seat" && !player.state.locked && drive.state.control === "player" && !bus.doorsOpen && drive.speed < 0.3 && !document.getElementById("hint").classList.contains("on") && !document.querySelector("#choices .choice");
+      // (never while someone is talking, a choice is up, or you're at a stop)
+      const atAStop = Object.values(STOPS).some((sd) => drive.inZone(sd)) || (props.mystery.d !== null && drive.inZone(props.mystery.d));
+      const idleNow = !nav && !atAStop && player.mode === "seat" && !player.state.locked && drive.state.control === "player" && !bus.doorsOpen && drive.speed < 0.3
+        && !document.getElementById("hint").classList.contains("on") && !document.querySelector("#choices .choice") && !document.getElementById("subtitle").classList.contains("on");
       idle = idleNow ? idle + dt : 0;
       if (idle > 6) {
         const ahead = Object.entries(STOPS).map(([n, d]) => ({ n, d })).filter((x) => x.d > drive.d + 6).sort((a, b) => a.d - b.d)[0];
