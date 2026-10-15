@@ -108,6 +108,7 @@ export function createDirector(w) {
       if (nav && nav.stop) nav = null;
       return drive.stoppedNear(d);
     },
+    get navTarget() { return nav; },
     // point the arrow at a place on foot (cleared with navTo(null))
     navTo(point) { nav = point ? { point: point.clone() } : null; },
     // wait for the doors (F) to be opened/closed, or for a timeout. Returns true if they did.

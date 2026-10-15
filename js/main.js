@@ -118,9 +118,11 @@ function clockText() {
 const TEST = params.has("test");
 const nextFrame = TEST ? (cb) => setTimeout(() => cb(performance.now()), 33) : (cb) => requestAnimationFrame(cb);
 
+const FAST = TEST ? Number(params.get("fast")) || 1 : 1;   // ?test&fast=6 plays 6x faster
+
 function frame(now) {
   nextFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const dt = Math.min(0.05, (now - last) / 1000) * FAST;
   last = now;
   if (paused) return;
   if (playing && input.hit("KeyF")) toggleDoors();
@@ -287,7 +289,18 @@ addEventListener("resize", () => resize(camera));
 resize(camera);
 resetWorld(1);
 nextFrame(frame);
-if (TEST) window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene };
+if (TEST) {
+  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene };
+  // ?bot=kind|cold|deadair|random: the automatic playtester plays the game
+  if (params.get("bot")) {
+    import("../tools/playtest.js").then((m) => {
+      settings.warned = true;
+      showTitle();
+      m.startBot(params.get("bot"));
+      begin(Number(params.get("night")) || 1, params.get("night") ? { flags: {}, kind: Number(params.get("kind")) || 0 } : null);
+    });
+  }
+}
 ui.fade(0, 2000);
 if (settings.warned) showTitle();
 else $("screen-warning").hidden = false;
