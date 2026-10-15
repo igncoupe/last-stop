@@ -1,6 +1,6 @@
 // Automatic playtester. Plays the whole game by itself so every night,
 // branch and ending can be checked for crashes and dead ends.
-// Open: index.html?test&fast=6&bot=kind   (strategies: kind, cold, deadair, random)
+// Open: index.html?test&fast=10&bot=kind   (strategies: kind, cold, deadair, random)
 // Results: window.__botReport (also logged to the console).
 export function startBot(strategy = "kind") {
   const L = window.__lastStop;
@@ -197,6 +197,6 @@ export function startBot(strategy = "kind") {
     } catch (e) {
       report.errors.push("bot: " + (e.stack || e));
     }
-  }, 120);
+  }, 60);
   return report;
 }

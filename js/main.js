@@ -129,10 +129,13 @@ function clockText() {
 
 // ?test runs the loop on a timer (for automated testing, where the page may not be painted)
 const TEST = params.has("test");
-const nextFrame = TEST ? (cb) => setTimeout(() => cb(performance.now()), 33) : (cb) => requestAnimationFrame(cb);
+// (60 steps a second, so automated runs go quickly; only every third one is drawn)
+const nextFrame = TEST ? (cb) => setTimeout(() => cb(performance.now()), 16) : (cb) => requestAnimationFrame(cb);
+let testFrame = 0;
 
-const FAST = TEST ? Number(params.get("fast")) || 1 : 1;   // ?test&fast=6 plays 6x faster
+const FAST = TEST ? Number(params.get("fast")) || 1 : 1;   // ?test&fast=10 plays 10x faster
 if (FAST > 1) Sound.setVoices(false);                       // subtitles only, timed by the game clock
+const SILENT = TEST && !params.has("sound");                // automated runs are silent unless &sound
 
 // Never a dead end at Northgate. If you're stopped there and the story has nothing on screen for
 // ten seconds, "End your shift [E]" comes up (with a note of what the story was waiting on).
@@ -204,8 +207,9 @@ function frame(now) {
   people.update(dt);
   director.update(dt);
   Sound.update(camera);
-  if (player.mode === "seat") bus.renderMirror(renderer, scene);
-  renderer.render(scene, camera);
+  const draw = !TEST || FAST <= 1 || testFrame++ % 3 === 0;
+  if (draw && player.mode === "seat") bus.renderMirror(renderer, scene);
+  if (draw) renderer.render(scene, camera);
   input.endFrame();
 }
 
@@ -358,7 +362,7 @@ function showTitle() {
 
 async function begin(startNight, saved) {
   Sound.init();
-  Sound.setVolume(settings.volume);
+  Sound.setVolume(SILENT ? 0 : settings.volume);
   $("screen-title").hidden = true;
   ui.loading("Loading voices…");
   manifest = await loadManifest();
