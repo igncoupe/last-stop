@@ -117,14 +117,15 @@ export async function night5(g) {
   g.release();
 
   let ripped = false;
-  let ripEntry = null;
+  let rip = null;
   if (f.rheeTruth) {
-    ripEntry = g.interact(g.bus.radioMesh, "Tear the radio out").then(() => { ripped = true; });
+    rip = g.interact(g.bus.radioMesh, "Tear the radio out");
+    rip.then(() => { ripped = true; });
   }
   g.hint(f.rheeTruth ? "Open the doors  [F]   ·   tear out the radio  [E]   ·   or drive away  [W]" : "Open the doors  [F]   ·   or drive away  [W]");
   await g.until(() => g.bus.doorsOpen || g.drive.moving || ripped);
   g.hint(null);
-  void ripEntry;
+  if (rip && !ripped) rip.cancel();
 
   if (ripped) {
     await ripRadio(g);

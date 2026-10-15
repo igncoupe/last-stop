@@ -87,7 +87,12 @@ export function startBot(strategy = "kind") {
       if (!card.hidden) {
         const kicker = document.getElementById("card-kicker").textContent;
         const title = document.getElementById("card-title").textContent;
-        if (kicker.startsWith("Ending")) { report.ending = title; log(`ENDING: ${title}`); }
+        if (kicker.startsWith("Ending")) {
+          report.ending = title;
+          log(`ENDING: ${title}`);
+          // the page reloads after the credits, so keep the report
+          try { localStorage.setItem(`botReport-${strategy}`, JSON.stringify({ ...report, flags: g.flags, kind: g.state.kind, late: g.state.late })); } catch { /* ignore */ }
+        }
         else log(`card: ${title}`);
         card.querySelector("button").click();
         return;

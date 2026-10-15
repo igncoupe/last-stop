@@ -243,10 +243,12 @@ export function createDirector(w) {
     faceScare() { return g.scare("face"); },
     fade(to, ms = 1200, white = false) { return ui.fade(to, ms, white); },
     card(opts) { return ui.card(opts); },
+    // wait for the player to press E on something. The promise has cancel().
     interact(mesh, label, { arrow = true } = {}) {
       if (arrow) nav = { mesh };
-      return new Promise((done) => {
-        const entry = player.addInteract({
+      let entry = null;
+      const p = new Promise((done) => {
+        entry = player.addInteract({
           mesh,
           label: () => label,
           use: () => {
@@ -256,6 +258,11 @@ export function createDirector(w) {
           },
         });
       });
+      p.cancel = () => {
+        player.removeInteract(entry);
+        if (nav && nav.mesh === mesh) nav = null;
+      };
+      return p;
     },
 
     // ---------- moving the player between places ----------
