@@ -152,6 +152,42 @@ export async function night1(g) {
   if (g.bus.doorsOpen) await closeDoorsAndGo(g);
   if (f.maraAboard && !g.drive.moving) await g.departed();
 
+  // ---------- the old request stop: something that isn't a passenger
+  await g.until(() => g.d > STOPS["St. Agnes"] + 25);
+  const rd = Math.max(g.d + 130, STOPS["St. Agnes"] + 150);
+  g.props.requestStop.place(rd);
+  g.shadeAt(g.props.requestStop.spot());
+  await g.until(() => g.d > rd - 95);
+  g.mood("dread");
+  await g.think("There's someone at the old request stop. The one they took out of service years ago.");
+  await g.think("No. Not someone. It's like somebody cut the shape of a man out of the night.");
+  await g.say("rhee", "Don't slow down, driver. That stop isn't on the schedule.");
+  await g.until(() => g.d > rd - 12 || (g.drive.speed < 0.3 && g.d > rd - 70), 30000);
+  g.sfx("whisper");
+  g.props.requestStop.light(false);
+  g.sfx("lightsout");
+  g.shadeHide();
+  await g.wait(800);
+  g.props.requestStop.light(true);
+  await g.think("Its head turned to follow me. Then the light went out. And it was gone.");
+  if (!g.drive.moving) {
+    g.hint("Drive  ·  W gas");
+    await g.until(() => g.drive.moving, 15000);
+    g.hint(null);
+  }
+  await g.wait(2200);
+  await g.shadeLeap({ ahead: 42, keepParked: true });
+  g.mood("terror");
+  if (f.junRode) await g.say("jun", "What was that? What WAS that?");
+  await g.think("It hit the glass. It was on the glass, pressed flat, looking in at me. It doesn't have a face. It doesn't have anything.");
+  await g.say("rhee", "Eyes on the road, driver. You'll see all sorts of things on nights.");
+  await g.think("There are handprints on the windshield. On the outside. They're not wet. They're ash.");
+  g.release();
+  g.hint("Drive  ·  W gas");
+  await g.departed();
+  g.hint(null);
+  g.mood("uneasy");
+
   // ---------- Canal Row
   g.amb({ water: 0.25 });
   await g.until(() => g.d > STOPS["Canal Row"] - 140);
@@ -225,9 +261,20 @@ export async function night1(g) {
   }
   g.mood("uneasy");
 
+  // ---------- the last stretch: Rhee has opinions
+  await g.wait(4000);
+  if (g.state.kind >= 2) {
+    await g.say("rhee", "You stop a lot, driver. For a lot of people. Teodor used to stop for everyone.");
+    await g.say("you", "Who's Teodor?");
+    await g.wait(1400);
+    await g.say("rhee", "Nobody. A driver who ran late.");
+  } else {
+    await g.say("rhee", "Not bad for a first night, driver. Keep your eyes on the clock, and off the mirror.");
+  }
+
   // ---------- Northgate
   stopped = await g.arrive("Northgate");
-  await openUp(g, 60000);
+  await openUp(g, 25000);
   if (f.maraAboard) {
     await g.say("mara", "End of the line, huh. Thanks for the scenic route.");
     await g.alight("mara", g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)));

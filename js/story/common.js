@@ -74,7 +74,7 @@ export async function openUp(g, timeoutMs = 20000) {
 }
 
 export async function endShift(g) {
-  await g.pressKey("KeyE", "End your shift  [E]");
+  await g.pressKey("KeyE", "End your shift  [E]", 30000);
   g.sfx("punch");
   await g.fade(1, 1400);
 }

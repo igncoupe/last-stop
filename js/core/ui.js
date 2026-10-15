@@ -67,6 +67,13 @@ export const ui = {
   hint(text) {
     if (text) el.hint.textContent = text;
     el.hint.classList.toggle("on", !!text);
+    // anything that needs a key press also shows big, in the middle of the screen
+    const cta = document.getElementById("cta");
+    if (!cta) return;
+    if (text && /[[A-Z0-9]+]/.test(text)) {
+      cta.textContent = text.replace(/s*·s*/g, "   ·   ");
+      cta.classList.add("on");
+    } else cta.classList.remove("on");
   },
 
   prompt(text, key = "E") {

@@ -40,12 +40,92 @@ export function buildBus(scene) {
       put(bus, box(0.1, 1.3, 0.12, trim), x, 1.95, z);
     }
     put(bus, box(0.02, 1.3, side === -1 ? 9.6 : 12, glassMat), x, 1.95, side === -1 ? -1.2 : 0);
-    put(bus, box(0.04, 0.16, 12, mat({ color: 0xd2721f })), side * (W + 0.05), 1.15, 0);
+    // the orange stripe stops at the door, like the real paint job
+    const stripe = mat({ color: 0xd2721f });
+    if (side === -1) {
+      put(bus, box(0.04, 0.16, 9.62, stripe), x - 0.05, 1.15, -1.19);
+      put(bus, box(0.04, 0.16, 0.34, stripe), x - 0.05, 1.15, 5.83);
+    } else put(bus, box(0.04, 0.16, 12, stripe), x + 0.05, 1.15, 0);
   }
 
   // front: dashboard, windshield, destination sign
   put(bus, box(2.5, 0.95, 0.08, shell), 0, 0.9, 6);
   put(bus, box(2.5, 1.5, 0.02, glassMat), 0, 2.1, 6);
+  // what's left on the outside of the windshield after something hits it: ash handprints, a crack
+  const smudgeCanvas = document.createElement("canvas");
+  smudgeCanvas.width = 512;
+  smudgeCanvas.height = 300;
+  const smudgeTex = new THREE.CanvasTexture(smudgeCanvas);
+  smudgeTex.colorSpace = THREE.SRGBColorSpace;
+  const smudge = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.5),
+    new THREE.MeshBasicMaterial({ map: smudgeTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })), 0, 2.1, 6.025);
+  smudge.rotation.y = Math.PI;          // reads the right way round from the driver's seat
+  smudge.visible = false;
+  function drawSmudge(level) {
+    const x = smudgeCanvas.getContext("2d");
+    x.clearRect(0, 0, 512, 300);
+    if (!level) return;
+    const W2 = 512, H2 = 300;
+    // the bus x of a mark -> canvas u (the plane is turned to face the driver)
+    const U = (bx) => ((1.25 - bx) / 2.5) * W2;
+    const V = (by) => ((2.85 - by) / 1.5) * H2;
+    const hand = (cx, cy, rot, smear) => {
+      x.save();
+      x.translate(cx, cy);
+      x.rotate(rot);
+      x.fillStyle = "rgba(150,148,140,0.55)";
+      x.beginPath(); x.ellipse(0, 0, 15, 19, 0, 0, Math.PI * 2); x.fill();
+      for (let i = 0; i < 4; i++) {
+        x.save();
+        x.rotate((i - 1.5) * 0.17);
+        x.fillRect(-3.5 + (i - 1.5) * 1.5, -60, 7, 44);
+        x.restore();
+      }
+      x.save(); x.rotate(-1.0); x.fillRect(-3.5, -40, 7, 26); x.restore();
+      // dragged down the glass
+      x.fillStyle = "rgba(150,148,140,0.22)";
+      x.fillRect(-14, 10, 28, smear);
+      x.restore();
+    };
+    hand(U(-0.75), V(2.48), -0.35, 60);
+    hand(U(1.18), V(2.5), 0.35, 70);
+    // a dusty smear the shape of a body, where it was pressed against the glass
+    const grd = x.createRadialGradient(U(0.3), V(2.15), 10, U(0.3), V(2.15), 120);
+    grd.addColorStop(0, "rgba(120,118,112,0.32)");
+    grd.addColorStop(1, "rgba(120,118,112,0)");
+    x.fillStyle = grd;
+    x.fillRect(0, 0, W2, H2);
+    if (level >= 2) {
+      // cracks from where its head hit
+      const cx = U(0.3), cy = V(2.4);
+      x.strokeStyle = "rgba(225,232,236,0.55)";
+      x.lineWidth = 1.2;
+      for (let i = 0; i < 11; i++) {
+        let a = (i / 11) * Math.PI * 2 + Math.random() * 0.3;
+        let px = cx, py = cy;
+        x.beginPath();
+        x.moveTo(px, py);
+        for (let s = 0; s < 6; s++) {
+          a += (Math.random() - 0.5) * 0.6;
+          px += Math.cos(a) * (12 + Math.random() * 18);
+          py += Math.sin(a) * (12 + Math.random() * 18);
+          x.lineTo(px, py);
+        }
+        x.stroke();
+      }
+      for (const r of [9, 20, 34]) {
+        x.beginPath();
+        for (let k = 0; k <= 12; k++) {
+          const a = (k / 12) * Math.PI * 2;
+          const rr = r + (Math.random() - 0.5) * 6;
+          if (k === 0) x.moveTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+          else x.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+        }
+        x.stroke();
+      }
+    }
+    smudgeTex.needsUpdate = true;
+  }
   put(bus, box(2.4, 0.42, 0.7, trim), 0, 1.15, 5.62);
   const destTex = tex.sign("9  NORTHGATE", { bg: "#120c02", fg: "#ffb54a", w: 128, h: 20, font: 15 });
   put(bus, new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.28), glow(0xffffff, { map: destTex })), 0, 2.83, 6.07);
@@ -71,7 +151,7 @@ export function buildBus(scene) {
       const a = (i / 6) * Math.PI * 2;
       put(wheelG, box(0.36, 0.04, 0.04, mat({ color: 0x3c4044 })), 0, Math.sin(a) * 0.16, Math.cos(a) * 0.16);
     }
-    const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.36, 14, 1, true, -Math.PI / 2, Math.PI), archMat);
+    const arch = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.36, 14, 1, true, 0, Math.PI), archMat);   // the top half, over the tire
     arch.rotation.z = Math.PI / 2;
     put(bus, arch, s * 1.14, 0.5, z);
   }
@@ -183,15 +263,29 @@ export function buildBus(scene) {
   tucked.visible = false;
 
   // rear-view mirror with a real camera behind it
-  // a sharp mirror: 480 x 160, smoothed, so you can actually see who's behind you
-  const mirrorRT = new THREE.WebGLRenderTarget(480, 160, { magFilter: THREE.LinearFilter, minFilter: THREE.LinearFilter });
+  // a sharp mirror: 1024 x 320, anti-aliased and mip-mapped, so you can actually see who's behind you.
+  // The glass, its housing and the stalk are one unit, so the glass fills the whole housing.
+  const MW = 0.84, MH = 0.26;
+  const mirrorRT = new THREE.WebGLRenderTarget(1024, 320, {
+    magFilter: THREE.LinearFilter, minFilter: THREE.LinearMipmapLinearFilter, generateMipmaps: true, samples: 4,
+  });
   mirrorRT.texture.colorSpace = THREE.SRGBColorSpace;
   mirrorRT.texture.wrapS = THREE.RepeatWrapping;
   mirrorRT.texture.repeat.x = -1;
-  const mirror = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.24), new THREE.MeshBasicMaterial({ map: mirrorRT.texture })), 0.22, 2.5, 5.78);
-  mirror.rotation.y = Math.PI + 0.12;
-  put(bus, box(0.78, 0.3, 0.03, trim), 0.22, 2.5, 5.8);
-  const mirrorCam = new THREE.PerspectiveCamera(40, 3, 0.1, 60);
+  mirrorRT.texture.anisotropy = 4;
+  const mirrorMount = put(bus, new THREE.Group(), 0.22, 2.5, 5.8);
+  mirrorMount.rotation.y = 0.12;                                    // angled toward the driver
+  const housing = mat({ color: 0x17181b });
+  put(mirrorMount, box(MW + 0.04, MH + 0.04, 0.035, housing), 0, 0, 0.005);
+  // a slightly raised rim all the way around the glass
+  for (const sy of [-1, 1]) put(mirrorMount, box(MW + 0.04, 0.016, 0.012, trim), 0, sy * (MH / 2 + 0.012), -0.016);
+  for (const sx of [-1, 1]) put(mirrorMount, box(0.016, MH + 0.04, 0.012, trim), sx * (MW / 2 + 0.012), 0, -0.016);
+  const mirror = put(mirrorMount, new THREE.Mesh(new THREE.PlaneGeometry(MW, MH), new THREE.MeshBasicMaterial({ map: mirrorRT.texture, color: 0xeef3f6 })), 0, 0, -0.0135);
+  mirror.rotation.y = Math.PI;                                      // the glass faces the driver
+  // stalk up to the ceiling
+  put(mirrorMount, box(0.05, 0.2, 0.05, trim), 0, MH / 2 + 0.1, 0.01);
+  put(mirrorMount, box(0.12, 0.02, 0.1, trim), 0, MH / 2 + 0.2, 0.01);
+  const mirrorCam = new THREE.PerspectiveCamera(38, MW / MH, 0.1, 60);
   mirrorCam.position.set(0.22, 2.35, 5.6);
   mirrorCam.rotation.set(-0.12, -0.08, 0);   // cameras look down -z: toward the back of the bus
   mirrorCam.layers.enable(MIRROR_ONLY);
@@ -326,6 +420,10 @@ export function buildBus(scene) {
     setVisor(down) { state.visorDown = down; },
     // the folded clipping tucked into the visor strap
     setClipping(on) { tucked.visible = on; },
+    // 0 = clean glass, 1 = ash handprints, 2 = handprints and a crack
+    setSmudge(level) { drawSmudge(level); smudge.visible = level > 0; },
+    // where something lands on the windshield (bus space, feet of a 2 m figure)
+    windshieldLanding: new THREE.Vector3(0.3, 0.55, 6.17),
     setInterior(mode) { state.interior = mode; },
     get interiorMode() { return state.interior; },
     get passengers() { return bus.children.filter((c) => c.userData.person).length; },

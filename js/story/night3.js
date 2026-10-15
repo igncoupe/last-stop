@@ -212,14 +212,7 @@ export async function night3(g) {
   await g.departed();
   g.hint(null);
 
-  // ---------- something hits the windshield
   g.dread(true);
-  await g.wait(7000);
-  g.sfx("bang");
-  await g.scare("hands");
-  g.shake(1.8);
-  await g.think("Something hit the windshield. Hands. Two gray hands, pressed flat. Then the rain washed them away.");
-  await g.say("rhee", "Keep driving, driver. You don't stop for weather.");
 
   // ---------- Canal Row is a river (only if it's still ahead of you)
   if (g.d < 1690) {
@@ -235,12 +228,29 @@ export async function night3(g) {
     g.flood(false);
     g.amb({ water: 0 });
   }
+
+  // ---------- in the lightning: something in the road, closer every flash
+  await g.wait(3500);
+  await g.think("Every time the lightning goes, the whole road lights up for a second.");
+  for (const ahead of [85, 55, 32]) {
+    await g.wait(1400 + Math.random() * 900);
+    await g.shadeFlash(ahead);
+    if (ahead === 85) await g.think("There's something standing in the road.");
+  }
+  await g.wait(1100);
+  await g.shadeLeap({ ahead: 18, hold: 1700, keepParked: true });
+  g.mood("terror");
+  if (f.junAboard) await g.say("jun", "It's on the glass! It's ON the glass!");
+  await g.think("It's back. The thing from the first night. Spread across the glass like it's trying to get in.");
+  await g.think("Then the lights went, and it was gone. Only the handprints stayed. The rain won't wash them off.");
+  g.release();
+  await g.say("rhee", "Keep driving, driver. You don't stop for weather.");
   g.dread(false);
   g.mood("uneasy");
 
   // ---------- Northgate
   await g.arrive("Northgate");
-  await openUp(g, 60000);
+  await openUp(g, 25000);
   if (f.junAboard) {
     await g.say("jun", f.junComforted ? "Thanks for believing me." : "Night. Be careful, okay?");
     g.spawn("junmom", "junmom", { at: terminalDoor() });

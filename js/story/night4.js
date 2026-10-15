@@ -190,9 +190,17 @@ async function bridge(g) {
   let speed = 11;
   await g.fade(0, 700);
   await g.think("The street's gone. The buildings are gone. The road is getting narrower.");
+  // under the last good streetlight: the shadow, pointing the way onto the bridge
+  g.shadeAt(new THREE.Vector3(B.origin + 4.1, 0.05, 170), "point", new THREE.Vector3(B.origin + 4.1, 0, 500));
   await g.say("rhee", "Faster. FASTER. The schedule always comes first.");
   g.sfx("heartbeat", 10, 120);
   const edgeZ = B.edge;
+  const pointing = (async () => {
+    await g.until(() => bus.position.z > 112, 30000);
+    await g.think("Under the last streetlight. The shadow. It's pointing at the bridge.");
+    await g.until(() => bus.position.z > 178, 30000);
+    g.shadeHide();
+  })();
   // roll toward the edge; slow to a crawl near it so there's time to choose
   const roll = (until) => g.frames((dt) => {
     const left = until - bus.position.z;
@@ -204,6 +212,7 @@ async function bridge(g) {
   const options = ["[Stand on the brake]", "[Floor it. Do what he says]"];
   if (f.rheeTruth) options.splice(1, 0, "“You said that to him too.” [Brake, and don't let go]");
   const rolling = roll(edgeZ - 6);
+  await pointing;
   const c = await g.choose(options, { silent: true });
   const obey = c === options.length - 1;
   if (!obey) {
@@ -289,7 +298,7 @@ async function bridge(g) {
 
   // the rest of the run, then Northgate
   await g.arrive("Northgate");
-  await openUp(g, 60000);
+  await openUp(g, 25000);
   g.sfx("static", 0.6);
   await g.say("dana", "Route 9! Route 9, come in. Your bus went dark for six minutes. GPS put you in the middle of the river. Are you okay?");
   await g.say("you", "I'm okay. I think.");

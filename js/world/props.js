@@ -109,6 +109,38 @@ export function buildProps(scene) {
     update(dt) { mRain.userData.tick(dt); },
   };
 
+  // ---- an old request stop, taken out of service years ago: a bent pole, a sign, one lamp
+  const rq = new THREE.Group();
+  const rust = mat({ color: 0x4a3a2c });
+  const pole = put(rq, box(0.07, 2.7, 0.07, rust), 0.6, 1.35, 0);
+  pole.rotation.z = 0.06;
+  const rqSign = tex.sign("REQUEST\nSTOP", { bg: "#c9c2a8", fg: "#2a2418", w: 64, h: 40, font: 12, border: 2 });
+  const xTex = tex.sign("NOT IN\nSERVICE", { bg: "#8c1c1c", fg: "#f0e6d0", w: 64, h: 24, font: 9 });
+  put(rq, box(0.04, 0.5, 0.7, [glow(0x9a9480, { map: rqSign }), glow(0x9a9480, { map: rqSign }), rust, rust, rust, rust]), 0.68, 2.45, 0);
+  const xs = put(rq, box(0.045, 0.2, 0.62, [mat({ map: xTex }), mat({ map: xTex }), rust, rust, rust, rust]), 0.69, 2.1, 0.02);
+  xs.rotation.x = 0.18;
+  // the lamp: a hooded head on a tall post, throwing a hard pool of light
+  put(rq, box(0.1, 5.4, 0.1, mat({ color: 0x2a2c30 })), -0.4, 2.7, -1.6);
+  put(rq, box(1.1, 0.08, 0.1, mat({ color: 0x2a2c30 })), 0.1, 5.4, -1.6);
+  const rqHead = put(rq, box(0.5, 0.14, 0.32, glow(0xffd9a0)), 0.6, 5.32, -1.6);
+  const rqLight = new THREE.SpotLight(0xffd9a0, 40, 14, 0.6, 0.6, 1.3);
+  rqLight.position.set(0.6, 5.2, -1.6);
+  rqLight.target.position.set(0.5, 0, -0.6);
+  rq.add(rqLight, rqLight.target);
+  const rqPool = decal(new THREE.MeshBasicMaterial({ map: radialTexture(), color: 0xffd696, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }), 2);
+  const pool = put(rq, new THREE.Mesh(new THREE.PlaneGeometry(4.5, 4.5), rqPool), 0.5, 0.03, -0.6);
+  pool.rotation.x = -Math.PI / 2;
+  rq.visible = false;
+  scene.add(rq);
+  props.requestStop = {
+    group: rq,
+    d: null,
+    place(d) { this.d = d; rq.visible = d !== null; if (d !== null) place(rq, d, CURB - 1.0); },
+    // where something would stand, waiting, in the light
+    spot() { return rq.localToWorld(new THREE.Vector3(0.45, 0, -0.55)); },
+    light(on) { rqLight.visible = on; rqPool.opacity = on ? 0.5 : 0; rqHead.material.color.set(on ? 0xffd9a0 : 0x1a1a1a); },
+  };
+
   // ---- the canal on the left of Canal Row
   const waterMat = new THREE.MeshPhongMaterial({ color: 0x0c1a24, map: tex.water(), shininess: 90, specular: 0x334455 });
   waterMat.map.repeat.set(0.25, 0.25);

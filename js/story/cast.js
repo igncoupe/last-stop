@@ -16,6 +16,8 @@ export const CAST = {
   lena:    { name: (f) => (f.knowsMother ? "Mom" : f.knowsLena ? "Lena" : "Woman in the shelter"), color: "#e59ab0", fx: "ghost", voice: "bf_emma", speed: 0.92, pitch: 0.98 },
   ivy:     { name: "Little girl", color: "#f2d36b", fx: "ghost", voice: "af_bella", speed: 0.88, pitch: 1.3 },
   rosie:   { name: (f) => (f.metRosie ? "Rosie" : "Woman on the bench"), color: "#f0b98a", fx: "dry", voice: "af_kore", speed: 0.98, pitch: 1.0 },
+  teodor94: { name: "Route 9 (tape, 1994)", color: "#dfbd88", fx: "radio", voice: "bm_george", speed: 0.92, pitch: 0.92 },
+  rhee94:  { name: "Dispatch (tape, 1994)", color: "#86cf9b", fx: "radio", voice: "am_fenrir", speed: 0.96, pitch: 0.92 },
   harold:  { name: "Harold Rhee", color: "#9aa0ad", fx: "ghost", voice: "am_fenrir", speed: 0.86, pitch: 0.92 },
   voices:  { name: "Voices", color: "#9aa0ad", fx: "whisper", voice: "af_nicole", speed: 0.85, pitch: 0.97 },
 };

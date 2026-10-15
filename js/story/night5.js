@@ -1,7 +1,7 @@
 // NIGHT 5 — "Last stop." Rosie. Teodor's confession. Ashgrove. The endings.
 // Kindness: give Rosie the present / tell her about her dad (+1)
 import * as THREE from "three";
-import { STOPS, route } from "../world/route.js";
+import { STOPS, route, LANE } from "../world/route.js";
 import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, KIND_ENOUGH } from "./common.js";
 
 export async function night5(g) {
@@ -107,12 +107,16 @@ export async function night5(g) {
   await g.say("lena", "Hi, sweetheart.");
   await g.think("Mom.");
   g.sfx("static", 1.4);
+  // between the drowned and the doors: the shadow, arms out, keeping them off the bus
+  g.shadeAt(mysteryCurb(g, 4.6, 4.7), "bar", route.at(md + 4.6, LANE, 1.6));
+  g.sfx("thunder");
   await g.say("rhee", "DRIVER.");
   await g.say("rhee", "You are ELEVEN MINUTES LATE. You will MAKE. UP. THE. TIME.");
   g.sfx("spark");
   g.shake(1.4);
   await g.say("rhee", "The schedule ALWAYS comes first. That's the JOB.");
   await g.say("teodor", "Please.");
+  await g.think("And between them and my doors, the shadow. Arms out. Keeping them off my bus. It's been keeping them off for thirty-two years.");
   g.release();
 
   let ripped = false;
@@ -151,6 +155,9 @@ async function ripRadio(g) {
   await g.wait(1200);
   g.radio("");
   g.mood("silence");
+  const gone = g.shadeDissolve(2.6);
+  await g.think("The shadow at the doors is coming apart. Like smoke. Like it was only ever his voice.");
+  await gone;
   g.storm(false);
   g.amb({ rain: 0.2 });
   await g.wait(2600);
@@ -171,6 +178,7 @@ async function endHome(g, crowd, deadAir) {
   g.rain(false);
   g.lockDoors(true);
   await g.wait(1500);
+  if (!deadAir && g.shade.visible) await g.think("The shadow stepped back from the doors. Just one step. Enough to let them through. It's still watching.");
   await g.think("For a moment, nobody moves. Then Daniel climbs the steps. He isn't dripping anymore.");
   const order = [["g1", "L1"], ["g0", "R1"], ["g2", "R0"], ["g3", "L2"]];
   for (const [k, seat] of order) g.board(k, seat, 1.5);

@@ -45,6 +45,7 @@ def emotion(who: str, text: str):
         "teodor": (0.45, 0.35), "rhee": (0.4, 0.55), "voices": (0.3, 0.4), "you": (0.45, 0.5),
         "lena": (0.5, 0.45), "daniel": (0.45, 0.45), "harold": (0.55, 0.4), "ivy": (0.6, 0.5),
         "jun": (0.6, 0.5), "mara": (0.55, 0.5), "radio94": (0.35, 0.55), "dana": (0.6, 0.5),
+        "teodor94": (0.6, 0.4), "rhee94": (0.35, 0.6),
     }.get(who, (0.5, 0.5))
     if re.search(r"\b[A-Z]{2,}\b", text) or "!" in text:
         ex, cfg = 0.9, 0.3                           # shouting

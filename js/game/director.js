@@ -6,7 +6,7 @@ import { ui } from "../core/ui.js";
 import { Sound } from "../audio.js";
 import { CAST, spoken, lineId } from "../story/cast.js";
 import { Person } from "../world/people.js";
-import { route, STOPS } from "../world/route.js";
+import { route, STOPS, LANE } from "../world/route.js";
 
 // a glowing arrow (with a light beam) that bobs over wherever you need to go
 function makeMarker() {
@@ -346,6 +346,95 @@ export function createDirector(w) {
     bus.setInterior("on");
     return "stopped";
   };
+  // ---------- the shadow: what's left of Rhee. It watches from stops, it runs, it jumps ----------
+  const shade = w.shade;
+  const camPos = () => camera.getWorldPosition(new THREE.Vector3());
+  g.shade = shade;
+  // stand somewhere (facing you, or facing `faceTo`); poses: stand | crouch | bar | point
+  g.shadeAt = (pos, poseName = "stand", faceTo = null) => shade.standAt(pos, faceTo || camPos(), poseName);
+  g.shadeHide = () => shade.hide();
+  g.shadeDissolve = (seconds) => shade.dissolve(seconds);
+  // standing in the road ahead, only there for the length of a lightning flash
+  g.shadeFlash = async (ahead) => {
+    shade.standAt(route.at(drive.d + 6 + ahead, LANE, 0), camPos());
+    w.lightning();
+    setTimeout(() => Sound.sfx("thunder"), 300 + Math.random() * 500);
+    await g.wait(260);
+    shade.hide();
+  };
+  // it runs along the sidewalk beside the bus, keeping up whatever you do, then cuts across the headlights
+  g.shadeRun = async (seconds = 6) => {
+    let off = -8;                  // next to the back of the bus
+    let lateral = 5.6;
+    let t = 0;
+    let cut = false;
+    let finished = false;
+    const prev = route.at(drive.d + off, lateral, 0);
+    Sound.sfx("skitter", seconds + 1.2);
+    await new Promise((done) => {
+      shade.runWith((dt) => {
+        t += dt;
+        if (t < seconds) off += dt * 2.2;
+        else { cut = true; off += dt * 9; lateral = Math.max(LANE - 0.6, lateral - dt * 5.5); }
+        if (cut && lateral <= LANE - 0.6 + 1e-3 && !finished) { finished = true; done(); }
+        const pos = route.at(drive.d + off, lateral, 0);
+        const dx = pos.x - prev.x, dz = pos.z - prev.z;
+        const yaw = dx * dx + dz * dz > 1e-6 ? Math.atan2(dx, dz) : route.heading(drive.d);
+        prev.copy(pos);
+        return { pos, yaw };
+      });
+    });
+    bus.setInterior("flicker");
+    Sound.sfx("lightsout");
+    await g.wait(260);
+    shade.hide();
+    bus.setInterior("on");
+  };
+  // crouched in the road ahead, in the headlights. When you get close it jumps onto the windshield.
+  g.shadeLeap = async ({ ahead = 40, hold = 1400, crack = true, keepParked = false } = {}) => {
+    const nose = () => drive.d + 6;
+    const d0 = nose() + ahead;
+    shade.crouchAt(route.at(d0, LANE, 0), bus.group.localToWorld(new THREE.Vector3(0, 1.6, 6)));
+    Sound.sfx("rise", 2.4);
+    let still = 0;
+    await until((dt) => {
+      still = drive.speed < 0.5 ? still + dt : 0;
+      return nose() > d0 - 14 || still > 2.5;       // stop, and it comes to you anyway
+    }, 25000);
+    if (!settings.scares) {
+      bus.setInterior("flicker");
+      Sound.sfx("lightsout");
+      await g.wait(500);
+      shade.hide();
+      bus.setInterior("on");
+      Sound.sfx("heartbeat", 3, 96);
+      return;
+    }
+    player.lookAtSoon(bus.group.localToWorld(new THREE.Vector3(0.3, 2.0, 6)));   // you look up when it moves
+    Sound.sfx("shriek");
+    const land = bus.group.localToWorld(bus.windshieldLanding.clone());
+    const dist = shade.root.getWorldPosition(new THREE.Vector3()).distanceTo(land);
+    await shade.leap(bus.group, bus.windshieldLanding, THREE.MathUtils.clamp(dist / 32, 0.3, 0.6));
+    Sound.sfx("slam");
+    if (crack) Sound.sfx("crack");
+    Sound.sfx("sting");
+    player.shake(2.6);
+    bus.setInterior("flicker");
+    bus.setSmudge(crack ? 2 : 1);
+    document.body.classList.add("scare-flash");
+    setTimeout(() => document.body.classList.remove("scare-flash"), 110);
+    const wasControl = drive.state.control;
+    if (wasControl === "player") drive.park();       // you stand on the brake without meaning to
+    Sound.sfx("brake");
+    await g.wait(hold);
+    bus.setInterior("off");
+    Sound.sfx("lightsout");
+    await g.wait(550);
+    shade.hide();
+    bus.setInterior("on");
+    if (wasControl === "player" && !keepParked) drive.release();   // (or the script lets go when it is ready)
+  };
+
   // something walks up the aisle, a little closer every time you check the mirror
   g.creepMirror = async (look = "drowned") => {
     g.spawn("creep", look, { ghost: true, mirrorOnly: true });
@@ -406,9 +495,9 @@ export function createDirector(w) {
   };
 
   // show a hint and wait for a key press
-  g.pressKey = async (code, text) => {
+  g.pressKey = async (code, text, timeoutMs = 0) => {
     ui.hint(text);
-    await until(() => w.input.hit(code));
+    await until(() => w.input.hit(code), timeoutMs);      // with a timeout, it carries on by itself
     ui.hint(null);
   };
 
@@ -424,6 +513,7 @@ export function createDirector(w) {
     ui.clearSubtitle();
     ui.clearChoices();
     ui.paper(null);
+    w.shade.hide();
   }
 
   return {

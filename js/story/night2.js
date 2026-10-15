@@ -38,9 +38,30 @@ export async function night2(g) {
   }
   await closeDoorsAndGo(g);
 
+  // ---------- an old tape comes over the radio (Elm waits for it)
+  const tape = (async () => {
+    await g.wait(4000);
+    g.sfx("static", 1.2);
+    g.radio("CH 9 ····");
+    await g.wait(900);
+    await g.say("teodor94", "Dispatch, this is Route 9. The river's coming over the road at Canal. I want to hold at Northgate till it passes.");
+    await g.say("rhee94", "Negative, Nine. You're eleven minutes down. Make up the time.");
+    await g.say("teodor94", "Harold, I've got kids on this bus.");
+    await g.say("rhee94", "Then get them home on schedule.");
+    g.sfx("static", 0.8);
+    g.radio("CH 9");
+    await g.wait(1200);
+    await g.say("rhee", "Old tapes, driver. The system plays them back sometimes. Ignore it.");
+    g.hint("Check your mirror");
+    await g.until(() => g.lookingAtMirror(), 9000);
+    g.hint(null);
+    await g.think("The old man in the back row is crying. He isn't making a sound.");
+  })();
+
   // ---------- Elm & 4th: Mara again
   const mara = g.spawn("mara", "mara", { at: curb("Elm & 4th", 2), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
   let stopped = await g.arrive("Elm & 4th");
+  await tape;
   if (stopped && (await openUp(g))) {
     await g.board("mara", "L0");
     f.maraAboard = true;
@@ -131,6 +152,20 @@ export async function night2(g) {
     }
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
+
+  // ---------- something keeping pace with the bus
+  await g.until(() => g.d > STOPS["Market St"] + 90);
+  if (g.d < STOPS["St. Agnes"] - 160) {
+    g.mood("dread");
+    const run = g.shadeRun(6);
+    g.look(() => (g.shade.visible ? g.shade.root.localToWorld(new THREE.Vector3(0, 1.7, 0)) : null));
+    await g.think("Something's moving on the sidewalk. Out of the corner of my eye. Keeping up with the bus.");
+    await run;
+    if (f.junAboard) await g.say("jun", "Okay. I saw that. I definitely saw that.");
+    await g.think("The thing from the windshield. It ran beside the bus. I was doing thirty.");
+    await g.say("rhee", "You're drifting, driver. Eyes front.");
+    g.mood("uneasy");
+  }
 
   // ---------- St. Agnes
   if (f.maraAboard) {
@@ -282,7 +317,7 @@ export async function night2(g) {
 
   // ---------- Northgate
   await g.arrive("Northgate");
-  await openUp(g, 60000);
+  await openUp(g, 25000);
   if (f.junAboard) {
     await g.say("jun", "Night, driver.");
     if (f.junTalked) g.spawn("junmom", "junmom", { at: terminalDoor() });

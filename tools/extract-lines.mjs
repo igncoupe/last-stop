@@ -28,6 +28,8 @@ for (const file of files) {
   for (const m of src.matchAll(/\bg\.say\(\s*"(\w+)"\s*,\s*"((?:[^"\\]|\\.)*)"/g)) add(m[1], unq(m[2]), night);
   for (const m of src.matchAll(/\bg\.think\(\s*"((?:[^"\\]|\\.)*)"/g)) add("you", unq(m[1]), night);
   for (const m of src.matchAll(/\bclockIn\(\s*g\s*,\s*\[([\s\S]*?)\]\s*\)/g)) strings(m[1]).forEach((t) => add("you", t, night));
+  // g.read({ the document }, [ "what you think while reading it", ... ])
+  for (const m of src.matchAll(/\bg\.read\(\s*\{[\s\S]*?\}\s*,\s*\[([\s\S]*?)\]\s*\)/g)) strings(m[1]).forEach((t) => add("you", t, night));
   for (const m of src.matchAll(/\bg\.choose\(\s*\[([\s\S]*?)\]\s*[,)]/g)) strings(m[1]).forEach((t) => { const s = spoken(t); if (s) add("you", s, night); });
   for (const m of src.matchAll(/\bopts\.push\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)) { const s = spoken(unq(m[1])); if (s) add("you", s, night); }
   // lines said with a ternary: g.say("who", cond ? "a" : "b") / g.think(cond ? "a" : "b")

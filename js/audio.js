@@ -124,6 +124,49 @@ const SFX = {
     out(noise(t, 0.12, "lowpass", 1200), 0.9, t, 0.002, 0.1);
     out(noise(t + 0.02, 0.7, "highpass", 3500), 0.18, t + 0.02, 0.01, 0.6);
   },
+  // something heavy hitting the windshield: a body-thump, the glass flexing, the frame rattling
+  slam(t) {
+    out(tone(t, 0.7, "sine", 70, 24), 1.2, t, 0.001, 0.65, 0.5);
+    out(noise(t, 0.18, "lowpass", 700), 1.1, t, 0.001, 0.16);
+    out(noise(t + 0.01, 0.5, "bandpass", 2600, 1.4), 0.5, t + 0.01, 0.002, 0.45, 0.3);
+    for (let i = 0; i < 7; i++) {
+      const tt = t + 0.06 + i * 0.045 + Math.random() * 0.02;
+      out(noise(tt, 0.03, "highpass", 2200), 0.25 / (1 + i * 0.3), tt, 0.001, 0.03);
+    }
+  },
+  // glass cracking: sharp ticks spreading out, then a long creak
+  crack(t) {
+    for (let i = 0; i < 9; i++) {
+      const tt = t + i * i * 0.012 + Math.random() * 0.01;
+      out(noise(tt, 0.02, "highpass", 4500), 0.55 / (1 + i * 0.25), tt, 0.0005, 0.02, 0.2, (Math.random() - 0.5) * 0.8);
+    }
+    out(tone(t + 0.15, 0.9, "sawtooth", 2400, 1700), 0.035, t + 0.15, 0.05, 0.8, 0.3);
+  },
+  // not a voice. Something pretending to be one.
+  shriek(t) {
+    [880, 1245, 1661, 2349].forEach((f, i) => {
+      const o = tone(t, 1.3, "sawtooth", f * 0.7, f * 1.18);
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 1800 + i * 500;
+      bp.Q.value = 3;
+      o.connect(bp);
+      out(bp, 0.22, t + i * 0.015, 0.02, 1.2, 0.6);
+    });
+    out(noise(t, 1.1, "bandpass", 3200, 2), 0.35, t, 0.02, 1.0, 0.5);
+  },
+  // the air tightening before something happens
+  rise(t, dur = 2.4) {
+    out(tone(t, dur, "sine", 55, 190), 0.35, t, dur * 0.85, 0.2, 0.4);
+    out(tone(t, dur, "sawtooth", 58, 196), 0.05, t, dur * 0.85, 0.2, 0.4);
+    out(noise(t, dur, "bandpass", 600, 0.8), 0.25, t, dur * 0.9, 0.15, 0.5);
+  },
+  // bare feet, running, much too fast
+  skitter(t, dur = 3) {
+    for (let tt = t; tt < t + dur; tt += 0.13 + Math.random() * 0.03) {
+      out(noise(tt, 0.04, "lowpass", 900), 0.3, tt, 0.002, 0.035, 0.2, 0.6);
+    }
+  },
   static(t, dur = 0.45) {
     const n = noise(t, dur, "bandpass", 2300, 0.7);
     const g = gainNode();
