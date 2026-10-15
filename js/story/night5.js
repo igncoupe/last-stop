@@ -138,6 +138,7 @@ export async function night5(g) {
 }
 
 async function ripRadio(g) {
+  g.park();                 // the bus stays at Ashgrove until you open the doors
   g.lockDoors(true);
   g.sfx("rip");
   await g.say("rhee", "DON'T YOU");
