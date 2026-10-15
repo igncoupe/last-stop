@@ -14,6 +14,7 @@ import { route, STOPS, MYSTERY } from "./world/route.js";
 import { createDrive } from "./game/drive.js";
 import { createPlayer } from "./game/player.js";
 import { createDirector } from "./game/director.js";
+import { createHorror } from "./world/horror.js";
 import { NIGHTS, ENDINGS, CREDITS } from "./story/nights.js";
 
 const $ = (id) => document.getElementById(id);
@@ -76,7 +77,8 @@ const drive = createDrive(bus);
 const player = createPlayer(camera, scene);
 
 const settings = Object.assign({ volume: 0.8, mouse: 1, scares: true, subs: true, warned: false }, store.get(SETTINGS) || {});
-const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, lightning, input };
+const horror = createHorror(camera);
+const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, lightning, input, horror };
 const director = createDirector(world);
 const g = director.g;
 
@@ -122,7 +124,9 @@ function frame(now) {
   last = now;
   if (paused) return;
   if (playing && input.hit("KeyF")) toggleDoors();
+  player.state.vibration = drive.speed / 14;
   player.update(dt, input);
+  horror.update(dt);
   drive.update(dt, input, playing && player.mode === "seat" && !player.state.locked);
   Sound.engine(0.3 + (drive.speed / 14) * 0.6, drive.speed / 14);
   const rt = director.routeText(nextStopName());
@@ -130,7 +134,7 @@ function frame(now) {
   if (key !== lastRoute) { bus.setRoute(rt.text, rt.glitch); lastRoute = key; }
   bus.update(dt, { speed: drive.speed, clock: clockText(), late: g.lateTonight });
   camera.getWorldPosition(focus);
-  city.update(focus);
+  city.update(focus, dt);
   props.rain.update(dt, focus);
   props.flood.update(dt);
   props.mystery.update(dt);
@@ -187,6 +191,7 @@ function resetWorld(n) {
   setSky("night");
   g.storm(false);
   g.route(null);
+  Sound.ambience({ wind: 1, hum: 0 });
   // you start by the dispatch office, facing the bus; the bus is solid
   bus.group.updateMatrixWorld(true);
   const busBox = new THREE.Box3().setFromObject(bus.group).expandByScalar(-0.15);

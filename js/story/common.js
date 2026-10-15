@@ -49,6 +49,7 @@ export async function closeDoorsAndGo(g) {
   g.hint("Drive  ·  W gas  ·  S brake  ·  look around with the mouse");
   await g.departed();
   g.hint(null);
+  if (g.state.night >= 2) g.dread(true);   // from night 2 on, the bus is never quite empty
 }
 
 // make sure the doors are open at a stop (the player has to do it)

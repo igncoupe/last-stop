@@ -169,7 +169,15 @@ export function buildCity(scene) {
       pool.rotation.x = -Math.PI / 2;
       pool.position.copy(route.at(d, side * (ROAD_HALF - 1.2), 0.03));
       group.add(pool);
-      lamps.push({ d, pos: route.at(d, side * (ROAD_HALF - 1.1), 5.6), group: g });
+      // some lamps are dying: they buzz on and off
+      const flicky = rand() < 0.16;
+      if (flicky) {
+        const own = new THREE.MeshBasicMaterial({ color: 0xffd9a0 });
+        head.material = own;
+        cone.material = coneMat.clone();
+        pool.material = poolMat.clone();
+      }
+      lamps.push({ d, pos: route.at(d, side * (ROAD_HALF - 1.1), 5.6), group: g, flicky, on: true, head, cone, pool, t: rand() * 3 });
     }
   }
 
@@ -190,7 +198,19 @@ export function buildCity(scene) {
       coneMat.visible = on;
       poolMat.visible = on;
     },
-    update(focus) {
+    update(focus, dt = 0.016) {
+      for (const lamp of lamps) {
+        if (!lamp.flicky) continue;
+        lamp.t -= dt;
+        if (lamp.t <= 0) {
+          lamp.on = !lamp.on;
+          lamp.t = lamp.on ? 0.05 + Math.random() * (Math.random() < 0.2 ? 3 : 0.4) : 0.04 + Math.random() * 0.25;
+          const lit = lamp.on && lampsOn.value;
+          lamp.head.material.color.set(lit ? 0xffd9a0 : 0x1a1a1a);
+          lamp.cone.visible = lit;
+          lamp.pool.visible = lit;
+        }
+      }
       // move the real lights to the lamps nearest the camera
       const near = lamps
         .map((lamp) => ({ lamp, dist: lamp.pos.distanceToSquared(focus) }))
@@ -198,7 +218,7 @@ export function buildCity(scene) {
         .slice(0, lights.length);
       lights.forEach((l, i) => {
         const n = near[i];
-        l.visible = lampsOn.value && !!n;
+        l.visible = lampsOn.value && !!n && n.lamp.on;
         if (n) l.position.copy(n.lamp.pos);
       });
     },

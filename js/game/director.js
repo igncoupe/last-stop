@@ -8,8 +8,28 @@ import { CAST, spoken, lineId } from "../story/cast.js";
 import { Person } from "../world/people.js";
 import { route, STOPS } from "../world/route.js";
 
+// a glowing arrow (with a light beam) that bobs over wherever you need to go
+function makeMarker() {
+  const g = new THREE.Group();
+  const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.45, 0.9, 4), new THREE.MeshBasicMaterial({ color: 0xffb54a, fog: false }));
+  arrow.rotation.x = Math.PI;
+  g.add(arrow);
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 40, 6, 1, true), new THREE.MeshBasicMaterial({ color: 0xffb54a, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+  beam.position.y = 20.5;
+  g.add(beam);
+  g.visible = false;
+  g.userData = { beam };
+  return g;
+}
+
 export function createDirector(w) {
   const { scene, camera, player, drive, bus, props, places, settings } = w;
+  const marker = makeMarker();
+  scene.add(marker);
+  const navEl = document.getElementById("nav");
+  let nav = null;          // { stop: { d, name } } | { mesh } | { point }
+  let navText = "";
+  let bob = 0;
   const waiters = new Set();
   const actors = new Map();
   let doorControl = true;
@@ -83,11 +103,13 @@ export function createDirector(w) {
     // wait until the bus stops at a stop (true) or drives past it (false)
     async arrive(name, { hint = true } = {}) {
       const d = name === "???" ? props.mystery.d : STOPS[name];
-      if (hint) ui.hint(`Drive to ${name === "???" ? "the next stop" : name}`);
+      if (hint) nav = { stop: { d, name: name === "???" ? "???" : name } };
       await until(() => drive.stoppedNear(d) || drive.passed(d));
-      ui.hint(null);
+      if (nav && nav.stop) nav = null;
       return drive.stoppedNear(d);
     },
+    // point the arrow at a place on foot (cleared with navTo(null))
+    navTo(point) { nav = point ? { point: point.clone() } : null; },
     // wait for the doors (F) to be opened/closed, or for a timeout. Returns true if they did.
     async doors(open, timeoutMs = 0, hintText = null) {
       if (hintText !== false) ui.hint(hintText || (open ? "Open the doors  [F]" : "Close the doors  [F]"));
@@ -180,33 +202,47 @@ export function createDirector(w) {
       player.lookAtSoon(a ? a.root.localToWorld(new THREE.Vector3(0, a.look.height - 0.15, 0)) : null);
     },
     cutscene(on, target = null) { on ? player.cutscene(target) : player.endCutscene(); },
+    // a real jumpscare, in the world: "face" lunges at you, "hands" slam the
+    // glass, "eyes" open in the dark first. The bus lights stutter with it.
     async scare(kind = "face") {
       if (!settings.scares) {
         Sound.sfx("heartbeat", 3, 96);
         await g.wait(700);
         return;
       }
-      Sound.sfx("sting");
-      player.shake(1.6);
-      await ui.scare(kind);
+      const before = bus.interiorMode;
+      if (kind === "eyes") {
+        bus.setInterior("off");
+        Sound.sfx("breath");
+        await g.wait(1350);
+      }
+      bus.setInterior("flicker");
+      Sound.sfx(kind === "hands" ? "bang" : "sting");
+      if (kind === "hands") Sound.sfx("sting");
+      player.shake(kind === "hands" ? 1.4 : 2.2);
+      document.body.classList.add("scare-flash");
+      setTimeout(() => document.body.classList.remove("scare-flash"), 110);
+      const playing = w.horror.play(kind === "eyes" ? "face" : kind);
+      await until(() => !w.horror.playing);
+      await playing;
+      bus.setInterior(before || "on");
     },
-    // a drowned face right in front of you, in the world
-    async faceScare(look = "drowned", dist = 0.55) {
-      if (!settings.scares) { Sound.sfx("heartbeat", 3, 96); await g.wait(700); return; }
-      const p = new Person(scene, look, { ghost: true });
-      const pos = camera.getWorldPosition(new THREE.Vector3());
-      const dir = camera.getWorldDirection(new THREE.Vector3());
-      p.placeAt(pos.clone().addScaledVector(dir, dist).setY(pos.y - p.look.height + 0.12), Math.atan2(-dir.x, -dir.z));
-      Sound.sfx("sting");
-      player.shake(1.8);
-      await g.wait(650);
-      p.remove();
-    },
+    // kept for older scripts: same as a face scare
+    faceScare() { return g.scare("face"); },
     fade(to, ms = 1200, white = false) { return ui.fade(to, ms, white); },
     card(opts) { return ui.card(opts); },
-    interact(mesh, label) {
+    interact(mesh, label, { arrow = true } = {}) {
+      if (arrow) nav = { mesh };
       return new Promise((done) => {
-        const entry = player.addInteract({ mesh, label: () => label, use: () => { player.removeInteract(entry); done(); } });
+        const entry = player.addInteract({
+          mesh,
+          label: () => label,
+          use: () => {
+            player.removeInteract(entry);
+            if (nav && nav.mesh === mesh) nav = null;
+            done();
+          },
+        });
       });
     },
 
@@ -275,17 +311,44 @@ export function createDirector(w) {
     await until(() => g.gazing(bus.group.localToWorld(new THREE.Vector3(0.7, 1.6, 12)), 35), 10000);
     await g.faceScare(look, 0.6);
   };
-  // random whispers, breathing and knocks while the bus is moving
+  // creepy things that just happen while you drive: whispers, footsteps in
+  // the aisle, the stop bell on an empty bus, people on the sidewalk who
+  // aren't there when you get close, streetlights that stutter
   let dread = false;
   let dreadT = 20;
-  g.dread = (on) => { dread = on; dreadT = 15 + Math.random() * 15; };
+  let watcher = null;
+  g.dread = (on) => { dread = on; dreadT = 12 + Math.random() * 12; };
+  const EVENTS = [
+    () => Sound.sfx("whisper"),
+    () => Sound.sfx("breath"),
+    () => Sound.sfx("steps"),
+    () => Sound.sfx("knock", 2),
+    () => { if (bus.passengers === 0) Sound.sfx("bell"); else Sound.sfx("drip"); },
+    () => {
+      w.city.setLampsOn(false);
+      Sound.sfx("lightsout");
+      setTimeout(() => w.city.setLampsOn(true), 180 + Math.random() * 400);
+    },
+    () => { bus.setInterior("flicker"); setTimeout(() => { if (bus.interiorMode === "flicker") bus.setInterior("on"); }, 900); },
+    () => Sound.sfx("siren"),
+    () => {
+      // someone standing on the sidewalk ahead
+      if (watcher) return;
+      const d0 = drive.d + 70 + Math.random() * 40;
+      const side = Math.random() < 0.7 ? 6.4 : -6.4;
+      watcher = { d: d0, p: new Person(scene, "drowned", { ghost: true }).placeAt(route.at(d0, side, 0.15), route.heading(d0) + (side > 0 ? Math.PI / 2 : -Math.PI / 2)) };
+    },
+  ];
   g.tickDread = (dt) => {
+    if (watcher) {
+      watcher.p.lookAt(camera.getWorldPosition(new THREE.Vector3()));
+      if (drive.d > watcher.d - 22 || !dread) { watcher.p.remove(); watcher = null; }
+    }
     if (!dread || !drive.moving) return;
     dreadT -= dt;
     if (dreadT > 0) return;
-    dreadT = 22 + Math.random() * 28;
-    const pick = ["whisper", "breath", "drip", "knock", "whisper"][Math.floor(Math.random() * 5)];
-    Sound.sfx(pick, ...(pick === "knock" ? [2] : []));
+    dreadT = 14 + Math.random() * 20;
+    EVENTS[Math.floor(Math.random() * EVENTS.length)]();
   };
 
   // show a hint and wait for a key press
@@ -302,6 +365,7 @@ export function createDirector(w) {
     doorControl = true;
     storm = false;
     g.dread(false);
+    nav = null;
     ui.hint(null);
     ui.clearSubtitle();
     ui.clearChoices();
@@ -325,6 +389,40 @@ export function createDirector(w) {
     },
     update(dt) {
       g.tickDread(dt);
+      // guidance: an arrow over the target, and a distance readout while driving
+      bob += dt;
+      let text = "";
+      let urgent = false;
+      if (nav && nav.stop) {
+        const left = nav.stop.d - drive.d;
+        marker.visible = left > -6;
+        marker.position.copy(route.at(nav.stop.d - 6, 2.3, 4.6 + Math.sin(bob * 3) * 0.25));
+        marker.scale.setScalar(1);
+        marker.userData.beam.visible = true;
+        if (drive.inZone(nav.stop.d)) {
+          text = drive.speed > 0.35 ? "Stop here  ·  brake  [S]" : "";
+          urgent = drive.speed > 0.35;
+        } else if (left > 70) {
+          text = `Next stop: ${nav.stop.name}  ·  ${Math.round(left)} m`;
+        } else if (left > 0) {
+          text = `${nav.stop.name}  ·  slow down, pull into the yellow box`;
+          urgent = drive.speed > 9;
+        }
+      } else if (nav && (nav.mesh || nav.point)) {
+        const p = nav.mesh ? nav.mesh.getWorldPosition(new THREE.Vector3()) : nav.point;
+        marker.visible = true;
+        marker.position.set(p.x, p.y + 0.75 + Math.sin(bob * 3) * 0.08, p.z);
+        marker.scale.setScalar(0.35);
+        marker.userData.beam.visible = false;
+      } else {
+        marker.visible = false;
+      }
+      if (text !== navText) {
+        navText = text;
+        navEl.textContent = text;
+        navEl.classList.toggle("on", !!text);
+      }
+      navEl.classList.toggle("urgent", urgent);
       waiters.forEach((wt) => {
         wt.left -= dt;
         if (wt.test(dt) || wt.left <= 0) {

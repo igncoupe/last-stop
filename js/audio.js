@@ -180,6 +180,39 @@ const SFX = {
   splash(t) { out(noise(t, 1.2, "lowpass", 1400), 0.7, t, 0.01, 1.1, 0.4); out(tone(t, 0.6, "sine", 200, 60), 0.4, t, 0.01, 0.5); },
   spark(t) { for (let i = 0; i < 6; i++) out(noise(t + i * 0.05 + Math.random() * 0.04, 0.05, "highpass", 4000), 0.5, t + i * 0.05, 0.001, 0.04); },
   rip(t) { out(noise(t, 0.5, "bandpass", 900, 1), 0.9, t, 0.005, 0.45); out(tone(t, 0.3, "sawtooth", 300, 80), 0.2, t, 0.002, 0.3); },
+  // your own footstep on concrete
+  step(t) {
+    out(noise(t, 0.09, "lowpass", 700 + Math.random() * 200), 0.3, t, 0.004, 0.08, 0.1);
+    out(tone(t, 0.07, "sine", 95, 55), 0.25, t, 0.003, 0.06);
+  },
+  // slow footsteps walking up the aisle behind you
+  steps(t) {
+    for (let i = 0; i < 5; i++) {
+      const tt = t + i * 0.62;
+      out(noise(tt, 0.1, "lowpass", 520), 0.16 + i * 0.03, tt, 0.004, 0.09, 0.5, i % 2 ? 0.25 : -0.25);
+      out(tone(tt, 0.08, "sine", 80, 50), 0.12 + i * 0.02, tt, 0.003, 0.07, 0.3);
+    }
+  },
+  // a siren far away across the city
+  siren(t) {
+    const o = ctx.createOscillator();
+    o.type = "sine";
+    for (let i = 0; i < 8; i++) o.frequency.setValueAtTime(i % 2 ? 960 : 720, t + i * 0.7);
+    o.start(t);
+    o.stop(t + 5.8);
+    const f = ctx.createBiquadFilter();
+    f.type = "lowpass";
+    f.frequency.value = 1100;
+    o.connect(f);
+    const g = gainNode();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.025, t + 1.5);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 5.6);
+    f.connect(g);
+    const p = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (p) { p.pan.value = Math.random() < 0.5 ? -0.7 : 0.7; g.connect(p); p.connect(sfxBus); } else g.connect(sfxBus);
+    send(g, 0.9);
+  },
 };
 
 function mood(name) {
@@ -303,6 +336,17 @@ function startAmbience() {
   hg.connect(ambBus);
   hum.start();
   amb.hum = { g: hg, max: 0.04 };
+  // wind that rises and falls
+  const wind = loop("bandpass", 380, 0.6);
+  const wl2 = ctx.createOscillator();
+  wl2.frequency.value = 0.07;
+  const wd2 = gainNode(0.045);
+  wl2.connect(wd2);
+  wd2.connect(wind.g.gain);
+  wl2.start();
+  amb.wind = { ...wind, max: 0.09 };
+  // tires hissing on wet asphalt, follows the bus speed
+  amb.tires = { ...loop("highpass", 1600), max: 0.08 };
 }
 function ambience(levels) {
   if (!ctx) return;
@@ -318,6 +362,7 @@ function engine(level, rev) {
   const a = amb.engine;
   a.g.gain.setTargetAtTime(level * a.max, ctx.currentTime, 0.3);
   a.oscs.forEach((o, i) => o.frequency.setTargetAtTime(34 + rev * 30 + i * 0.7, ctx.currentTime, 0.3));
+  amb.tires.g.gain.setTargetAtTime(Math.min(1, rev * 1.2) * amb.tires.max, ctx.currentTime, 0.3);
 }
 
 /* ---------------- voices ---------------- */

@@ -2,6 +2,7 @@
 // by a cutscene. Also handles looking at things and pressing E on them.
 import * as THREE from "three";
 import { ui } from "../core/ui.js";
+import { Sound } from "../audio.js";
 
 const WALK_SPEED = 2.4;
 const RADIUS = 0.3;
@@ -112,7 +113,10 @@ export function createPlayer(camera, scene) {
             const cos = Math.cos(s.yaw);
             s.pos.x += ((-sin * f + cos * r) / len) * WALK_SPEED * dt;
             s.pos.z += ((-cos * f - sin * r) / len) * WALK_SPEED * dt;
+            const before = Math.sin(s.bob);
             s.bob += dt * 9;
+            if (before > 0 && Math.sin(s.bob) <= 0) Sound.sfx("step");   // one step per bob
+            if (before < 0 && Math.sin(s.bob) >= 0) Sound.sfx("step");
             collide(s.pos);
           }
         }
@@ -122,6 +126,10 @@ export function createPlayer(camera, scene) {
         const rel = THREE.MathUtils.clamp(Math.atan2(Math.sin(s.yaw - Math.PI), Math.cos(s.yaw - Math.PI)), -2.7, 2.7);
         s.yaw = Math.PI + rel;
         camera.position.copy(s.seatEye);
+        // the old engine shakes the whole bus a little
+        const v = (s.vibration || 0) * 0.004 + 0.0006;
+        camera.position.x += (Math.random() - 0.5) * v;
+        camera.position.y += (Math.random() - 0.5) * v * 1.5;
       }
       camera.rotation.set(s.pitch, s.yaw, 0, "YXZ");
       if (s.shake > 0) {

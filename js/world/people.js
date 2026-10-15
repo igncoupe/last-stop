@@ -27,6 +27,7 @@ export class Person {
     this.look = look;
     this.scene = scene;
     this.root = new THREE.Group();
+    this.root.userData.person = this;
     this.body = new THREE.Group();
     this.root.add(this.body);
     scene.add(this.root);
