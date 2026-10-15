@@ -10,9 +10,9 @@ Be careful who you stop for. Be more careful who you don't.
 
 - 3D, first person, with a low-poly PS1 look
 - You really drive the bus. You choose who to stop for by pulling over and opening the doors.
-- Every character is voiced (AI voices made with Kokoro), with subtitles
+- Every character is voiced with open-source AI voices, with subtitles
 - 5 nights, about an hour, and 4 endings
-- A generated horror score, rain, radio static, jumpscares
+- A generated horror score, rain, radio static, and in-world jumpscares: the drowned, a shadow that stalks the route, and cars on the other side of the road that aren't right
 
 > Content warning: jumpscares, loud sounds, flashing lights, and themes of death, drowning and grief. Jumpscares can be turned off on the title screen.
 
@@ -71,6 +71,14 @@ python tools/make_voices.py
 ```
 
 Only new or changed lines get generated. Chatterbox runs on the CPU (slowly); `--workers 3 --worker N` lets you run several at once. For a fast, flatter fallback there's `tools/make_voices_kokoro.py`.
+
+The driver (you) is voiced with [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) (Apache 2.0). His voice was designed from a written description, a new voice and not a copy of anyone's, in three deliveries (weary, scared, terrified) kept in `tools/refs/driver_*.wav`; each of his lines is cloned from the delivery that fits it:
+
+```bash
+pip install -U qwen-tts soundfile
+python tools/make_driver_voice.py design      # only to re-design the voice
+python tools/make_driver_voice.py lines
+```
 
 Chatterbox adds an inaudible watermark to its audio that marks it as AI-generated.
 

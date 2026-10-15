@@ -451,6 +451,7 @@
    "id": "b3e34a34",
    "who": "rhee",
    "text": "On time, driver. That's what I like to see.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -459,6 +460,7 @@
    "id": "ca0b2f3a",
    "who": "rhee",
    "text": "A few minutes late tonight. Don't make it a habit.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -467,6 +469,7 @@
    "id": "c71403db",
    "who": "rhee",
    "text": "You were late tonight, driver. Very late. People notice.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -475,6 +478,7 @@
    "id": "018b35f7",
    "who": "rhee",
    "text": "Evening, new driver. This is Rhee, night dispatch. You'll be hearing a lot of me.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -483,6 +487,7 @@
    "id": "2383af51",
    "who": "rhee",
    "text": "Route 9 runs forty minutes, depot to Northgate. Two rules. You don't run late. And you don't let anyone ride free.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -491,6 +496,7 @@
    "id": "7430a182",
    "who": "rhee",
    "text": "The cameras see everything. So do I.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -499,6 +505,7 @@
    "id": "912fed3d",
    "who": "teodor",
    "text": "End of the line.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -507,6 +514,7 @@
    "id": "0cfe804b",
    "who": "you",
    "text": "Northgate, then.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -515,6 +523,7 @@
    "id": "770fb40f",
    "who": "teodor",
    "text": "If you say so.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -523,6 +532,7 @@
    "id": "84043e64",
    "who": "teodor",
    "text": "You've got kind eyes. I've seen them before. That's going to make this harder for you.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -531,6 +541,7 @@
    "id": "066a5d85",
    "who": "rhee",
    "text": "You're exactly on schedule, driver. Let's keep it that way.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -539,6 +550,7 @@
    "id": "365b073b",
    "who": "mara",
    "text": "Thank you. Oh my god, thank you. I'm Mara. If I'm late one more time they'll take me off nights, and I can't afford days.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -547,6 +559,7 @@
    "id": "a74a1872",
    "who": "rhee",
    "text": "Good. That's how it's done.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -555,6 +568,7 @@
    "id": "de4454d2",
    "who": "mara",
    "text": "St. Agnes. Twelve-hour shifts. You get used to the quiet. Mostly.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -563,6 +577,7 @@
    "id": "9ee15e09",
    "who": "mara",
    "text": "You're new. The last guy quit after a week. Said the bus was always cold. Said he kept hearing people in the back.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -571,6 +586,7 @@
    "id": "13786a45",
    "who": "mara",
    "text": "He was kind of a weirdo, though.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -579,6 +595,7 @@
    "id": "3f5bd2f9",
    "who": "mara",
    "text": "You know this route used to go farther? Past Northgate, out to Ashgrove. Before the bridge.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -587,6 +604,7 @@
    "id": "7cac3b9a",
    "who": "mara",
    "text": "A storm took it out. Way before I was born. My mom says they never found all the—",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -595,6 +613,7 @@
    "id": "0b7d45b0",
    "who": "mara",
    "text": "Never mind. It's a sad story for a bus at midnight.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -603,6 +622,7 @@
    "id": "cfee0626",
    "who": "jun",
    "text": "I don't... I don't have the fare. I just need to get to Northgate. Please. I'll pay you back tomorrow, I swear.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -611,6 +631,7 @@
    "id": "5deabb8b",
    "who": "rhee",
    "text": "Reminder, driver. No. Free. Rides.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -619,6 +640,7 @@
    "id": "d19feffd",
    "who": "jun",
    "text": "Thanks. I'm Jun. In case you need it for, like, a report.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -627,6 +649,7 @@
    "id": "c5ee7fa4",
    "who": "rhee",
    "text": "I saw that, driver. That's your one warning.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -635,6 +658,7 @@
    "id": "7221c6a1",
    "who": "jun",
    "text": "Is he okay? The old guy in the back? He's not blinking.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -643,6 +667,7 @@
    "id": "65860ccf",
    "who": "mara",
    "text": "This is me. St. Agnes.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -651,6 +676,7 @@
    "id": "3daca779",
    "who": "mara",
    "text": "Made it with a minute to spare. You're a lifesaver. Literally, probably. Same bus tomorrow?",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -659,6 +685,7 @@
    "id": "3f5a8290",
    "who": "mara",
    "text": "Hey! That was my stop! Great. Now I'm walking back.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -667,6 +694,7 @@
    "id": "df52a639",
    "who": "rhee",
    "text": "Don't slow down, driver. That stop isn't on the schedule.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -675,6 +703,7 @@
    "id": "c0872d72",
    "who": "mara",
    "text": "I'll walk from here. Thanks for nothing.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -683,6 +712,7 @@
    "id": "cb7f1393",
    "who": "daniel",
    "text": "Ashgrove, please.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -691,6 +721,7 @@
    "id": "db35e2ec",
    "who": "you",
    "text": "This bus doesn't go to Ashgrove.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -699,6 +730,7 @@
    "id": "8ea1f894",
    "who": "daniel",
    "text": "No. I suppose it doesn't. Not anymore.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -707,6 +739,7 @@
    "id": "8f154831",
    "who": "rhee",
    "text": "Watch the road, driver. You're drifting.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -715,6 +748,7 @@
    "id": "9d0e4ee4",
    "who": "jun",
    "text": "What was that? What WAS that?",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -723,6 +757,7 @@
    "id": "1edc4650",
    "who": "rhee",
    "text": "Eyes on the road, driver. You'll see all sorts of things on nights.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -731,6 +766,7 @@
    "id": "39524556",
    "who": "rhee",
    "text": "You stop a lot, driver. For a lot of people. Teodor used to stop for everyone.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -739,6 +775,7 @@
    "id": "7c0d6448",
    "who": "you",
    "text": "Who's Teodor?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -747,6 +784,7 @@
    "id": "0280f92a",
    "who": "rhee",
    "text": "Nobody. A driver who ran late.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -755,6 +793,7 @@
    "id": "153e5205",
    "who": "rhee",
    "text": "Not bad for a first night, driver. Keep your eyes on the clock, and off the mirror.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -763,6 +802,7 @@
    "id": "7586ef59",
    "who": "mara",
    "text": "End of the line, huh. Thanks for the scenic route.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -771,6 +811,7 @@
    "id": "455a3fa2",
    "who": "jun",
    "text": "Thanks. Seriously. I'll pay you back.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -779,6 +820,7 @@
    "id": "1ceadcc9",
    "who": "you",
    "text": "End of the line, sir.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -787,6 +829,7 @@
    "id": "92f68c9b",
    "who": "teodor",
    "text": "Not yet, it isn't.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -795,6 +838,7 @@
    "id": "58875ee9",
    "who": "rhee",
    "text": "Driver. Your display is malfunctioning. Ignore it.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -803,6 +847,7 @@
    "id": "90aefc46",
    "who": "rhee",
    "text": "Whatever it shows you. Ignore it.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -811,6 +856,7 @@
    "id": "6fd90922",
    "who": "voices",
    "text": "You came back.",
+   "kind": "say",
    "voice": "af_nicole",
    "speed": 0.85,
    "pitch": 0.97
@@ -819,6 +865,7 @@
    "id": "989bcc4e",
    "who": "rhee",
    "text": "And no more free rides. I mean it.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -827,6 +874,7 @@
    "id": "1bcd7886",
    "who": "rhee",
    "text": "Get some sleep. Same time tomorrow.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -835,6 +883,7 @@
    "id": "a0033819",
    "who": "you",
    "text": "First night on Route 9. Nobody else wanted the shift.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -843,6 +892,7 @@
    "id": "2e03a6ed",
    "who": "you",
    "text": "I asked for it. I didn't tell them why.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -851,6 +901,7 @@
    "id": "05d6d8f0",
    "who": "you",
    "text": "There's an old man in the back row. I didn't see him get on.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -859,6 +910,7 @@
    "id": "a0df76bc",
    "who": "you",
    "text": "Elm and Fourth is first. Then Market, St. Agnes, Canal Row, Northgate.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -867,6 +919,7 @@
    "id": "b4fbcfbd",
    "who": "you",
    "text": "Someone's running for the bus. A nurse, I think. She's a long way back.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -875,6 +928,7 @@
    "id": "5daca877",
    "who": "you",
    "text": "She stopped running. She's just standing under the streetlight. Watching me go.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -883,6 +937,7 @@
    "id": "58068aea",
    "who": "you",
    "text": "Was someone running for the bus back there? Too late now.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -891,6 +946,7 @@
    "id": "987ec793",
    "who": "you",
    "text": "She was looking past me. At the back row.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -899,6 +955,7 @@
    "id": "b644e108",
    "who": "you",
    "text": "He nodded like he'd heard it before. It's six miles to Northgate.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -907,6 +964,7 @@
    "id": "386eba6c",
    "who": "you",
    "text": "There was a kid on the bench at Market. He watched the bus go by.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -915,6 +973,7 @@
    "id": "21e16543",
    "who": "you",
    "text": "I don't look. I don't want to look.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -923,6 +982,7 @@
    "id": "3f88013a",
    "who": "you",
    "text": "Every window in the hospital is lit. Someone's standing in a window on the fourth floor.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -931,6 +991,7 @@
    "id": "8fb3dbe3",
    "who": "you",
    "text": "There's someone at the old request stop. The one they took out of service years ago.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -939,6 +1000,7 @@
    "id": "4a442b74",
    "who": "you",
    "text": "No. Not someone. It's like somebody cut the shape of a man out of the night.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -947,6 +1009,7 @@
    "id": "cdbce358",
    "who": "you",
    "text": "Its head turned to follow me. Then the light went out. And it was gone.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -955,6 +1018,7 @@
    "id": "ed8a0985",
    "who": "you",
    "text": "Canal Row. The route sheet says nobody ever gets on here.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -963,6 +1027,7 @@
    "id": "6d2f660e",
    "who": "you",
    "text": "Nobody. Just water on the road. It hasn't rained all week.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -971,6 +1036,7 @@
    "id": "59a400eb",
    "who": "you",
    "text": "He sat right behind me. I can hear him dripping.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -979,6 +1045,7 @@
    "id": "4f57aa29",
    "who": "you",
    "text": "He's staring at the back of my head.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -987,6 +1054,7 @@
    "id": "206525b2",
    "who": "you",
    "text": "He's gone. There's just a puddle on his seat, spreading.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -995,6 +1063,7 @@
    "id": "bade5bf5",
    "who": "you",
    "text": "A face, pressed against my window. On the inside.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1003,6 +1072,7 @@
    "id": "abe01d6f",
    "who": "you",
    "text": "It hit the glass. It was on the glass, pressed flat, looking in at me. It doesn't have a face. It doesn't have anything.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1011,6 +1081,7 @@
    "id": "02858512",
    "who": "you",
    "text": "There are handprints on the windshield. On the outside. They're not wet. They're ash.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1019,6 +1090,7 @@
    "id": "3e6533b0",
    "who": "you",
    "text": "The route display. It's showing a stop after Northgate. There's nothing after Northgate.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1027,6 +1099,7 @@
    "id": "004b379b",
    "who": "you",
    "text": "He's gone. I didn't hear the doors. There's a coin on his seat. Old. Worn smooth. And the seat is soaking wet.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1035,6 +1108,7 @@
    "id": "4aa58024",
    "who": "you",
    "text": "I'm alone on the bus. I'm alone on the bus.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1043,6 +1117,7 @@
    "id": "65886966",
    "who": "you",
    "text": "NIGHT ROUTE 9. DEPOT TO NORTHGATE. 11:40 PM.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1051,6 +1126,7 @@
    "id": "ebe461d8",
    "who": "you",
    "text": "DO NOT RUN LATE. NO FREE RIDES. DISPATCH IS WATCHING.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1059,6 +1135,7 @@
    "id": "c5d0c61c",
    "who": "you",
    "text": "Someone's written underneath in pencil. Stop for them.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1067,6 +1144,7 @@
    "id": "dfc8eab9",
    "who": "you",
    "text": "Sir? Where are you headed?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1075,6 +1153,7 @@
    "id": "5bb3a81d",
    "who": "you",
    "text": "What happened to the bridge?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1083,6 +1162,7 @@
    "id": "57a9c36d",
    "who": "you",
    "text": "Sit down. This one's on me.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1091,6 +1171,7 @@
    "id": "a4626eb2",
    "who": "you",
    "text": "Sorry, kid. Rules.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1099,6 +1180,7 @@
    "id": "80997214",
    "who": "rhee",
    "text": "Evening, driver. Northgate by twelve twenty. And your display is still broken, so don't look at it.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1107,6 +1189,7 @@
    "id": "45c0513e",
    "who": "teodor",
    "text": "You saw it, then.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -1115,6 +1198,7 @@
    "id": "7c73d730",
    "who": "teodor",
    "text": "There was a stop past Northgate once. Ashgrove. Little houses by the river. Kids who'd wave at the bus.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -1123,6 +1207,7 @@
    "id": "4906489b",
    "who": "teodor",
    "text": "The bridge went down in March of ninety-four. In a storm. With the last bus of the night on it.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -1131,6 +1216,7 @@
    "id": "ec986855",
    "who": "you",
    "text": "Which route?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1139,6 +1225,7 @@
    "id": "1d8e0ffe",
    "who": "teodor",
    "text": "This one.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -1147,6 +1234,7 @@
    "id": "ec7960bf",
    "who": "teodor94",
    "text": "Dispatch, this is Route 9. The river's coming over the road at Canal. I want to hold at Northgate till it passes.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.92,
    "pitch": 0.92
@@ -1155,6 +1243,7 @@
    "id": "b861e563",
    "who": "rhee94",
    "text": "Negative, Nine. You're eleven minutes down. Make up the time.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.96,
    "pitch": 0.92
@@ -1163,6 +1252,7 @@
    "id": "caf217ce",
    "who": "teodor94",
    "text": "Harold, I've got kids on this bus.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.92,
    "pitch": 0.92
@@ -1171,6 +1261,7 @@
    "id": "ad88095e",
    "who": "rhee94",
    "text": "Then get them home on schedule.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.96,
    "pitch": 0.92
@@ -1179,6 +1270,7 @@
    "id": "9dd37dc4",
    "who": "rhee",
    "text": "Old tapes, driver. The system plays them back sometimes. Ignore it.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1187,6 +1279,7 @@
    "id": "d6e794eb",
    "who": "mara",
    "text": "Figured I owe you a coffee. It's terrible. Hospital coffee always is.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1195,6 +1288,7 @@
    "id": "e8530f43",
    "who": "mara",
    "text": "Heads up. A water main burst on Canal Row. It's deep. Take it slow, or you'll stall out in the middle of it.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1203,6 +1297,7 @@
    "id": "4ea44667",
    "who": "mara",
    "text": "I got written up. One more and I'm off nights. So thanks for that.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1211,6 +1306,7 @@
    "id": "185c2418",
    "who": "mara",
    "text": "Yeah. Okay. Everybody's got a schedule. I get it.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1219,6 +1315,7 @@
    "id": "479f747d",
    "who": "mara",
    "text": "Canal Row's flooded tonight. Go slow or you'll stall in it.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1227,6 +1324,7 @@
    "id": "691fc720",
    "who": "mara",
    "text": "There's a man on my ward. Room four B. Ninety-one years old. No visitors. Ever.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1235,6 +1333,7 @@
    "id": "903d2a97",
    "who": "mara",
    "text": "He barely talks. But every night, right around this time, he opens his eyes and asks me two things.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1243,6 +1342,7 @@
    "id": "95e076dc",
    "who": "mara",
    "text": "What time is it. And is Route 9 running yet.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1251,6 +1351,7 @@
    "id": "fa3961c6",
    "who": "mara",
    "text": "I always tell him yes. It seems to help.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1259,6 +1360,7 @@
    "id": "ccbaedf1",
    "who": "mara",
    "text": "My mom was a nurse at St. Agnes back then too. She lost a friend on that bus. She never really talked about it.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1267,6 +1369,7 @@
    "id": "a2ecacd8",
    "who": "jun",
    "text": "I'm paying tonight. And here's yesterday's. Don't want you getting in trouble.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1275,6 +1378,7 @@
    "id": "a3b6c638",
    "who": "jun",
    "text": "My mom cleans the Northgate depot. Nights. She works two jobs, so nights are kind of the only time I see her.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1283,6 +1387,7 @@
    "id": "6ac47bb4",
    "who": "jun",
    "text": "She gets off at twelve thirty. If I'm there before then, we walk home together.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1291,6 +1396,7 @@
    "id": "4533c2cb",
    "who": "jun",
    "text": "Can I ask you something weird? Last night, when we got to Northgate. Did you count how many people got off?",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1299,6 +1405,7 @@
    "id": "aa2e76f9",
    "who": "you",
    "text": "Just you.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1307,6 +1414,7 @@
    "id": "8383d676",
    "who": "jun",
    "text": "There were six people in the back when I got off. All wet. All looking at you.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1315,6 +1423,7 @@
    "id": "291942b7",
    "who": "momcall",
    "text": "Hello? Jun? Jun, is that you?",
+   "kind": "say",
    "voice": "af_sarah",
    "speed": 1,
    "pitch": 1
@@ -1323,6 +1432,7 @@
    "id": "638cf538",
    "who": "you",
    "text": "No, I'm sorry. I'm the Route 9 driver. I saw him last night at Market Street. He was trying to get to Northgate.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1331,6 +1441,7 @@
    "id": "7811d094",
    "who": "momcall",
    "text": "Northgate. He was coming to me. I work at the Northgate depot. He was walking to me.",
+   "kind": "say",
    "voice": "af_sarah",
    "speed": 1,
    "pitch": 1
@@ -1339,6 +1450,7 @@
    "id": "6341fb5b",
    "who": "momcall",
    "text": "Thank you. I'll call the police. Thank you.",
+   "kind": "say",
    "voice": "af_sarah",
    "speed": 1,
    "pitch": 1
@@ -1347,6 +1459,7 @@
    "id": "48bfb44c",
    "who": "rhee",
    "text": "Driver. Personal calls are not on the schedule.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1355,6 +1468,7 @@
    "id": "af9f7bc7",
    "who": "jun",
    "text": "Okay. I saw that. I definitely saw that.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1363,6 +1477,7 @@
    "id": "67911aa8",
    "who": "rhee",
    "text": "You're drifting, driver. Eyes front.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1371,6 +1486,7 @@
    "id": "69e78022",
    "who": "mara",
    "text": "Hey. Weird question. If you ever see a stop that isn't supposed to be there...",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1379,6 +1495,7 @@
    "id": "97309180",
    "who": "mara",
    "text": "My mom used to say the drowned don't want to scare you. They just want a ride home.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1387,6 +1504,7 @@
    "id": "03a0393c",
    "who": "mara",
    "text": "Forget it. I'm tired. See you tomorrow.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1395,6 +1513,7 @@
    "id": "f0dd5238",
    "who": "mara",
    "text": "Seriously? That was my stop.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1403,6 +1522,7 @@
    "id": "1cd17c5f",
    "who": "you",
    "text": "The bridge is gone. It's been gone a long time.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1411,6 +1531,7 @@
    "id": "0f0973e2",
    "who": "you",
    "text": "This bus doesn't go there.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1419,6 +1540,7 @@
    "id": "cb5ce8d4",
    "who": "daniel",
    "text": "Everyone keeps telling me.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -1427,6 +1549,7 @@
    "id": "52e0275c",
    "who": "daniel",
    "text": "I'm Daniel. My daughter's Rosie. She turns six tonight. I promised her I'd be home before she fell asleep.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -1435,6 +1558,7 @@
    "id": "7749ec20",
    "who": "daniel",
    "text": "I think I'm very late.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -1443,6 +1567,7 @@
    "id": "d55fc336",
    "who": "daniel",
    "text": "You're kind. He was kind too. The driver.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -1451,6 +1576,7 @@
    "id": "a938c416",
    "who": "daniel",
    "text": "He wanted to wait out the storm. But the man on the radio kept saying make up the time. Make up the time.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -1459,6 +1585,7 @@
    "id": "c17eb54c",
    "who": "daniel",
    "text": "The man on the radio told him to make up the time. Did you know that? He wanted to wait.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -1467,6 +1594,7 @@
    "id": "6cff0705",
    "who": "rhee",
    "text": "Driver. Do NOT open those doors. They are not on the manifest.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1475,6 +1603,7 @@
    "id": "79e11c08",
    "who": "teodor",
    "text": "It's not their night yet. But you could let them see you.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -1483,6 +1612,7 @@
    "id": "0afe6060",
    "who": "lena",
    "text": "Not yet. Not tonight.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -1491,6 +1621,7 @@
    "id": "86b64914",
    "who": "lena",
    "text": "I'm Lena. You're the first one who's opened the doors in a very long time.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -1499,6 +1630,7 @@
    "id": "07c2370f",
    "who": "lena",
    "text": "Have we met? You look so much like someone I",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -1507,6 +1639,7 @@
    "id": "338fe016",
    "who": "lena",
    "text": "He's still riding, isn't he? Every night. Tell him we don't blame him. We never did.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -1515,6 +1648,7 @@
    "id": "6fca6b09",
    "who": "rhee",
    "text": "Driver. Close. The. Doors.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1523,6 +1657,7 @@
    "id": "16bd2ce1",
    "who": "rhee",
    "text": "Good. Good driver.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1531,6 +1666,7 @@
    "id": "33355330",
    "who": "jun",
    "text": "Night, driver.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1539,6 +1675,7 @@
    "id": "9fd52826",
    "who": "rhee",
    "text": "Storm's coming in off the river tomorrow. A big one. Like the old days.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1547,6 +1684,7 @@
    "id": "3e65c78d",
    "who": "rhee",
    "text": "You'll want to make up the time.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1555,6 +1693,7 @@
    "id": "9bc1f4ab",
    "who": "you",
    "text": "I barely slept. Every time I closed my eyes I heard dripping.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1563,6 +1702,7 @@
    "id": "258c55d2",
    "who": "you",
    "text": "Mom took the last bus home every night. That's most of what I remember about her. Her keys in the door, at one in the morning.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1571,6 +1711,7 @@
    "id": "1609fe51",
    "who": "you",
    "text": "And then one night, the keys didn't come.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1579,6 +1720,7 @@
    "id": "2f2d540d",
    "who": "you",
    "text": "He's back. Same seat. Same wet shoes.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1587,6 +1729,7 @@
    "id": "2ceecb81",
    "who": "you",
    "text": "And the stop with no name moved. It's before Northgate now.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1595,6 +1738,7 @@
    "id": "d55d99ac",
    "who": "you",
    "text": "The old man in the back row is crying. He isn't making a sound.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1603,6 +1747,7 @@
    "id": "ea535d2e",
    "who": "you",
    "text": "Mara was at the stop. I didn't pick her up. Again.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1611,6 +1756,7 @@
    "id": "af716072",
    "who": "you",
    "text": "The old man has his eyes closed. He might be smiling.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1619,6 +1765,7 @@
    "id": "96d90fca",
    "who": "you",
    "text": "Jun was waiting with exact change. I left him there.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1627,6 +1774,7 @@
    "id": "e3b48e36",
    "who": "you",
    "text": "Something's moving on the sidewalk. Out of the corner of my eye. Keeping up with the bus.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1635,6 +1783,7 @@
    "id": "e897f687",
    "who": "you",
    "text": "The thing from the windshield. It ran beside the bus. I was doing thirty.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1643,6 +1792,7 @@
    "id": "a70b13e7",
    "who": "you",
    "text": "Too fast. The engine's drowned. It won't turn over.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1651,6 +1801,7 @@
    "id": "fb7d4769",
    "who": "you",
    "text": "Someone's knocking on the doors.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1659,6 +1810,7 @@
    "id": "cb6dbff1",
    "who": "you",
    "text": "He's shivering so hard his teeth click.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1667,6 +1819,7 @@
    "id": "28d304ab",
    "who": "you",
    "text": "Something wet is touching the back of my neck.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1675,6 +1828,7 @@
    "id": "ca863448",
    "who": "you",
    "text": "I'm not opening those doors.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1683,6 +1837,7 @@
    "id": "0283affa",
    "who": "you",
    "text": "Hands. All over the door glass. Gray and wrinkled from the water.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1691,6 +1846,7 @@
    "id": "eb48a482",
    "who": "you",
    "text": "I can hear someone breathing. Somewhere behind me.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1699,6 +1855,7 @@
    "id": "51455359",
    "who": "you",
    "text": "There's nothing there. There's nothing there. There's nothing there.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1707,6 +1864,7 @@
    "id": "ea00d745",
    "who": "you",
    "text": "I'm slowing down. I'm not touching the brake.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1715,6 +1873,7 @@
    "id": "21a79ff2",
    "who": "you",
    "text": "There's a shelter where there's never been a shelter. Lit up yellow. It's raining inside it. Only inside it.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1723,6 +1882,7 @@
    "id": "982c95fc",
    "who": "you",
    "text": "Nobody's getting on.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1731,6 +1891,7 @@
    "id": "d2ee30c4",
    "who": "you",
    "text": "She stopped. She's looking at me like she knows me.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1739,6 +1900,7 @@
    "id": "b03554e3",
    "who": "you",
    "text": "A little girl at the front of the shelter waved at the bus. The way kids used to wave at buses.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1747,6 +1909,7 @@
    "id": "731f803f",
    "who": "you",
    "text": "The back row is empty again. Another coin. Another wet seat.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1755,6 +1918,7 @@
    "id": "d538464f",
    "who": "you",
    "text": "The display flickered. The stop with no name moved again. It's after St. Agnes now. It's getting closer.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1763,6 +1927,7 @@
    "id": "95957ed3",
    "who": "you",
    "text": "NOTICE: DEPOT CAMERAS SHOW NO PASSENGERS BOARDING ROUTE 9 AT THE DEPOT.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1771,6 +1936,7 @@
    "id": "84ccddf9",
    "who": "you",
    "text": "I checked the tape before my shift. It shows me getting on alone.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1779,6 +1945,7 @@
    "id": "fbf41490",
    "who": "you",
    "text": "There's a poster on the shelter. MISSING. Jun Park, fifteen. Last seen Market Street, around midnight.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1787,6 +1954,7 @@
    "id": "47d51805",
    "who": "you",
    "text": "It's the kid from last night. There's a phone number. Underneath, someone wrote: please. anything.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1795,6 +1963,7 @@
    "id": "18f833dd",
    "who": "you",
    "text": "That stop on the display. What is it?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1803,6 +1972,7 @@
    "id": "dfb4ef6e",
    "who": "you",
    "text": "I'm sorry. I should have waited.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1811,6 +1981,7 @@
    "id": "ed686827",
    "who": "you",
    "text": "Why do you ride to Northgate every night?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1819,6 +1990,7 @@
    "id": "301f1cee",
    "who": "you",
    "text": "The lights are back. He's gone. My jacket is folded on his seat. Soaked through. Still warm.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1827,6 +1999,7 @@
    "id": "d6598857",
    "who": "you",
    "text": "The lights are back. His seat is empty, and dark with water.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -1835,6 +2008,7 @@
    "id": "46461dbb",
    "who": "rhee",
    "text": "Two perfect nights, driver. Don't spoil it in the rain.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1843,6 +2017,7 @@
    "id": "75971b46",
    "who": "rhee",
    "text": "You're behind this week, driver. In weather like this, drivers make mistakes. Don't.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1851,6 +2026,7 @@
    "id": "65ee4da6",
    "who": "rhee",
    "text": "And I haven't forgotten about the free ride.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -1859,6 +2035,7 @@
    "id": "3b039f9c",
    "who": "mara",
    "text": "It's like the sky is falling. Thank you.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1867,6 +2044,7 @@
    "id": "39bc37f5",
    "who": "mara",
    "text": "Can I ask you something, and you don't think I'm crazy? Mr. Varga, in four B. He's getting worse. Tonight or tomorrow, the doctors say.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1875,6 +2053,7 @@
    "id": "b4764123",
    "who": "mara",
    "text": "He's stopped asking if Route 9 is running. Now he asks for the driver. The new driver. By name.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1883,6 +2062,7 @@
    "id": "fa119b52",
    "who": "mara",
    "text": "I never told him your name.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1891,6 +2071,7 @@
    "id": "3f58b36e",
    "who": "mara",
    "text": "Would you come up? When we get to St. Agnes? Just for a minute. I think he's waiting for you.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1899,6 +2080,7 @@
    "id": "6d3a05ac",
    "who": "mara",
    "text": "Right. The schedule.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -1907,6 +2089,7 @@
    "id": "ad37ce46",
    "who": "jun",
    "text": "I almost didn't come. I didn't want to ride tonight. But Mom's working, and the trains are down.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1915,6 +2098,7 @@
    "id": "aba84b94",
    "who": "jun",
    "text": "Are they real? The people in the back? Please don't tell me I'm crazy.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1923,6 +2107,7 @@
    "id": "c9b57c17",
    "who": "jun",
    "text": "Okay. Real. That's better than being crazy, actually.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1931,6 +2116,7 @@
    "id": "e4a73179",
    "who": "jun",
    "text": "They don't look mean. They look sad. Like when you wait for someone at the airport and they never come out.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -1939,6 +2125,7 @@
    "id": "d8a8c255",
    "who": "junmom",
    "text": "You. You're the driver who called.",
+   "kind": "say",
    "voice": "af_sarah",
    "speed": 1,
    "pitch": 1
@@ -1947,6 +2134,7 @@
    "id": "3dfd0e99",
    "who": "junmom",
    "text": "The police found him on the road to Northgate. Halfway there, in the dark. He was walking to me.",
+   "kind": "say",
    "voice": "af_sarah",
    "speed": 1,
    "pitch": 1
@@ -1955,6 +2143,7 @@
    "id": "7986c9fa",
    "who": "junmom",
    "text": "He's home. He's asleep in his bed right now. Because you called.",
+   "kind": "say",
    "voice": "af_sarah",
    "speed": 1,
    "pitch": 1
@@ -1963,6 +2152,7 @@
    "id": "60cdabc4",
    "who": "radio94",
    "text": "Repeating our top story. At twelve thirty-one this morning, the Ashgrove bridge collapsed during the storm.",
+   "kind": "say",
    "voice": "bm_lewis",
    "speed": 1,
    "pitch": 0.96
@@ -1971,6 +2161,7 @@
    "id": "a7325815",
    "who": "radio94",
    "text": "A Route 9 city bus was crossing at the time. Divers have recovered fourteen.",
+   "kind": "say",
    "voice": "bm_lewis",
    "speed": 1,
    "pitch": 0.96
@@ -1979,6 +2170,7 @@
    "id": "1db07667",
    "who": "radio94",
    "text": "The driver, Teodor Varga, fifty-eight, was pulled from the river alive, and is in critical condition at St. Agnes.",
+   "kind": "say",
    "voice": "bm_lewis",
    "speed": 1,
    "pitch": 0.96
@@ -1987,6 +2179,7 @@
    "id": "37120f0c",
    "who": "radio94",
    "text": "Among the dead, a St. Agnes nurse, Lena Marsh, thirty-one, who leaves behind a four-year-old child.",
+   "kind": "say",
    "voice": "bm_lewis",
    "speed": 1,
    "pitch": 0.96
@@ -1995,6 +2188,7 @@
    "id": "1dbddb7c",
    "who": "radio94",
    "text": "Dispatch records show the bus was running eleven minutes behind sched",
+   "kind": "say",
    "voice": "bm_lewis",
    "speed": 1,
    "pitch": 0.96
@@ -2003,6 +2197,7 @@
    "id": "77e96798",
    "who": "rhee",
    "text": "That's enough of that.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2011,6 +2206,7 @@
    "id": "ac80a605",
    "who": "mara",
    "text": "Fourth floor. Room four B. Please.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2019,6 +2215,7 @@
    "id": "7bad6c99",
    "who": "rhee",
    "text": "Driver. You have no scheduled break at St. Agnes.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2027,6 +2224,7 @@
    "id": "331b21dc",
    "who": "mara",
    "text": "Okay. Okay. I'll tell him you're coming tomorrow.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2035,6 +2233,7 @@
    "id": "37c3121d",
    "who": "rhee",
    "text": "CLOSE THE DOORS. Driver, CLOSE THEM.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2043,6 +2242,7 @@
    "id": "94f04855",
    "who": "teodor",
    "text": "She's in there, you know. Your mother. In the cardigan. She sat right behind me every night.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -2051,6 +2251,7 @@
    "id": "65487108",
    "who": "ivy",
    "text": "Is it time yet?",
+   "kind": "say",
    "voice": "af_bella",
    "speed": 0.88,
    "pitch": 1.3
@@ -2059,6 +2260,7 @@
    "id": "8b514b6e",
    "who": "teodor",
    "text": "Not tonight, Ivy. Soon. I promise. Soon.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -2067,6 +2269,7 @@
    "id": "05607cbe",
    "who": "ivy",
    "text": "Can I sit up front? Mister Teodor always let me ring the bell.",
+   "kind": "say",
    "voice": "af_bella",
    "speed": 0.88,
    "pitch": 1.3
@@ -2075,6 +2278,7 @@
    "id": "6291d70c",
    "who": "ivy",
    "text": "That's my stop. That's always my stop.",
+   "kind": "say",
    "voice": "af_bella",
    "speed": 0.88,
    "pitch": 1.3
@@ -2083,6 +2287,7 @@
    "id": "4f0f3a4b",
    "who": "rhee",
    "text": "You'll regret that, driver.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2091,6 +2296,7 @@
    "id": "c3b948f2",
    "who": "jun",
    "text": "It's on the glass! It's ON the glass!",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -2099,6 +2305,7 @@
    "id": "47cf7195",
    "who": "rhee",
    "text": "Keep driving, driver. You don't stop for weather.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2107,6 +2314,7 @@
    "id": "2bcead10",
    "who": "junmom",
    "text": "This is me. Jun wants to meet you, you know. The driver who called. He thinks you're some kind of hero.",
+   "kind": "say",
    "voice": "af_sarah",
    "speed": 1,
    "pitch": 1
@@ -2115,6 +2323,7 @@
    "id": "5082f4a0",
    "who": "rhee",
    "text": "Ignore that.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2123,6 +2332,7 @@
    "id": "2de908c9",
    "who": "mara",
    "text": "This way. Fourth floor smells like bleach and old flowers. You stop noticing.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2131,6 +2341,7 @@
    "id": "cf029563",
    "who": "mara",
    "text": "He hasn't moved in three days.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2139,6 +2350,7 @@
    "id": "32923864",
    "who": "teodor",
    "text": "You came back. Lena's child. You came back for her.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -2147,6 +2359,7 @@
    "id": "c8b7b688",
    "who": "teodor",
    "text": "Don't let him make you late.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -2155,6 +2368,7 @@
    "id": "e19a942e",
    "who": "teodor",
    "text": "The man on the radio. Don't listen to him. He told me to make up the time, and I listened.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -2163,6 +2377,7 @@
    "id": "7598ae6c",
    "who": "teodor",
    "text": "Fourteen. I listened, and it was fourteen.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -2171,6 +2386,7 @@
    "id": "ce559cea",
    "who": "mara",
    "text": "He's been waiting thirty years for somebody to stop.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2179,6 +2395,7 @@
    "id": "510b7af2",
    "who": "you",
    "text": "The rain is so loud on the depot roof it sounds like applause.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2187,6 +2404,7 @@
    "id": "da67f7fb",
    "who": "you",
    "text": "My jacket is hanging behind the driver's seat. I left it soaked on Canal Row. It's dry now. It smells like the river.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2195,6 +2413,7 @@
    "id": "848a2763",
    "who": "you",
    "text": "He's back there again. He looks worse tonight. Grayer. Like a photo left in the sun.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2203,6 +2422,7 @@
    "id": "1cfc8d2c",
    "who": "you",
    "text": "Mara was waiting in the rain. I didn't stop.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2211,6 +2431,7 @@
    "id": "da295ba7",
    "who": "you",
    "text": "Nobody's here. Someone left a nurse's lanyard hanging on the shelter. It's swinging in the wind.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2219,6 +2440,7 @@
    "id": "b078b9fb",
    "who": "you",
    "text": "The poster's pulped by the rain. Someone has put up two more.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2227,6 +2449,7 @@
    "id": "d322b880",
    "who": "you",
    "text": "There's a kid with a huge backpack in the back row.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2235,6 +2458,7 @@
    "id": "67df5e16",
    "who": "you",
    "text": "Nobody. It was nobody.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2243,6 +2467,7 @@
    "id": "3eac4cc1",
    "who": "you",
    "text": "Lena Marsh.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2251,6 +2476,7 @@
    "id": "30491fae",
    "who": "you",
    "text": "My mother's name was Lena Marsh. I was four.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2259,6 +2485,7 @@
    "id": "80b1c6f2",
    "who": "you",
    "text": "The woman in the shelter. Lena. She looked at me like she knew me. Because she did.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2267,6 +2494,7 @@
    "id": "206b2225",
    "who": "you",
    "text": "Nobody ever told me how. They just said there was an accident. They just said she wasn't coming home.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2275,6 +2503,7 @@
    "id": "30dba18b",
    "who": "you",
    "text": "Varga. Teodor Varga. He's looking at the radio. Then at me. He nods. Very slightly.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2283,6 +2512,7 @@
    "id": "c6d7402f",
    "who": "you",
    "text": "Up on the fourth floor, a thin figure is pressing one hand against the window glass.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2291,6 +2521,7 @@
    "id": "e15fa426",
    "who": "you",
    "text": "The doors opened by themselves.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2299,6 +2530,7 @@
    "id": "7582c4a7",
    "who": "you",
    "text": "Knocking. Not on the doors. Under the floor. Under my feet. Like people trapped in something, beating on the walls.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2307,6 +2539,7 @@
    "id": "389649d9",
    "who": "you",
    "text": "She's looking right at me. She's soaking wet. She's younger than I am now.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2315,6 +2548,7 @@
    "id": "50839194",
    "who": "you",
    "text": "She's gone. The seat is soaking wet. There's a tiny yellow button on it.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2323,6 +2557,7 @@
    "id": "91f1dc5c",
    "who": "you",
    "text": "Hands. On every window of the bus. Gray. Wrinkled. Pressing.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2331,6 +2566,7 @@
    "id": "92281d82",
    "who": "you",
    "text": "I don't feel like a good driver.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2339,6 +2575,7 @@
    "id": "4d447dcf",
    "who": "you",
    "text": "Canal Row is a river now. The water's up to the second step.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2347,6 +2584,7 @@
    "id": "63088e00",
    "who": "you",
    "text": "In the lightning, there are faces under the water. Looking up.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2355,6 +2593,7 @@
    "id": "d016c23f",
    "who": "you",
    "text": "Every time the lightning goes, the whole road lights up for a second.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2363,6 +2602,7 @@
    "id": "d13d96d4",
    "who": "you",
    "text": "There's something standing in the road.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2371,6 +2611,7 @@
    "id": "e87f98ca",
    "who": "you",
    "text": "It's back. The thing from the first night. Spread across the glass like it's trying to get in.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2379,6 +2620,7 @@
    "id": "e4d314dd",
    "who": "you",
    "text": "Then the lights went, and it was gone. Only the handprints stayed. The rain won't wash them off.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2387,6 +2629,7 @@
    "id": "a6cbf553",
    "who": "you",
    "text": "There's a sheet of paper under my windshield wiper.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2395,6 +2638,7 @@
    "id": "47f0295e",
    "who": "you",
    "text": "The stop with no name moved again. It's right after Market Street now.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2403,6 +2647,7 @@
    "id": "3af4fc55",
    "who": "you",
    "text": "It's him. The old man from the back row. Same hands. Same wet-looking eyes. Tubes in his arm.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2411,6 +2656,7 @@
    "id": "d811be3b",
    "who": "you",
    "text": "My bus is down there in the rain. And someone's sitting in the back row. Looking up at me.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2419,6 +2665,7 @@
    "id": "58b3f83b",
    "who": "you",
    "text": "His hand let go. The monitor keeps counting. Slow.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2427,6 +2674,7 @@
    "id": "29c1d3e3",
    "who": "you",
    "text": "The missing poster has a strip pasted across it. FOUND SAFE.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2435,6 +2683,7 @@
    "id": "242839fa",
    "who": "you",
    "text": "Notice. Route 9 radio moves to channel 4 starting tomorrow. Channel 9 has been out of service since nineteen ninety-four. Dana, night dispatch.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2443,6 +2692,7 @@
    "id": "643ed369",
    "who": "you",
    "text": "I'll try.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2451,6 +2701,7 @@
    "id": "e047a920",
    "who": "you",
    "text": "I don't get breaks on Route 9.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2459,6 +2710,7 @@
    "id": "b44b5cd1",
    "who": "you",
    "text": "They're real. Sit up front with me. You're safe up here.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2467,6 +2719,7 @@
    "id": "002bf157",
    "who": "you",
    "text": "It's just the storm. Sit down.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2475,6 +2728,7 @@
    "id": "afa6e81b",
    "who": "you",
    "text": "Just for a minute. Go ahead.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2483,6 +2737,7 @@
    "id": "8c75e7db",
    "who": "jun",
    "text": "Thanks for believing me.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -2491,6 +2746,7 @@
    "id": "224a2070",
    "who": "jun",
    "text": "Night. Be careful, okay?",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -2499,6 +2755,7 @@
    "id": "edb39c46",
    "who": "dana",
    "text": "Route 9? Route 9, is that you? Oh thank god. This is Dana, night dispatch.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2507,6 +2764,7 @@
    "id": "6fb032c6",
    "who": "dana",
    "text": "Where have you been all week? We've had zero contact from your bus. Your GPS keeps dropping out at a spot that isn't on any map.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2515,6 +2773,7 @@
    "id": "c473d1e1",
    "who": "you",
    "text": "I've been checking in every night. With Rhee. Night dispatch.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2523,6 +2782,7 @@
    "id": "23d7bc82",
    "who": "dana",
    "text": "Rhee?",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2531,6 +2791,7 @@
    "id": "825da25e",
    "who": "dana",
    "text": "Harold Rhee was dispatch here in the nineties. He ran Route 9 the night the bridge went down.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2539,6 +2800,7 @@
    "id": "576e2182",
    "who": "dana",
    "text": "He died in ninety-five. After the inquiry. They found him in the dispatch office with the radio still on.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2547,6 +2809,7 @@
    "id": "a825b8bb",
    "who": "rhee",
    "text": "Hello, Dana.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2555,6 +2818,7 @@
    "id": "bee86683",
    "who": "dana",
    "text": "Who is th",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2563,6 +2827,7 @@
    "id": "ee8d8530",
    "who": "rhee",
    "text": "You don't need channel 4, driver. You've got me.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2571,6 +2836,7 @@
    "id": "c8a65f8f",
    "who": "rhee",
    "text": "That doesn't work, driver.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2579,6 +2845,7 @@
    "id": "f7269eb2",
    "who": "rhee",
    "text": "It didn't work for Teodor either.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2587,6 +2854,7 @@
    "id": "3133e0ec",
    "who": "mara",
    "text": "I'm not riding. I'm walking in. It's Mr. Varga. They think it's tonight. Maybe tomorrow.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2595,6 +2863,7 @@
    "id": "a8b65902",
    "who": "mara",
    "text": "He woke up for about a minute after you left. He said, give this to the driver.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2603,6 +2872,7 @@
    "id": "593cd4b9",
    "who": "mara",
    "text": "He keeps saying fourteen. Just the number. Over and over.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2611,6 +2881,7 @@
    "id": "886a22d7",
    "who": "mara",
    "text": "I'll be with him. He won't be alone. I promise.",
+   "kind": "say",
    "voice": "af_heart",
    "speed": 1.02,
    "pitch": 1
@@ -2619,6 +2890,7 @@
    "id": "fdfda00f",
    "who": "rhee",
    "text": "Put that away, driver. Teodor kept that for thirty years. Look where it got him.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2627,6 +2899,7 @@
    "id": "7fc196ea",
    "who": "jun",
    "text": "From my mom. Soup. She says you look like you don't eat.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -2635,6 +2908,7 @@
    "id": "99b33fc2",
    "who": "jun",
    "text": "Don't go past Market tonight. Please. I had a dream. The bus was in the river, and you were driving, and all the windows were full of faces.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -2643,6 +2917,7 @@
    "id": "07b1d313",
    "who": "jun",
    "text": "Just. If something tells you to go faster? Don't.",
+   "kind": "say",
    "voice": "am_puck",
    "speed": 1.06,
    "pitch": 1.1
@@ -2651,6 +2926,7 @@
    "id": "4518468c",
    "who": "lena",
    "text": "You grew up.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -2659,6 +2935,7 @@
    "id": "dd892ecf",
    "who": "lena",
    "text": "Don't look at me, sweetheart. Look at the road. He's going to make you drive.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -2667,6 +2944,7 @@
    "id": "6fcde7d6",
    "who": "rhee",
    "text": "There we go. Full bus. Just like the old days.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2675,6 +2953,7 @@
    "id": "ce82045a",
    "who": "rhee",
    "text": "You're eleven minutes late, driver.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2683,6 +2962,7 @@
    "id": "e5be74f8",
    "who": "rhee",
    "text": "MAKE UP THE TIME.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2691,6 +2971,7 @@
    "id": "8937e20f",
    "who": "rhee",
    "text": "Faster. FASTER. The schedule always comes first.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2699,6 +2980,7 @@
    "id": "14e14cac",
    "who": "you",
    "text": "You said that to him too.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2707,6 +2989,7 @@
    "id": "f5e7a7c9",
    "who": "voices",
    "text": "He stopped. He stopped this time.",
+   "kind": "say",
    "voice": "af_nicole",
    "speed": 0.85,
    "pitch": 0.97
@@ -2715,6 +2998,7 @@
    "id": "fe29359d",
    "who": "lena",
    "text": "That's my kid. That's my kid.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -2723,6 +3007,7 @@
    "id": "07de17e1",
    "who": "rhee",
    "text": "GOOD. GOOD DRIVER.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2731,6 +3016,7 @@
    "id": "355d1257",
    "who": "lena",
    "text": "No. No, no, no. Not you too.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -2739,6 +3025,7 @@
    "id": "3f75ca48",
    "who": "rhee",
    "text": "That's how it's done. You'll do it properly next time.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2747,6 +3034,7 @@
    "id": "9c0bd6a3",
    "who": "dana",
    "text": "Route 9, if you can hear this, it's Dana. Don't answer. Just listen.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2755,6 +3043,7 @@
    "id": "3dda2907",
    "who": "dana",
    "text": "I pulled Harold Rhee's file. After the inquiry he never went home. He slept in the dispatch office.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2763,6 +3052,7 @@
    "id": "594cfcd4",
    "who": "dana",
    "text": "Every night at twelve nineteen he read out the Route 9 stops on channel 9. To nobody. Elm and Fourth. Market. St. Agnes. Canal Row. Northgate. Ashgrove.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2771,6 +3061,7 @@
    "id": "c17ca94d",
    "who": "dana",
    "text": "The night he died, he got as far as Ashgrove and stopped. Like he couldn't say what came after.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2779,6 +3070,7 @@
    "id": "bac94408",
    "who": "rhee",
    "text": "That's enough, Dana.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2787,6 +3079,7 @@
    "id": "1f62a5e9",
    "who": "rhee",
    "text": "Eyes front, driver. You've got a schedule to keep.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2795,6 +3088,7 @@
    "id": "9a8c8cdd",
    "who": "dana",
    "text": "Route 9! Route 9, come in. Your bus went dark for six minutes. GPS put you in the middle of the river. Are you okay?",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2803,6 +3097,7 @@
    "id": "5cee5470",
    "who": "you",
    "text": "I'm okay. I think.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2811,6 +3106,7 @@
    "id": "2f671f9d",
    "who": "dana",
    "text": "Listen to me. Whatever you're hearing on channel 9, it isn't us. Nobody's been on that channel since",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -2819,6 +3115,7 @@
    "id": "6af7745b",
    "who": "rhee",
    "text": "Since me.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2827,6 +3124,7 @@
    "id": "44532d60",
    "who": "rhee",
    "text": "Tomorrow's the last run, driver. The stop is coming to you.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -2835,6 +3133,7 @@
    "id": "b0d3dc45",
    "who": "you",
    "text": "The back row is empty tonight. Just a dark stain on the seat that never dries.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2843,6 +3142,7 @@
    "id": "e58731fc",
    "who": "you",
    "text": "The radio is off. The light is off. His voice is still coming out of it.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2851,6 +3151,7 @@
    "id": "dc8165c4",
    "who": "you",
    "text": "A brass name badge. The pin's bent. The letters are worn soft by a thumb. T. Varga. Route 9.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2859,6 +3160,7 @@
    "id": "65d5f2e8",
    "who": "you",
    "text": "The bus coughed and rolled to a stop on its own. The engine's still running.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2867,6 +3169,7 @@
    "id": "31c07472",
    "who": "you",
    "text": "A streetlight glare, right in my eyes.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2875,6 +3178,7 @@
    "id": "8dd3bcad",
    "who": "you",
    "text": "Something fell out of the visor into my lap. A newspaper clipping, folded small. Someone kept it a long time.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2883,6 +3187,7 @@
    "id": "a06c4f29",
    "who": "you",
    "text": "The posters are gone. Washed off, or torn down. There's a soaked backpack on the bench nobody's claimed.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2891,6 +3196,7 @@
    "id": "0cfa0f8e",
    "who": "you",
    "text": "The doors opened by themselves. This time they don't wait for me. They're getting on.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2899,6 +3205,7 @@
    "id": "981a50aa",
    "who": "you",
    "text": "Fourteen. They don't pay. They don't look at me. They sit, and they drip.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2907,6 +3214,7 @@
    "id": "4678ce28",
    "who": "you",
    "text": "Water. Around my shoes. Rising.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2915,6 +3223,7 @@
    "id": "8b25949b",
    "who": "you",
    "text": "Someone sat down right behind me. I can feel cold coming off her, like an open freezer.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2923,6 +3232,7 @@
    "id": "9298e7e3",
    "who": "you",
    "text": "Mom.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2931,6 +3241,7 @@
    "id": "5a6ab979",
    "who": "you",
    "text": "I'm not. The clock says I'm not.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2939,6 +3250,7 @@
    "id": "575a5d2d",
    "who": "you",
    "text": "The pedal is going down by itself.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2947,6 +3259,7 @@
    "id": "8f2cdbe7",
    "who": "you",
    "text": "The street's gone. The buildings are gone. The road is getting narrower.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2955,6 +3268,7 @@
    "id": "a9a3f491",
    "who": "you",
    "text": "Under the last streetlight. The shadow. It's pointing at the bridge.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2963,6 +3277,7 @@
    "id": "5fa42028",
    "who": "you",
    "text": "It stopped. The front wheels are on the last slab of the bridge. Under me there's nothing. Just the river, waiting.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2971,6 +3286,7 @@
    "id": "6e46a919",
    "who": "you",
    "text": "Behind me, fourteen people let out a breath they've been holding for thirty years.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2979,6 +3295,7 @@
    "id": "8099469b",
    "who": "you",
    "text": "I'm parked outside St. Agnes. The bus is bone dry. My clothes are soaked through. I can taste the river.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2987,6 +3304,7 @@
    "id": "6b822808",
    "who": "you",
    "text": "I'm parked outside St. Agnes. The bus is dry. The engine ticks as it cools.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -2995,6 +3313,7 @@
    "id": "3ebc071f",
    "who": "you",
    "text": "Up on the fourth floor, the window of four B is lit. Dimmer now. The thin figure is holding up one finger.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3003,6 +3322,7 @@
    "id": "b30459fb",
    "who": "you",
    "text": "One more night.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3011,6 +3331,7 @@
    "id": "a6077d86",
    "who": "you",
    "text": "Someone's standing at the back of the bus. I can see them in the mirror.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3019,6 +3340,7 @@
    "id": "f5ac59be",
    "who": "you",
    "text": "Nobody. Nothing. But the air back here smells like a struck match.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3027,6 +3349,7 @@
    "id": "484fa867",
    "who": "you",
    "text": "The stop with no name is right after Elm and Fourth now. Tomorrow, it'll be waiting.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3035,6 +3358,7 @@
    "id": "67a34532",
    "who": "you",
    "text": "Inquiry. Dispatcher ordered bus onto bridge.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3043,6 +3367,7 @@
    "id": "9783f155",
    "who": "you",
    "text": "Route 9 driver Teodor Varga radioed dispatch at twelve nineteen, asking permission to wait out the storm at Northgate.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3051,6 +3376,7 @@
    "id": "21bf96f5",
    "who": "you",
    "text": "Dispatcher Harold Rhee refused. Recordings show Rhee told Varga, eleven minutes behind schedule, to make up the time by taking the Ashgrove bridge.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3059,6 +3385,7 @@
    "id": "97113e31",
    "who": "you",
    "text": "Asked if he regretted the order, Rhee said: the schedule always comes first. That's the job.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3067,6 +3394,7 @@
    "id": "a2de5917",
    "who": "you",
    "text": "There's a photo of the victims. Fourteen faces. A woman in a cardigan, holding a little kid on her hip.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3075,6 +3403,7 @@
    "id": "272c9651",
    "who": "you",
    "text": "The kid is me.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3083,6 +3412,7 @@
    "id": "7b68281d",
    "who": "you",
    "text": "Under the article, in shaky pencil, one word, over and over, until the paper tore. Stop. Stop. Stop. Stop.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3091,6 +3421,7 @@
    "id": "d5292edb",
    "who": "you",
    "text": "There's a little box on the dashboard, wrapped in soggy paper with balloons on it. For Rosie. Love, Dad.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3099,6 +3430,7 @@
    "id": "1e152154",
    "who": "you",
    "text": "Underneath, newer, in shaky handwriting: she waits at Elm and Fourth. She doesn't know why.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3107,6 +3439,7 @@
    "id": "6c6ff39b",
    "who": "rhee",
    "text": "Last run, driver. Big night. Full bus.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3115,6 +3448,7 @@
    "id": "e9fadb21",
    "who": "rhee",
    "text": "You know what to do. You make up the time.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3123,6 +3457,7 @@
    "id": "a84d46fe",
    "who": "rosie",
    "text": "Sorry. I'm not riding. I just come here. Every year, on this night. I don't even really know why.",
+   "kind": "say",
    "voice": "af_kore",
    "speed": 0.98,
    "pitch": 1
@@ -3131,6 +3466,7 @@
    "id": "300f7dc8",
    "who": "rosie",
    "text": "My dad took the last bus home on this night. I was six. It was my birthday. He promised he'd be home before I fell asleep.",
+   "kind": "say",
    "voice": "af_kore",
    "speed": 0.98,
    "pitch": 1
@@ -3139,6 +3475,7 @@
    "id": "5a0c40f1",
    "who": "rosie",
    "text": "I stayed awake all night. I'm Rosie, by the way. Sorry. You don't need my life story.",
+   "kind": "say",
    "voice": "af_kore",
    "speed": 0.98,
    "pitch": 1
@@ -3147,6 +3484,7 @@
    "id": "8472c53b",
    "who": "rosie",
    "text": "That's his handwriting.",
+   "kind": "say",
    "voice": "af_kore",
    "speed": 0.98,
    "pitch": 1
@@ -3155,6 +3493,7 @@
    "id": "9ece3e77",
    "who": "rosie",
    "text": "He remembered. He got it for me. He was bringing it home.",
+   "kind": "say",
    "voice": "af_kore",
    "speed": 0.98,
    "pitch": 1
@@ -3163,6 +3502,7 @@
    "id": "8cdf915a",
    "who": "rosie",
    "text": "How do you know his name?",
+   "kind": "say",
    "voice": "af_kore",
    "speed": 0.98,
    "pitch": 1
@@ -3171,6 +3511,7 @@
    "id": "5f1d0b95",
    "who": "you",
    "text": "He rides this bus. He talks about you. He was bringing you a present.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3179,6 +3520,7 @@
    "id": "63fec406",
    "who": "rosie",
    "text": "I always felt like he was trying. Like he was out there, still trying to get home.",
+   "kind": "say",
    "voice": "af_kore",
    "speed": 0.98,
    "pitch": 1
@@ -3187,6 +3529,7 @@
    "id": "b3467f05",
    "who": "teodor",
    "text": "March fourteenth, nineteen ninety-four. I was eleven minutes late.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3195,6 +3538,7 @@
    "id": "5ebdd77d",
    "who": "teodor",
    "text": "I asked to wait out the storm. Harold said no. Harold said make up the time. And I was scared of losing my job, and I had a schedule, and I did what I was told.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3203,6 +3547,7 @@
    "id": "fc4431b8",
    "who": "teodor",
    "text": "Fourteen people. Lena. Daniel. Little Ivy. Eleven more. I knew every one of their faces. I used to wave.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3211,6 +3556,7 @@
    "id": "76630e3e",
    "who": "teodor",
    "text": "Your mother sat right behind me, every night. She talked about her kid the whole way home. You. She talked about you.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3219,6 +3565,7 @@
    "id": "b255524a",
    "who": "teodor",
    "text": "They pulled me out of the river alive. Everyone said I survived.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3227,6 +3574,7 @@
    "id": "55c35fe2",
    "who": "teodor",
    "text": "I didn't. I've been riding this bus every night since. Waiting for a driver who would stop.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3235,6 +3583,7 @@
    "id": "0dbd1617",
    "who": "teodor",
    "text": "Right now there's a nurse holding my hand in Room four B. She's very kind. She tells me Route 9 is running.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3243,6 +3592,7 @@
    "id": "cc28e157",
    "who": "teodor",
    "text": "It's my last night too. Tonight they get on, or they never do.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3251,6 +3601,7 @@
    "id": "15b5856b",
    "who": "teodor",
    "text": "Stop for them. That's all. That's all it ever was. Stop for people.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3259,6 +3610,7 @@
    "id": "e1b100e7",
    "who": "teodor",
    "text": "Because you stop. I've watched you all week. You stop for people when it costs you.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3267,6 +3619,7 @@
    "id": "ef5b7a9e",
    "who": "teodor",
    "text": "Because you're who's driving. And because I'm out of nights.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3275,6 +3628,7 @@
    "id": "927d4934",
    "who": "rhee",
    "text": "Don't listen to him, driver. He's the one who drowned them.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3283,6 +3637,7 @@
    "id": "6d286338",
    "who": "lena",
    "text": "Hi, sweetheart.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3291,6 +3646,7 @@
    "id": "c1abb8a1",
    "who": "rhee",
    "text": "DRIVER.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3299,6 +3655,7 @@
    "id": "513136f4",
    "who": "rhee",
    "text": "You are ELEVEN MINUTES LATE. You will MAKE. UP. THE. TIME.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3307,6 +3664,7 @@
    "id": "ba4efda8",
    "who": "rhee",
    "text": "The schedule ALWAYS comes first. That's the JOB.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3315,6 +3673,7 @@
    "id": "77d37f7c",
    "who": "teodor",
    "text": "Please.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3323,6 +3682,7 @@
    "id": "85523db4",
    "who": "rhee",
    "text": "DON'T YOU",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3331,6 +3691,7 @@
    "id": "1491b103",
    "who": "rhee",
    "text": "I DID MY JOB. I DID MY JOB. THE SCHEDULE",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3339,6 +3700,7 @@
    "id": "f1208b11",
    "who": "lena",
    "text": "Thank you for stopping.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3347,6 +3709,7 @@
    "id": "be2c1d14",
    "who": "harold",
    "text": "I'm sorry. I'm so sorry. I thought the schedule was the job.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.86,
    "pitch": 0.92
@@ -3355,6 +3718,7 @@
    "id": "1acf8140",
    "who": "lena",
    "text": "Everyone gets a ride home. That's the job.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3363,6 +3727,7 @@
    "id": "a6b4d01e",
    "who": "lena",
    "text": "You don't have to keep driving for me anymore. I'm going home now. Then you go home too.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3371,6 +3736,7 @@
    "id": "bc8342b3",
    "who": "you",
    "text": "I missed you.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3379,6 +3745,7 @@
    "id": "b4f36876",
    "who": "lena",
    "text": "I know. I was always on my way back. Always.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3387,6 +3754,7 @@
    "id": "82a9513f",
    "who": "teodor",
    "text": "Mind if I drive the last bit?",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3395,6 +3763,7 @@
    "id": "d66b23ec",
    "who": "dana",
    "text": "Route 9, this is Dana on channel 4. You okay? I've got you back on GPS. Clean signal for the first time all week.",
+   "kind": "say",
    "voice": "af_aoede",
    "speed": 1.05,
    "pitch": 1
@@ -3403,6 +3772,7 @@
    "id": "65cd57ee",
    "who": "daniel",
    "text": "It isn't enough to stop once. You have to be the kind of driver who stops.",
+   "kind": "say",
    "voice": "bm_fable",
    "speed": 0.9,
    "pitch": 0.95
@@ -3411,6 +3781,7 @@
    "id": "7463e0dc",
    "who": "lena",
    "text": "We'll know when you are.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3419,6 +3790,7 @@
    "id": "646dfa29",
    "who": "lena",
    "text": "Not yet, sweetheart. Not yet.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3427,6 +3799,7 @@
    "id": "d4516da1",
    "who": "teodor",
    "text": "Tomorrow, then. And the night after. As long as it takes.",
+   "kind": "say",
    "voice": "bm_george",
    "speed": 0.85,
    "pitch": 0.88
@@ -3435,6 +3808,7 @@
    "id": "0ac56c48",
    "who": "rhee",
    "text": "Good. GOOD. Back on schedule.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3443,6 +3817,7 @@
    "id": "50038e94",
    "who": "lena",
    "text": "You didn't stop.",
+   "kind": "say",
    "voice": "bf_emma",
    "speed": 0.92,
    "pitch": 0.98
@@ -3451,6 +3826,7 @@
    "id": "755b438a",
    "who": "rhee",
    "text": "Evening, driver. See you tomorrow night.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3459,6 +3835,7 @@
    "id": "3c2bebc6",
    "who": "rhee",
    "text": "And the night after that.",
+   "kind": "say",
    "voice": "am_fenrir",
    "speed": 0.94,
    "pitch": 0.9
@@ -3467,6 +3844,7 @@
    "id": "9163935f",
    "who": "you",
    "text": "Last night. I reached into my pocket for my keys and found coins instead. Four of them. Heavy. Worn smooth.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3475,6 +3853,7 @@
    "id": "16857865",
    "who": "you",
    "text": "And the brass badge. T. Varga. It's warm, like someone was just holding it.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3483,6 +3862,7 @@
    "id": "bb94eea5",
    "who": "you",
    "text": "Thirty-two years. Tonight I find out if she ever gets home.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3491,6 +3871,7 @@
    "id": "056412e4",
    "who": "you",
    "text": "The stain on the back seat has spread across three seats now.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3499,6 +3880,7 @@
    "id": "74a1db4d",
    "who": "you",
    "text": "Two people at Elm and Fourth. A woman on the bench. And a man under the streetlight in an old brown driver's uniform.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3507,6 +3889,7 @@
    "id": "5d5d02bb",
    "who": "you",
    "text": "Her hands are shaking so much I have to help her with the paper. Inside is a music box. Cheap. Painted. A little dancer with a chipped arm.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3515,6 +3898,7 @@
    "id": "089e6aee",
    "who": "you",
    "text": "It's playing the same notes I've been hearing in my head all week.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3523,6 +3907,7 @@
    "id": "60871a2b",
    "who": "you",
    "text": "The man in the uniform took off his cap. He's getting on.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3531,6 +3916,7 @@
    "id": "8d89d153",
    "who": "you",
    "text": "The display stopped flickering. For the first time, the stop has a name. Ashgrove.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3539,6 +3925,7 @@
    "id": "975819ca",
    "who": "you",
    "text": "Fourteen of them. Standing in a rain that isn't falling anywhere else. They're not knocking. They're just waiting. Like they always have.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3547,6 +3934,7 @@
    "id": "b8977d2e",
    "who": "you",
    "text": "And between them and my doors, the shadow. Arms out. Keeping them off my bus. It's been keeping them off for thirty-two years.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3555,6 +3943,7 @@
    "id": "07a17232",
    "who": "you",
    "text": "The shadow at the doors is coming apart. Like smoke. Like it was only ever his voice.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3563,6 +3952,7 @@
    "id": "d90454b8",
    "who": "you",
    "text": "Dead air. It's the best sound I've ever heard.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3571,6 +3961,7 @@
    "id": "a546b867",
    "who": "you",
    "text": "Someone's crying in the back row. A thin, gray man in a dispatcher's cardigan, with a headset around his neck.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3579,6 +3970,7 @@
    "id": "4dbd6ef2",
    "who": "you",
    "text": "The shadow stepped back from the doors. Just one step. Enough to let them through. It's still watching.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3587,6 +3979,7 @@
    "id": "1cd2ead5",
    "who": "you",
    "text": "For a moment, nobody moves. Then Daniel climbs the steps. He isn't dripping anymore.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3595,6 +3988,7 @@
    "id": "02106537",
    "who": "you",
    "text": "Fourteen fares. Fourteen old coins in the box. Ivy rang the bell and giggled.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3603,6 +3997,7 @@
    "id": "e57c848b",
    "who": "you",
    "text": "He drives like he never left. The road ends. The bridge isn't there anymore. We just keep going.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3611,6 +4006,7 @@
    "id": "65a22f07",
    "who": "you",
    "text": "Below us, the river is full of stars.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3619,6 +4015,7 @@
    "id": "dc448a54",
    "who": "you",
    "text": "Northgate. Morning. The bus is empty, and dry.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3627,6 +4024,7 @@
    "id": "ae3452c5",
    "who": "you",
    "text": "For the first time in thirty-two years, I think she made it home.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3635,6 +4033,7 @@
    "id": "3ea52364",
    "who": "you",
    "text": "Somewhere across town, a music box is playing on a kitchen table. And a woman is finally asleep.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3643,6 +4042,7 @@
    "id": "81b81ffb",
    "who": "you",
    "text": "Jun is here with two coffees. He doesn't say anything. He just hands me one.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3651,6 +4051,7 @@
    "id": "3b5bf1d9",
    "who": "you",
    "text": "I tuned the spare radio to channel 9, just to check. Nothing. Just static. Just dead air.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3659,6 +4060,7 @@
    "id": "08353efa",
    "who": "you",
    "text": "I'm keeping Route 9. Nobody else wants it anyway. And I always stop.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3667,6 +4069,7 @@
    "id": "2dd408e3",
    "who": "you",
    "text": "I'm keeping Route 9. Somebody has to stop.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3675,6 +4078,7 @@
    "id": "667d3956",
    "who": "you",
    "text": "Three weeks later. A new driver starts on Route 7. First night. Last bus.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3683,6 +4087,7 @@
    "id": "8293bd21",
    "who": "you",
    "text": "Nobody moves.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3691,6 +4096,7 @@
    "id": "99f33439",
    "who": "you",
    "text": "But tonight is his last night. We both know it.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3699,6 +4105,7 @@
    "id": "6e7bcc04",
    "who": "you",
    "text": "Ashgrove is still on my route display when I clock out. It'll be there tomorrow, too.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3707,6 +4114,7 @@
    "id": "42cd4bb8",
    "who": "you",
    "text": "Every seat is full. Fourteen people, soaked to the bone, staring straight ahead.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3715,6 +4123,7 @@
    "id": "6f51f3b6",
    "who": "you",
    "text": "Mom is in the seat right behind me.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3723,6 +4132,7 @@
    "id": "3c0bd070",
    "who": "you",
    "text": "Water is creeping across the floor. I can't feel my feet.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3731,6 +4141,7 @@
    "id": "e395d262",
    "who": "you",
    "text": "Northgate. The clock on the dash settles on twelve twenty. Exactly on time.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3739,6 +4150,7 @@
    "id": "7feab87f",
    "who": "you",
    "text": "My hands on the wheel are gray. Wrinkled. Like they've been underwater for a very long time.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3747,6 +4159,7 @@
    "id": "4779c0b1",
    "who": "you",
    "text": "There's a note taped to the driver's window. Mr. Varga passed at twelve thirty-one. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Mara.",
+   "kind": "think",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3755,6 +4168,7 @@
    "id": "ec23a759",
    "who": "you",
    "text": "What do I have to do?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3763,6 +4177,7 @@
    "id": "ebc50e11",
    "who": "you",
    "text": "Why me?",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3771,6 +4186,7 @@
    "id": "81b65418",
    "who": "you",
    "text": "Your dad's name was Daniel. He was trying to get home to you.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
@@ -3779,6 +4195,7 @@
    "id": "b89ff6b3",
    "who": "you",
    "text": "Happy birthday, Rosie.",
+   "kind": "say",
    "voice": "am_michael",
    "speed": 1,
    "pitch": 0.98
