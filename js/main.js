@@ -153,14 +153,18 @@ function frame(now) {
 
 /* ---------- pause ---------- */
 input.init(canvas);
+// while a night card or ending card is up, letting go of the mouse is not a pause
+let inMenu = false;
+function setPaused(on) {
+  paused = on;
+  $("screen-pause").hidden = !on;
+  Sound.setMuted(on || settings.muted);
+}
 input.onLockChange = (locked) => {
-  if (!playing) return;
-  paused = !locked;
-  $("screen-pause").hidden = locked;
-  if (paused) Sound.setMuted(true);
-  else Sound.setMuted(false);
+  if (!playing || inMenu) return;
+  setPaused(!locked);
 };
-canvas.addEventListener("click", () => { if (playing) input.lock(); });
+canvas.addEventListener("click", () => { if (playing && !inMenu) input.lock(); });
 $("btn-resume").addEventListener("click", () => input.lock());
 $("btn-quit").addEventListener("click", () => location.reload());
 
@@ -210,13 +214,18 @@ async function play(startNight, saved) {
     director.state.night = n;
     director.state.lateAtNight = director.state.late;
     store.set(SAVE, { night: n, flags: director.state.flags, kind: director.state.kind, late: director.state.late, warn: director.state.warn });
+    inMenu = true;
+    setPaused(false);
     input.unlock();
     await ui.fade(1, 600);
     resetWorld(n);
     if (manifest && manifest.nights[n]) Sound.prefetch(manifest.nights[n]);
     const info = NIGHTS[n];
     await ui.card({ kicker: "Route 9", title: `Night ${n}`, sub: info.subtitle, actions: [{ label: "Start shift" }] });
+    inMenu = false;
     input.lock();
+    // if the browser didn't hand over the mouse, show Resume so one click fixes it
+    if (!TEST) setTimeout(() => { if (playing && !inMenu && !input.locked) setPaused(true); }, 700);
     ui.fade(0, 1500);
     ending = await info.run(g);
   }
@@ -226,6 +235,8 @@ async function play(startNight, saved) {
   found.add(ending);
   store.set(FOUND, [...found]);
   playing = false;
+  inMenu = true;
+  setPaused(false);
   ui.showHud(false);
   input.unlock();
   const e = ENDINGS[ending];

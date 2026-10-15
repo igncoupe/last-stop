@@ -78,4 +78,5 @@ Want real actors instead? Record a line and save it over its file in `voices/` (
 
 ## Testing tricks
 
-Add `?night=3` to the URL and press New game to start on a later night.
+- Add `?night=3` to the URL and press New game to start on a later night.
+- **Automatic playtester:** `?test&fast=6&bot=kind` plays the whole game by itself at 6x speed and reports errors, dead ends and the ending in `window.__botReport` (open the browser console). Strategies: `kind` (stops for everyone), `cold` (stops for no one), `deadair` (goes for the true ending), `random`.
