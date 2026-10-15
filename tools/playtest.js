@@ -71,6 +71,9 @@ export function startBot(strategy = "kind") {
 
   let lastSig = "";
   let sameFor = 0;
+  let holding = false;
+  let holdFor = 0;
+  let lastNav = null;
   let last = performance.now();
   const timer = setInterval(() => {
     const now = performance.now();
@@ -131,8 +134,18 @@ export function startBot(strategy = "kind") {
         if (!driveOn) press("KeyF");
       }
 
+      // after pulling into a stop, wait there until the game says to drive
+      if (nav && nav.stop) { holding = false; lastNav = nav.stop.d; }
+      else if (lastNav !== null && drive.speed < 0.5 && drive.inZone(lastNav)) { holding = true; holdFor = 0; lastNav = null; }
+      if (holding) {
+        holdFor += dtReal;
+        const navText = document.getElementById("nav").textContent;
+        if (/^Drive/.test(h) || /Keep driving/.test(navText) || /drive on|drive away/.test(h) && strategy === "cold" || holdFor > 30) holding = false;
+      }
+
       // driving
       if (!seat || drive.state.control !== "player" || bus.doorsOpen) { pedals(false, false); }
+      else if (holding) { pedals(false, true); }
       else {
         let w = true;
         let s = false;
