@@ -30,6 +30,7 @@ export function createDirector(w) {
   let nav = null;          // { stop: { d, name } } | { mesh } | { point }
   let navText = "";
   let bob = 0;
+  let idle = 0;
   const waiters = new Set();
   const actors = new Map();
   let doorControl = true;
@@ -277,7 +278,13 @@ export function createDirector(w) {
   g.roadFigure = async (look = "drowned", ahead = 75) => {
     const d0 = drive.d + ahead;
     g.spawn("roadfig", look, { ghost: true, at: route.at(d0, 2.3, 0), yaw: route.heading(d0) + Math.PI });
-    await until(() => drive.d > d0 - 8 || (drive.speed < 0.3 && drive.d > d0 - 45));
+    // resolves when you reach them, or after you've sat stopped in sight of them for a few seconds
+    let stoppedFor = 0;
+    await until((dt) => {
+      if (drive.d > d0 - 8) return true;
+      stoppedFor = drive.speed < 0.3 ? stoppedFor + dt : 0;
+      return stoppedFor > (drive.d > d0 - 45 ? 0.5 : 4);
+    });
     if (drive.d > d0 - 8 && drive.speed > 1.5) {
       g.despawn("roadfig");
       Sound.sfx("bang");
@@ -417,6 +424,13 @@ export function createDirector(w) {
         marker.userData.beam.visible = false;
       } else {
         marker.visible = false;
+      }
+      // sitting still with nothing to do? point the way
+      const idleNow = !nav && player.mode === "seat" && !player.state.locked && drive.state.control === "player" && !bus.doorsOpen && drive.speed < 0.3 && !document.getElementById("hint").classList.contains("on") && !document.querySelector("#choices .choice");
+      idle = idleNow ? idle + dt : 0;
+      if (idle > 6) {
+        const ahead = Object.entries(STOPS).map(([n, d]) => ({ n, d })).filter((x) => x.d > drive.d + 6).sort((a, b) => a.d - b.d)[0];
+        text = ahead ? `Keep driving  ·  next stop: ${ahead.n}` : "Keep driving";
       }
       if (text !== navText) {
         navText = text;

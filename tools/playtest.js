@@ -24,9 +24,12 @@ export function startBot(strategy = "kind") {
   };
   let gas = false;
   let brake = false;
+  // keys get dropped when the window loses focus, so held keys are re-sent every tick
   const pedals = (w, s) => {
-    if (w !== gas) { key("KeyW", w); gas = w; }
-    if (s !== brake) { key("KeyS", s); brake = s; }
+    if (w || w !== gas) key("KeyW", w);
+    if (s || s !== brake) key("KeyS", s);
+    gas = w;
+    brake = s;
   };
   const aim = (v) => {
     const st = player.state;
@@ -146,11 +149,13 @@ export function startBot(strategy = "kind") {
           }
         }
         // a figure in the road: the kind driver brakes
-        if (g.actor("roadfig") && strategy !== "cold") { w = false; s = true; }
+        const fig = g.actor("roadfig");
+        if (fig && strategy !== "cold" && fig.root.position.distanceTo(bus.group.position) < 45) { w = false; s = true; }
         // the flood on night 2: go slow unless you're careless
         if (g.state.night === 2 && drive.d > 1590 && drive.d < 1700 && strategy !== "cold" && drive.speed > 5) { w = false; s = true; }
         if (/drive on|drive away/.test(h) && strategy !== "cold") { w = false; }
         pedals(w, s);
+        report.drive = { nav: nav && nav.stop ? nav.stop.name : null, d: Math.round(drive.d), v: +drive.speed.toFixed(1), w, s, keys: [...L.input.keys] };
       }
 
       // stuck detection (nothing changes for a long time)

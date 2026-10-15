@@ -292,7 +292,7 @@ if (!camera.aspect || !Number.isFinite(camera.aspect)) { camera.aspect = 16 / 9;
 resetWorld(1);
 nextFrame(frame);
 if (TEST) {
-  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene };
+  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input };
   // ?bot=kind|cold|deadair|random: the automatic playtester plays the game
   if (params.get("bot")) {
     import("../tools/playtest.js").then((m) => {

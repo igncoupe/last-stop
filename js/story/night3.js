@@ -270,7 +270,9 @@ async function ward(g) {
   mara.walk([H.spawn.clone().setY(0).add(new THREE.Vector3(0, 0, 31)), H.roomPos.clone().add(new THREE.Vector3(2.2, 0, -1.6))], { speed: 1.2 });
   await g.say("mara", "This way. Fourth floor smells like bleach and old flowers. You stop noticing.");
   g.hint("Go to Room 4B");
+  g.navTo(H.roomPos.clone().add(new THREE.Vector3(2.4, 2.2, 0)));
   await g.until(() => g.camera.getWorldPosition(new THREE.Vector3()).distanceTo(H.roomPos) < 3.4);
+  g.navTo(null);
   g.hint(null);
   g.sfx("heartbeat", 6, 52);
   await g.think("It's him. The old man from the back row. Same hands. Same wet-looking eyes. Tubes in his arm.");
