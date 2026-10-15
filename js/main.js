@@ -287,6 +287,7 @@ ui.subsOn = settings.subs;
 /* ---------- start ---------- */
 addEventListener("resize", () => resize(camera));
 resize(camera);
+if (!camera.aspect || !Number.isFinite(camera.aspect)) { camera.aspect = 16 / 9; camera.updateProjectionMatrix(); }
 resetWorld(1);
 nextFrame(frame);
 if (TEST) {

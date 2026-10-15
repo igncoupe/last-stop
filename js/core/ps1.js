@@ -32,6 +32,8 @@ export function makeRenderer(canvas, { preserve = false } = {}) {
   renderer.setPixelRatio(1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const resize = (camera) => {
+    // a minimized window can report 0 x 0; keep the last real size instead
+    if (!window.innerWidth || !window.innerHeight) return;
     const w = Math.ceil(window.innerWidth / PIXEL_SCALE);
     const h = Math.ceil(window.innerHeight / PIXEL_SCALE);
     renderer.setSize(w, h, false);
