@@ -36,7 +36,7 @@ if (matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").ma
 
 /* ---------- world ---------- */
 const canvas = $("view");
-const { renderer, resize } = makeRenderer(canvas);
+const { renderer, resize } = makeRenderer(canvas, { preserve: params.has("test") });
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(72, 16 / 9, 0.05, 260);
 scene.add(camera);
@@ -112,8 +112,12 @@ function clockText() {
   return `${h % 12 || 12}:${String(m % 60).padStart(2, "0")}${h < 12 ? "a" : "p"}`;
 }
 
+// ?test runs the loop on a timer (for automated testing, where the page may not be painted)
+const TEST = params.has("test");
+const nextFrame = TEST ? (cb) => setTimeout(() => cb(performance.now()), 33) : (cb) => requestAnimationFrame(cb);
+
 function frame(now) {
-  requestAnimationFrame(frame);
+  nextFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (paused) return;
@@ -274,7 +278,8 @@ ui.subsOn = settings.subs;
 addEventListener("resize", () => resize(camera));
 resize(camera);
 resetWorld(1);
-requestAnimationFrame(frame);
+nextFrame(frame);
+if (TEST) window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene };
 ui.fade(0, 2000);
 if (settings.warned) showTitle();
 else $("screen-warning").hidden = false;

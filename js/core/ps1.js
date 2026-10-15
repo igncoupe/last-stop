@@ -27,8 +27,8 @@ export function glow(color, options = {}) {
   return patch(new THREE.MeshBasicMaterial({ color, ...options }));
 }
 
-export function makeRenderer(canvas) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
+export function makeRenderer(canvas, { preserve = false } = {}) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: preserve });
   renderer.setPixelRatio(1);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   const resize = (camera) => {
