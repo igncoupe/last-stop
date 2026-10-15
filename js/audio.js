@@ -558,8 +558,10 @@ async function voice(id, { fx = "dry", at = null } = {}) {
   // (resume can wait forever while the page is hidden, so it only gets a moment)
   if (ctx.state === "suspended") { try { await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 300))]); } catch { /* no permission yet */ } }
   if (ctx.state !== "running") return false;   // no sound allowed: subtitles carry the line
-  const buf = await loadClip(id);
-  if (!buf) return false;
+  // a clip that won't download or won't decode gets 6 seconds, then the subtitle carries the line alone
+  let late = false;
+  const buf = await Promise.race([loadClip(id), new Promise((r) => setTimeout(() => { late = true; r(null); }, 6000))]);
+  if (!buf || late) return false;
   const { input, tail } = fxChain(fx);
   let outNode = tail;
   // where they are only moves the voice left or right; it never gets quieter with distance

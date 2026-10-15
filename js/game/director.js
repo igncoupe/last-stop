@@ -44,7 +44,9 @@ export function createDirector(w) {
     s.waiting = `line (${who})`;
     const c = CAST[who];
     ui.subtitle(nameOf(who), c.color, text);
-    const played = await Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) });
+    // a line can never hold up the story: whatever happens to its audio, it ends in a bounded time
+    const cap = new Promise((r) => setTimeout(() => r("cap"), 9000 + text.length * 110));
+    const played = await Promise.race([Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) }), cap]);
     if (!played) await g.wait(Math.max(1500, text.length * 60 + 500));
     if (!keep) ui.clearSubtitle();
     if (after) await g.wait(after);
@@ -208,6 +210,7 @@ export function createDirector(w) {
     },
     // walk from where they are, up the steps, pay, and sit down
     async board(key, seatName, speed = 1.4) {
+      s.waiting = `${key} boarding`;
       const p = actors.get(key);
       const outside = bus.group.localToWorld(bus.boardPath[0].clone());
       const step = bus.group.localToWorld(bus.boardPath[1].clone());
@@ -223,6 +226,7 @@ export function createDirector(w) {
     },
     // get off the bus and walk somewhere (a world position), then vanish
     async alight(key, to = null, { vanish = true, speed = 1.4 } = {}) {
+      s.waiting = `${key} getting off`;
       const p = actors.get(key);
       if (!p) return;
       const z = p.root.position.z;
@@ -253,6 +257,7 @@ export function createDirector(w) {
     // a real jumpscare, in the world: "face" lunges at you, "hands" slam the
     // glass, "eyes" open in the dark first. The bus lights stutter with it.
     async scare(kind = "face") {
+      s.waiting = "scare " + kind;
       if (!settings.scares) {
         Sound.sfx("heartbeat", 3, 96);
         await g.wait(700);

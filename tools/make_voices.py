@@ -73,6 +73,8 @@ def main():
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--threads", type=int, default=0)
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--ids", default="", help="comma-separated line ids to (re)generate")
+    ap.add_argument("--take", type=int, default=0, help="a different take of the same line (another seed)")
     args = ap.parse_args()
     if args.threads:
         torch.set_num_threads(args.threads)
@@ -80,6 +82,10 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     manifest = json.loads((ROOT / "voices" / "manifest.json").read_text(encoding="utf-8"))
     lines = [l for i, l in enumerate(manifest["lines"]) if i % args.workers == args.worker]
+    if args.ids:
+        wanted = set(args.ids.split(","))
+        lines = [l for l in lines if l["id"] in wanted]
+        args.all = True
     if not args.all:
         lines = [l for l in lines if not (out / f"{l['id']}.mp3").exists()]
     # longest lines first, so the workers finish around the same time
@@ -91,7 +97,7 @@ def main():
     for n, line in enumerate(lines, 1):
         ref = REFS / f"{line['who']}.wav"
         ex, cfg = emotion(line["who"], line["text"])
-        torch.manual_seed(zlib.crc32(line["id"].encode()))
+        torch.manual_seed(zlib.crc32(line["id"].encode()) + args.take * 7919)
         wav = model.generate(speakable(line["text"]), audio_prompt_path=str(ref), exaggeration=ex, cfg_weight=cfg)
         samples = shape(wav.squeeze(0).numpy(), model.sr)
         sf.write(out / f"{line['id']}.mp3", samples, model.sr, format="MP3")

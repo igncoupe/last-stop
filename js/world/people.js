@@ -157,7 +157,13 @@ export class Person {
   // walk through points given in `parent` space (default: the current parent)
   // ground(x, z), if given, is the height underfoot in the parent's space (the bus steps)
   walk(points, { speed = 1.3, parent = null, ground = null } = {}) {
-    if (parent && this.root.parent !== parent) parent.attach(this.root);
+    if (parent && this.root.parent !== parent) {
+      parent.attach(this.root);
+      // re-parenting can come back as a flipped rotation (x and z at 180°), and then turning toward
+      // where they're going turns them the wrong way: keep just the heading
+      const yaw = new THREE.Euler().setFromQuaternion(this.root.quaternion, "YXZ").y;
+      this.root.rotation.set(0, yaw, 0);
+    }
     this.ground = ground;
     this.stand();
     this.mode = "walk";
