@@ -148,6 +148,7 @@ function buildBridge(scene) {
     start: new THREE.Vector3(X + 2.3, 0, 4),
     edge: 268,          // where the deck ends
     origin: X,
+    water,
     update(dt) { water.material.map.offset.y += dt * 0.01; },
   };
 }

@@ -199,10 +199,11 @@ async function endHome(g, crowd, deadAir) {
   g.despawn("teodor");
   g.spawn("teodor", "uniform");
   g.actor("teodor").sit(g.bus.group, new THREE.Vector3(0.7, 0.5, 4.75), 0);
-  // you ride in the front passenger seat now
-  g.fixedCamera(g.bus.group, new THREE.Vector3(-0.6, 1.5, 2.6), new THREE.Euler(-0.05, Math.PI + 0.2, 0, "YXZ"));
+  // you stand in the aisle behind him, looking out through the windshield
+  g.fixedCamera(g.bus.group, new THREE.Vector3(0.0, 1.78, 3.75), new THREE.Euler(-0.07, Math.PI + 0.08, 0, "YXZ"));
   const stars = starField();
   P.group.add(stars);
+  P.water.visible = false;           // tonight the river is made of stars
   await g.fade(0, 1400);
   await g.think("He drives like he never left. The road ends. The bridge isn't there anymore. We just keep going.");
   await g.frames((dt) => {
@@ -215,17 +216,24 @@ async function endHome(g, crowd, deadAir) {
   return deadAir ? "deadair" : "home";
 }
 
+// stars above, and stars in the river below: the bus drives through them
 function starField() {
-  const n = 1500;
-  const pos = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) {
-    pos[i * 3] = (Math.random() - 0.5) * 300;
-    pos[i * 3 + 1] = -6 - Math.random() * 40;
-    pos[i * 3 + 2] = 180 + Math.random() * 400;
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-  return new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xfff4d8, size: 2, sizeAttenuation: false, fog: false }));
+  const group = new THREE.Group();
+  const layer = (n, size, color, yMin, yMax) => {
+    const pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 420;
+      pos[i * 3 + 1] = yMin + Math.random() * (yMax - yMin);
+      pos[i * 3 + 2] = 60 + Math.random() * 700;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    group.add(new THREE.Points(geo, new THREE.PointsMaterial({ color, size, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.95 })));
+  };
+  layer(3000, 3, 0xfff4d8, -45, -4);     // the river
+  layer(1200, 2, 0xd8e4ff, 8, 120);      // the sky
+  layer(250, 5, 0xffe2a8, -30, 60);      // a few bright ones
+  return group;
 }
 
 // morning at Northgate. The bus is empty.
@@ -233,6 +241,7 @@ async function dawn(g, deadAir) {
   const f = g.flags;
   g.despawnAll();
   g.places.bridge.group.visible = false;
+  g.places.bridge.water.visible = true;
   g.drive.detach(false);
   g.drive.d = route.length - 32;
   g.setDoors(true);
