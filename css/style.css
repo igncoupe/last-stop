@@ -230,8 +230,21 @@ body.shake #view { animation: shake .5s cubic-bezier(.36, .07, .19, .97); }
   height: 120px; margin: 4px 0 12px;
   display: grid; place-items: end start; padding: 6px;
   font-size: 11px; color: #ddd;
-  background: radial-gradient(ellipse at 30% 40%, #8c8c86, #44443f 70%), #555;
-  filter: sepia(.5) contrast(1.1);
+  /* a faded group photo: two rows of heads and shoulders */
+  background:
+    radial-gradient(circle at 50% 34%, rgba(28, 27, 25, .85) 0 8px, transparent 9px) 0 4px / 34px 56px,
+    radial-gradient(ellipse 15px 12px at 50% 100%, rgba(28, 27, 25, .85) 0 99%, transparent 100%) 0 4px / 34px 56px,
+    radial-gradient(ellipse at 30% 40%, #8c8c86, #44443f 70%), #555;
+  filter: sepia(.5) contrast(1.1) blur(.4px);
+}
+/* one face on a missing poster */
+.paper-poster .p-photo {
+  width: 130px; height: 150px; margin: 4px auto 12px;
+  background:
+    radial-gradient(ellipse 26px 32px at 50% 38%, #34322e 0 99%, transparent 100%),
+    radial-gradient(ellipse 58px 40px at 50% 112%, #34322e 0 99%, transparent 100%),
+    #85827a;
+  filter: grayscale(1) contrast(1.2);
 }
 /* a yellowed newspaper clipping */
 .paper-clipping .sheet { background: #d9cba3; font-family: Georgia, "Times New Roman", serif; font-size: 15px; transform: rotate(1.5deg); }
