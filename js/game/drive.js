@@ -88,6 +88,7 @@ export function createDrive(bus) {
       s.pitch += (THREE.MathUtils.clamp(-acc * 0.004, -0.03, 0.02) - s.pitch) * Math.min(1, dt * 4);
       const turn = route.heading(s.d + 6) - route.heading(s.d);
       const turnRate = Math.atan2(Math.sin(turn), Math.cos(turn));
+      s.steer = turnRate;
       s.roll += (THREE.MathUtils.clamp(turnRate * s.speed * 0.02, -0.04, 0.04) - s.roll) * Math.min(1, dt * 3);
       place();
     },

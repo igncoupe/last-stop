@@ -146,7 +146,7 @@ function frame(now) {
   const rt = director.routeText(nextStopName());
   const key = rt.text + rt.glitch;
   if (key !== lastRoute) { bus.setRoute(rt.text, rt.glitch); lastRoute = key; }
-  bus.update(dt, { speed: drive.speed, clock: clockText(), late: g.lateTonight });
+  bus.update(dt, { speed: drive.speed, clock: clockText(), late: g.lateTonight, steer: drive.state.steer || 0 });
   camera.getWorldPosition(focus);
   city.update(focus, dt);
   props.depot.update(dt, clockMinutes());

@@ -462,6 +462,8 @@ export function buildBus(scene) {
       const eased = state.doorAmt * state.doorAmt * (3 - 2 * state.doorAmt);
       doorPanels.forEach(({ pivot, dir }) => { pivot.rotation.y = dir * eased * 1.42; });
       visorPivot.rotation.x = THREE.MathUtils.lerp(visorPivot.rotation.x, state.visorDown ? -1.45 : 0, dt * 6);
+      // the steering wheel turns into the corners
+      wheelG.rotation.z = THREE.MathUtils.lerp(wheelG.rotation.z, THREE.MathUtils.clamp((info.steer || 0) * 9, -2.2, 2.2), Math.min(1, dt * 4));
       // door button: pressed in for a moment, green = closed, amber = open
       state.btnT = Math.max(0, (state.btnT || 0) - dt);
       doorBtn.position.y = state.btnT > 0 ? 1.362 : 1.37;
