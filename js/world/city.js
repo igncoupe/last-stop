@@ -236,7 +236,7 @@ export function buildCity(scene) {
     }
   }
   const lampDs = lamps.map((l) => l.d);
-  const mysteryDs = [660, 1085, 1630, 2190];
+  const mysteryDs = [660, 1085, 1630, 2290];
   const treeOk = (d, side, pos, onSidewalk) => {
     if (d < 50 || d > L - 60 || nearCorner(d, 24)) return false;
     if (Object.values(STOPS).some((s) => Math.abs(s - d) < 14)) return false;

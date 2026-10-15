@@ -162,6 +162,7 @@ export function createDirector(w) {
       const clash = (x) => Object.values(STOPS).some((sd) => Math.abs(sd - x) < 45);
       while (clash(d)) d += 20;
       d = Math.min(d, route.length - 110);
+      d = Math.max(d, drive.d + 70);          // and never behind you, however late in the run it is
       props.mystery.place(d);
       return d;
     },
