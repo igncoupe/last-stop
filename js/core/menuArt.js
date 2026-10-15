@@ -31,6 +31,10 @@ export function createMenuArt(canvas) {
     blocks.push({ x, w, h, wins });
     x += w + rnd() * 4;
   }
+  // low clouds, lit orange from underneath by the city
+  const clouds = Array.from({ length: 9 }, () => ({ x: rnd() * W, y: 8 + rnd() * 70, rx: 40 + rnd() * 70, ry: 6 + rnd() * 9 }));
+  // puddles on the road: (X across, f how close, width)
+  const puddles = [[-110, 0.55, 40], [-20, 0.8, 70], [30, 0.38, 26], [-70, 0.28, 22], [50, 0.95, 50]];
   const drops = Array.from({ length: 170 }, () => ({ x: rnd() * W, y: rnd() * H, v: 170 + rnd() * 140, l: 3 + rnd() * 6 }));
 
   let raf = 0;
@@ -66,7 +70,17 @@ export function createMenuArt(canvas) {
     sky.addColorStop(1, "#241a10");
     c.fillStyle = sky;
     c.fillRect(0, 0, W, HOR + 1);
-    if (flash) rect(0, 0, W, HOR, `rgba(150, 168, 200, ${flash * 0.55})`);
+    for (const k of clouds) {
+      c.fillStyle = flash ? `rgba(150, 160, 190, ${0.15 + flash * 0.45})` : "rgba(26, 22, 24, .55)";
+      c.beginPath();
+      c.ellipse(k.x, k.y, k.rx, k.ry, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "rgba(70, 44, 24, .12)";
+      c.beginPath();
+      c.ellipse(k.x, k.y + k.ry * 0.5, k.rx * 0.8, k.ry * 0.4, 0, 0, Math.PI * 2);
+      c.fill();
+    }
+    if (flash) rect(0, 0, W, HOR, `rgba(150, 168, 200, ${flash * 0.4})`);
 
     // the skyline
     for (const b of blocks) {
@@ -85,8 +99,12 @@ export function createMenuArt(canvas) {
     c.fillRect(0, HOR - 24, W, 54);
 
     // the ground: sidewalks, then the road
-    rect(0, HOR, W, DEPTH, "#09090b");
-    c.fillStyle = "#0f1013";
+    rect(0, HOR, W, DEPTH, "#070709");
+    const road = c.createLinearGradient(0, HOR, 0, H);
+    road.addColorStop(0, "#1c1c21");
+    road.addColorStop(0.35, "#141519");
+    road.addColorStop(1, "#101115");
+    c.fillStyle = road;
     c.beginPath();
     c.moveTo(VX, HOR);
     c.lineTo(gx(-160, 1.2), gy(1.2));
@@ -94,7 +112,14 @@ export function createMenuArt(canvas) {
     c.closePath();
     c.fill();
     // curbs and the broken center line
-    c.strokeStyle = "rgba(120, 120, 130, .28)";
+    // puddles: dull mirrors of the sky
+    for (const [X, pf, pw] of puddles) {
+      c.fillStyle = flash ? `rgba(170, 185, 215, ${0.12 + flash * 0.3})` : "rgba(110, 120, 140, .09)";
+      c.beginPath();
+      c.ellipse(gx(X, pf), gy(pf), pw * pf * 0.5, Math.max(1, pw * pf * 0.07), 0, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.strokeStyle = "rgba(140, 140, 150, .38)";
     c.lineWidth = 1;
     for (const X of [-160, 80]) {
       c.beginPath();
@@ -118,15 +143,29 @@ export function createMenuArt(canvas) {
     for (const [f, on] of [[0.42, flicker], [0.2, 1], [0.1, 1]]) {
       const x = gx(-178, f);
       const top = gy(f) - 250 * f;
-      stand(-180, f, 4, 250, "#141417");
-      rect(x, top, 34 * f, Math.max(1, 3 * f), "#141417");
+      const pole = "#25262c";
+      stand(-180, f, 5, 250, pole);
+      rect(x + 4 * f, top, Math.max(1, 1.2 * f), 250 * f, `rgba(232, 150, 60, ${0.18 * on})`);   // lit side
+      rect(x, top, 34 * f, Math.max(1, 3 * f), pole);
       const hx = x + 32 * f;
+      rect(hx - 6 * f, top - 1, 12 * f, Math.max(2, 4 * f), "#2c2d33");                   // the lamp's head
       // the pool of light on the wet road, and its long reflection
       glow(hx, gy(f), 70 * f, "rgba(232, 150, 60, A)", 0.32 * on);
       c.fillStyle = `rgba(232, 150, 60, ${0.16 * on})`;
       c.fillRect(Math.round(hx - 2 * f), gy(f), Math.max(1, Math.round(4 * f)), Math.round(DEPTH * (1 - f) * 0.8));
       glow(hx, top + 3 * f, 22 * f + 3, "rgba(255, 190, 110, A)", 0.8 * on);
       rect(hx - 4 * f, top + 2 * f, 8 * f, Math.max(1, 2 * f), on > 0.5 ? "#ffe2b0" : "#3a2c1c");
+    }
+
+    c.strokeStyle = "rgba(34, 34, 40, .95)";
+    c.lineWidth = 1;
+    const tx = gx(-178, 0.42);
+    const ty = gy(0.42) - 250 * 0.42;
+    for (const [dy, ey] of [[4, 30], [8, 40]]) {
+      c.beginPath();
+      c.moveTo(tx, ty + dy);
+      c.quadraticCurveTo((tx + W) / 2, ty + dy + 34, W + 4, ey);
+      c.stroke();
     }
 
     // the 9: headlights out of the fog, closer and closer, and then gone

@@ -195,8 +195,8 @@ body.shake #view { animation: shake .5s cubic-bezier(.36, .07, .19, .97); }
 .btn.primary:hover, .btn.primary:focus-visible { background: #ffc773; }
 
 /* ---------- the main menu: its own picture, the title and the buttons down the left ---------- */
-.screen.menu { display: block; padding: 0; text-align: left; background: #000; overflow: hidden; }
-.menu-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; image-rendering: crisp-edges; }
+.screen.menu { display: block; place-items: normal; padding: 0; text-align: left; background: #000; overflow: hidden; }
+.menu-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 78% 50%; image-rendering: pixelated; image-rendering: crisp-edges; }
 .menu-shade {
   position: absolute; inset: 0; pointer-events: none;
   background:
@@ -228,8 +228,9 @@ body.shake #view { animation: shake .5s cubic-bezier(.36, .07, .19, .97); }
 }
 
 /* ---------- settings ---------- */
-.settings-screen { z-index: 21; background: radial-gradient(ellipse at 50% 120%, rgba(255, 181, 74, .08), transparent 60%), rgba(0, 0, 0, .8); }
+.settings-screen { z-index: 21; place-items: start center; padding-top: max(24px, 5vh); background: radial-gradient(ellipse at 50% 120%, rgba(255, 181, 74, .08), transparent 60%), rgba(0, 0, 0, .8); }
 .set-panel { width: min(620px, 100%); max-width: none; }
+.set-panel .card-title { font-size: clamp(48px, 7vw, 72px); margin: 0 0 8px; }
 .set-tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 6px 0 18px; }
 .set-tab {
   font-family: var(--led-font); font-size: 22px; letter-spacing: .08em; text-transform: uppercase;
@@ -238,7 +239,7 @@ body.shake #view { animation: shake .5s cubic-bezier(.36, .07, .19, .97); }
 }
 .set-tab:hover, .set-tab:focus-visible { color: var(--text); border-color: var(--dim); outline: none; }
 .set-tab[aria-selected="true"] { color: var(--led); border-color: var(--led); background: rgba(255, 181, 74, .08); }
-.set-body { min-height: 290px; text-align: left; border-top: 1px solid var(--line); }
+.set-body { min-height: 330px; text-align: left; border-top: 1px solid var(--line); }
 .set-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 18px;
   padding: 11px 4px; border-bottom: 1px solid var(--line);
