@@ -1,7 +1,7 @@
 // Things along the route: bus shelters, the stop with no name, the canal,
 // the flood, rain, the depot garage (start) and Northgate terminal (end).
 import * as THREE from "three";
-import { mat, glow, box } from "../core/ps1.js";
+import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { ribbon, radialTexture } from "./city.js";
 import { route, STOPS, CURB, LANE } from "./route.js";
@@ -39,14 +39,14 @@ function shelter(name, { old = false } = {}) {
 // a yellow box painted on the road: pull the bus into it to stop
 function stopBox(d) {
   const g = new THREE.Group();
-  const paint = new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.85 });
-  const fill = new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.12, depthWrite: false });
+  const paint = decal(new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.85 }), 2);
+  const fill = decal(new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.12, depthWrite: false }), 1);
   g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE + 1.5, 0.025, fill, [3, 3], 1));
   g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE - 1.3, 0.03, paint, [1, 1], 1));
   g.add(ribbon(d - 17, d + 6, LANE + 1.3, LANE + 1.5, 0.03, paint, [1, 1], 1));
   g.add(ribbon(d - 17, d - 16.7, LANE - 1.5, LANE + 1.5, 0.03, paint, [1, 1], 0.3));
   g.add(ribbon(d + 5.7, d + 6, LANE - 1.5, LANE + 1.5, 0.03, paint, [1, 1], 0.3));
-  const word = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.3), new THREE.MeshBasicMaterial({ map: tex.sign("BUS\nSTOP", { bg: "rgba(0,0,0,0)", fg: "#e0b23a", w: 64, h: 32, font: 13 }), transparent: true, depthWrite: false }));
+  const word = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.3), decal(new THREE.MeshBasicMaterial({ map: tex.sign("BUS\nSTOP", { bg: "rgba(0,0,0,0)", fg: "#e0b23a", w: 64, h: 32, font: 13 }), transparent: true, depthWrite: false }), 2));
   word.rotation.set(-Math.PI / 2, 0, 0, "YXZ");
   word.rotation.y = route.heading(d) + Math.PI;
   word.position.copy(route.at(d - 3, LANE, 0.035));
@@ -118,7 +118,7 @@ export function buildProps(scene) {
   scene.add(ribbon(1565, 2040, -CURB + 0.15, -CURB + 0.25, 1.1, mat({ color: 0x3b3f45 }), [1, 1], 2));
 
   // ---- flood over the road at Canal Row
-  const floodMat = new THREE.MeshPhongMaterial({ color: 0x0d1d29, map: tex.water(), shininess: 120, specular: 0x445566, transparent: true, opacity: 0.88 });
+  const floodMat = decal(new THREE.MeshPhongMaterial({ color: 0x0d1d29, map: tex.water(), shininess: 120, specular: 0x445566, transparent: true, opacity: 0.88 }), 3);
   const flood = ribbon(1690, 1915, -CURB - 0.5, CURB + 0.5, 0.2, floodMat, [6, 6]);
   flood.visible = false;
   scene.add(flood);
@@ -136,7 +136,7 @@ export function buildProps(scene) {
   props.rain = {
     set(on) { rain.visible = on; },
     get on() { return rain.visible; },
-    update(dt, cam) { if (!rain.visible) return; rain.position.set(cam.x, cam.y, cam.z); rain.userData.tick(dt); },
+    update(dt, cam, hidden) { if (!rain.visible) return; rain.position.set(cam.x, cam.y, cam.z); rain.userData.tick(dt, hidden); },
   };
 
   buildDepot(scene, props);
@@ -153,17 +153,22 @@ function rainBox(count, w, h, d, color) {
   geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
   const lines = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.45 }));
   lines.frustumCulled = false;
-  const write = () => {
-    drops.forEach(([x, y, z], i) => pos.set([x, y, z, x + 0.03, y + 0.45, z], i * 6));
+  // hidden(x, y, z) can hide drops at a world position (rain must not fall inside the bus)
+  const write = (hidden) => {
+    const o = lines.position;
+    drops.forEach(([x, y, z], i) => {
+      if (hidden && hidden(o.x + x, o.y + y, o.z + z)) pos.fill(0, i * 6, i * 6 + 6);
+      else pos.set([x, y, z, x + 0.03, y + 0.45, z], i * 6);
+    });
     geo.attributes.position.needsUpdate = true;
   };
   write();
-  lines.userData.tick = (dt) => {
+  lines.userData.tick = (dt, hidden) => {
     for (const dr of drops) {
       dr[1] -= dt * 14;
       if (dr[1] < -h / 2) dr[1] += h;
     }
-    write();
+    write(hidden);
   };
   return lines;
 }

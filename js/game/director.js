@@ -98,7 +98,12 @@ export function createDirector(w) {
       if (line && !silent) await g.say("you", line);
       return i;
     },
-    hint(text) { ui.hint(text); },
+    // show the objective; "look at X" hints also glide the view there
+    hint(text) {
+      ui.hint(text);
+      const auto = text && autoLook.find(([re]) => re.test(text));
+      if (auto) player.lookAtSoon(auto[1]);
+    },
 
     // ---------- the bus ----------
     // wait until the bus stops at a stop (true) or drives past it (false)
@@ -276,6 +281,20 @@ export function createDirector(w) {
     camera,
   };
 
+  const headOf = (key) => () => {
+    const a = actors.get(key);
+    return a ? a.root.localToWorld(new THREE.Vector3(0, a.look.height - 0.2, 0)) : null;
+  };
+  // hints that turn your head for you
+  const autoLook = [
+    [/mirror/i, () => g.mirrorPoint()],
+    [/back row|Turn around/i, () => g.backRow()],
+    [/at the door/i, () => bus.group.localToWorld(new THREE.Vector3(-1.2, 1.6, 4.6))],
+    [/at the shelter/i, headOf("drowned1")],
+    [/out the window/i, () => places.hospital.win.getWorldPosition(new THREE.Vector3())],
+    [/back to the bed/i, () => places.hospital.bedHead],
+  ];
+
   // is the player looking at a world point (within `deg` degrees)?
   g.gazing = (point, deg = 14) => {
     const from = camera.getWorldPosition(new THREE.Vector3());
@@ -322,13 +341,13 @@ export function createDirector(w) {
     g.spawn("creep", look, { ghost: true, mirrorOnly: true });
     for (const seat of ["B1", "L7", "L4", "L1"]) {
       g.seat("creep", seat);
-      ui.hint("Check your mirror");
+      g.hint("Check your mirror");
       await until(() => g.lookingAtMirror(), 14000);
       ui.hint(null);
       Sound.sfx(seat === "L1" ? "breath" : "drip");
       await g.wait(seat === "L1" ? 1200 : 2600);
     }
-    ui.hint("Turn around");
+    g.hint("Turn around");
     await until(() => g.lookingBack() || g.gazing(bus.group.localToWorld(new THREE.Vector3(0.66, 1.3, 3.1)), 30), 12000);
     ui.hint(null);
     g.despawn("creep");

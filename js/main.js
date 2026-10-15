@@ -39,7 +39,7 @@ if (matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").ma
 const canvas = $("view");
 const { renderer, resize } = makeRenderer(canvas, { preserve: params.has("test") });
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(72, 16 / 9, 0.05, 260);
+const camera = new THREE.PerspectiveCamera(72, 16 / 9, 0.08, 260);
 scene.add(camera);
 const hemi = new THREE.HemisphereLight(0x4a5878, 0x0a0a0c, 0.35);
 const ambient = new THREE.AmbientLight(0x1c2030, 0.6);
@@ -62,11 +62,12 @@ function setSky(name) {
   scene.background.set(k.fog);
   hemi.intensity = hemiBase = k.hemi;
 }
+// a cold flash across the sky, not a white-out
 function lightning() {
-  hemi.intensity = 4;
+  hemi.intensity = 1.8;
   setTimeout(() => { hemi.intensity = hemiBase; }, 70);
-  setTimeout(() => { hemi.intensity = 3; }, 140);
-  setTimeout(() => { hemi.intensity = hemiBase; }, 220);
+  setTimeout(() => { hemi.intensity = 1.3; }, 150);
+  setTimeout(() => { hemi.intensity = hemiBase; }, 230);
 }
 
 const city = buildCity(scene);
@@ -99,6 +100,13 @@ let paused = false;
 let last = performance.now();
 let lastRoute = "";
 const focus = new THREE.Vector3();
+// is a world point inside the bus? (so rain doesn't fall through the roof)
+const busInverse = new THREE.Matrix4();
+const tmpV = new THREE.Vector3();
+const insideBus = (x, y, z) => {
+  tmpV.set(x, y, z).applyMatrix4(busInverse);
+  return Math.abs(tmpV.x) < 1.4 && tmpV.y > -0.2 && tmpV.y < 3.3 && Math.abs(tmpV.z) < 6.3;
+};
 
 function nextStopName() {
   const stops = Object.entries(STOPS).map(([n, d]) => ({ n, d }));
@@ -138,7 +146,8 @@ function frame(now) {
   bus.update(dt, { speed: drive.speed, clock: clockText(), late: g.lateTonight });
   camera.getWorldPosition(focus);
   city.update(focus, dt);
-  props.rain.update(dt, focus);
+  busInverse.copy(bus.group.matrixWorld).invert();
+  props.rain.update(dt, focus, insideBus);
   props.flood.update(dt);
   props.mystery.update(dt);
   places.hospital.update(dt);

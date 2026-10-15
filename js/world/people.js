@@ -33,7 +33,8 @@ export class Person {
     scene.add(this.root);
     this.mats = [];
     const m = (color) => {
-      const x = mat({ color, transparent: true, opacity: 1 });
+      // solid, never see-through: overlapping see-through boxes flickered badly
+      const x = mat({ color });
       this.mats.push(x);
       return x;
     };
@@ -126,19 +127,20 @@ export class Person {
     all.add(this);
   }
 
-  // the drowned: pale, a little see-through, black eyes
+  // the drowned: washed-out colors, gray-blue skin, black eyes, a faint cold glow
   setGhost(on) {
     this.ghost = on;
     this.mats.forEach((x) => {
-      x.transparent = true;
-      x.opacity = on ? 0.82 : 1;
-      x.emissive?.set(on ? 0x0c1418 : 0x000000);
+      if (on && !x.userData.origColor) {
+        x.userData.origColor = x.color.clone();
+        x.color.lerp(new THREE.Color(0x56636a), 0.55);      // drained of color
+      }
+      x.emissive?.set(on ? 0x0b1518 : 0x000000);
     });
     this.eyeMat.color.set(on ? 0x000000 : 0x111111);
-    if (on) this.skinMat.color.set(0x9aa4a8);
+    if (on) this.skinMat.color.set(0x8c979b);
     return this;
   }
-  setOpacity(a) { this.mats.forEach((x) => { x.opacity = a; }); }
   setMirrorOnly(on) {
     this.root.traverse((o) => { if (o.isMesh) o.layers.set(on ? MIRROR_ONLY : 0); });
     return this;

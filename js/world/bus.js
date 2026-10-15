@@ -116,14 +116,15 @@ export function buildBus(scene) {
   visor.userData.interact = "visor";
 
   // rear-view mirror with a real camera behind it
-  const mirrorRT = new THREE.WebGLRenderTarget(192, 64, { magFilter: THREE.NearestFilter, minFilter: THREE.NearestFilter });
+  // a sharp mirror: 480 x 160, smoothed, so you can actually see who's behind you
+  const mirrorRT = new THREE.WebGLRenderTarget(480, 160, { magFilter: THREE.LinearFilter, minFilter: THREE.LinearFilter });
   mirrorRT.texture.colorSpace = THREE.SRGBColorSpace;
   mirrorRT.texture.wrapS = THREE.RepeatWrapping;
   mirrorRT.texture.repeat.x = -1;
-  const mirror = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.2), new THREE.MeshBasicMaterial({ map: mirrorRT.texture })), 0.22, 2.5, 5.78);
+  const mirror = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.24), new THREE.MeshBasicMaterial({ map: mirrorRT.texture })), 0.22, 2.5, 5.78);
   mirror.rotation.y = Math.PI + 0.12;
-  put(bus, box(0.66, 0.26, 0.03, trim), 0.22, 2.5, 5.8);
-  const mirrorCam = new THREE.PerspectiveCamera(42, 3, 0.1, 60);
+  put(bus, box(0.78, 0.3, 0.03, trim), 0.22, 2.5, 5.8);
+  const mirrorCam = new THREE.PerspectiveCamera(40, 3, 0.1, 60);
   mirrorCam.position.set(0.22, 2.35, 5.6);
   mirrorCam.rotation.set(-0.12, -0.08, 0);   // cameras look down -z: toward the back of the bus
   mirrorCam.layers.enable(MIRROR_ONLY);

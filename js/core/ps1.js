@@ -8,13 +8,26 @@ const SNAP = new THREE.Vector2(360, 270);            // vertex snapping grid (lo
 function patch(material) {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uSnap = { value: SNAP };
+    // snap only points in front of the camera: snapping points behind it (w <= 0)
+    // throws them across the screen, which made big surfaces like the ground glitch
     shader.vertexShader = "uniform vec2 uSnap;\n" + shader.vertexShader.replace(
       "#include <project_vertex>",
       `#include <project_vertex>
-       gl_Position.xy = floor(gl_Position.xy / gl_Position.w * uSnap + 0.5) / uSnap * gl_Position.w;`,
+       if (gl_Position.w > 0.3) {
+         gl_Position.xy = floor(gl_Position.xy / gl_Position.w * uSnap + 0.5) / uSnap * gl_Position.w;
+       }`,
     );
   };
   material.customProgramCacheKey = () => "ps1-" + material.type;
+  return material;
+}
+
+// things painted on top of other surfaces (road lines, light pools, puddles)
+// get pulled toward the camera in the depth buffer so they never flicker
+export function decal(material, strength = 1) {
+  material.polygonOffset = true;
+  material.polygonOffsetFactor = -1 * strength;
+  material.polygonOffsetUnits = -4 * strength;
   return material;
 }
 

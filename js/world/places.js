@@ -133,7 +133,7 @@ function buildBridge(scene) {
   put(g, box(7, 0.6, 70, mat({ map: tex.concrete(), color: 0x777777 }), [3, 3]), 0, -0.25, 235);
   put(g, box(3.5, 0.6, 9, mat({ map: tex.concrete(), color: 0x777777 })), -1.6, -0.3, 274);
   for (const x of [-3.4, 3.4]) for (let z = 202; z < 268; z += 2.5) put(g, box(0.1, 1, 0.1, mat({ color: 0x3b3f45 })), x, 0.5, z);
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshPhongMaterial({ color: 0x050b10, map: tex.water(), shininess: 60 }));
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(600, 600, 30, 30), new THREE.MeshPhongMaterial({ color: 0x050b10, map: tex.water(), shininess: 60 }));
   water.material.map.repeat.set(40, 40);
   water.rotation.x = -Math.PI / 2;
   put(g, water, 0, -6, 300);

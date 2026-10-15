@@ -19,9 +19,14 @@ export function createPlayer(camera, scene) {
     seatEye: null,
     colliders: [],
     interactables: [],      // { mesh, label(): string|null, use() }
-    look: null,             // cutscene look-at target (world point)
+    look: null,             // () => world point to turn toward (cutscenes, "check your mirror")
+    lookRelease: true,      // let go once we're looking at it
+    viewYaw: 0,             // what the camera actually shows: eases toward yaw/pitch
+    viewPitch: 0,
     shake: 0,
   };
+  const SMOOTH = 15;        // view smoothing: higher = snappier
+  const snapView = () => { s.viewYaw = s.yaw; s.viewPitch = s.pitch; };
   const ray = new THREE.Raycaster();
   const center = new THREE.Vector2(0, 0);
   let hovered = null;
@@ -51,6 +56,7 @@ export function createPlayer(camera, scene) {
       s.pos.copy(pos);
       s.yaw = yaw;
       s.pitch = 0;
+      snapView();
     },
     sitIn(parent, eye, yaw = Math.PI) {
       s.mode = "seat";
@@ -59,6 +65,7 @@ export function createPlayer(camera, scene) {
       parent.add(camera);
       s.yaw = yaw;
       s.pitch = -0.05;
+      snapView();
     },
     // a fixed camera for cinematic shots (the player can't move or look)
     fixed(parent, pos, rot) {
@@ -68,10 +75,18 @@ export function createPlayer(camera, scene) {
       camera.rotation.copy(rot);
     },
     // cutscene: the player can't move or look; the camera turns toward `target`
-    cutscene(target = null) { s.locked = true; s.look = target ? target.clone() : null; },
+    cutscene(target = null) {
+      s.locked = true;
+      s.look = target ? (typeof target === "function" ? target : () => target) : null;
+      s.lookRelease = false;
+    },
     endCutscene() { s.locked = false; s.look = null; },
-    // pull the view toward something without locking the player
-    lookAtSoon(target) { s.look = target ? target.clone() : null; },
+    // glide the view toward something (a point, or a function returning one).
+    // It lets go once you're looking at it, or as soon as you move the mouse.
+    lookAtSoon(target) {
+      s.look = target ? (typeof target === "function" ? target : () => target) : null;
+      s.lookRelease = true;
+    },
     shake(amount) { s.shake = Math.max(s.shake, amount); },
     setColliders(list) { s.colliders = list; },
     addInteract(entry) { s.interactables.push(entry); return entry; },
@@ -84,22 +99,31 @@ export function createPlayer(camera, scene) {
       if (free) {
         s.yaw -= input.dx * 0.0022;
         s.pitch -= input.dy * 0.0022;
+        // moving the mouse yourself cancels an automatic pan
+        if (s.look && s.lookRelease && Math.abs(input.dx) + Math.abs(input.dy) > 3) s.look = null;
       }
-      // a cutscene (or a scare) can pull your view toward something
+      // a cutscene, a scare or a "check your mirror" can turn your view
       if (s.look) {
-        const from = camera.getWorldPosition(new THREE.Vector3());
-        const dir = s.look.clone().sub(from).normalize();
-        let wantYaw = Math.atan2(-dir.x, -dir.z);
-        const wantPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
-        if (base === "seat") {
-          // seat yaw is relative to the bus, so subtract the bus's own heading
-          const q = s.seatParent.getWorldQuaternion(new THREE.Quaternion());
-          wantYaw -= new THREE.Euler().setFromQuaternion(q, "YXZ").y;
+        const target = s.look();
+        if (!target) {
+          s.look = null;
+        } else {
+          const from = camera.getWorldPosition(new THREE.Vector3());
+          const dir = target.clone().sub(from).normalize();
+          let wantYaw = Math.atan2(-dir.x, -dir.z);
+          const wantPitch = Math.asin(THREE.MathUtils.clamp(dir.y, -1, 1));
+          if (base === "seat") {
+            // seat yaw is relative to the bus, so subtract the bus's own heading
+            const q = s.seatParent.getWorldQuaternion(new THREE.Quaternion());
+            wantYaw -= new THREE.Euler().setFromQuaternion(q, "YXZ").y;
+          }
+          let dy = wantYaw - s.yaw;
+          dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+          const dp = wantPitch - s.pitch;
+          s.yaw += dy * Math.min(1, dt * 4);
+          s.pitch += dp * Math.min(1, dt * 4);
+          if (s.lookRelease && Math.abs(dy) < 0.02 && Math.abs(dp) < 0.02) s.look = null;
         }
-        let dy = wantYaw - s.yaw;
-        dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-        s.yaw += dy * Math.min(1, dt * 3);
-        s.pitch += (wantPitch - s.pitch) * Math.min(1, dt * 3);
       }
       s.pitch = THREE.MathUtils.clamp(s.pitch, -1.35, 1.25);
 
@@ -131,7 +155,13 @@ export function createPlayer(camera, scene) {
         camera.position.x += (Math.random() - 0.5) * v;
         camera.position.y += (Math.random() - 0.5) * v * 1.5;
       }
-      camera.rotation.set(s.pitch, s.yaw, 0, "YXZ");
+      // view smoothing: the camera eases toward where you're aiming
+      const k = 1 - Math.exp(-dt * SMOOTH);
+      let dv = s.yaw - s.viewYaw;
+      dv = Math.atan2(Math.sin(dv), Math.cos(dv));
+      s.viewYaw += dv * k;
+      s.viewPitch += (s.pitch - s.viewPitch) * k;
+      camera.rotation.set(s.viewPitch, s.viewYaw, 0, "YXZ");
       if (s.shake > 0) {
         camera.rotation.x += (Math.random() - 0.5) * s.shake * 0.05;
         camera.rotation.y += (Math.random() - 0.5) * s.shake * 0.05;

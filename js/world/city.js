@@ -1,7 +1,7 @@
 // The city along Route 9: road, sidewalks, buildings and streetlights.
 // Everything is generated from the route, so the same city appears every night.
 import * as THREE from "three";
-import { mat, glow, box } from "../core/ps1.js";
+import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { route, ROAD_HALF, CURB, districtAt, nearCorner, STOPS } from "./route.js";
 
@@ -48,9 +48,9 @@ export function buildCity(scene) {
   // ground, road, sidewalks
   const groundMat = mat({ map: tex.concrete(), color: 0x6a6a6a });
   groundMat.map.repeat.set(400, 400);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), groundMat);
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000, 100, 100), groundMat);   // tiled, so the PS1 wobble stays small
   ground.rotation.x = -Math.PI / 2;
-  ground.position.set(600, -0.05, 800);
+  ground.position.set(600, -0.15, 800);
   group.add(ground);
 
   group.add(ribbon(-10, L + 20, -ROAD_HALF, ROAD_HALF, 0.0, mat({ map: tex.asphalt() }), [5, 5]));
@@ -61,7 +61,7 @@ export function buildCity(scene) {
   // dashed center line
   const dashes = [];
   for (let d = 0; d < L; d += 9) if (!nearCorner(d, 22)) dashes.push(d);
-  const dash = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, 0.02, 3), glow(0xb59a52), dashes.length);
+  const dash = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, 0.02, 3), decal(glow(0xb59a52)), dashes.length);
   const m4 = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   dashes.forEach((d, i) => {
@@ -144,7 +144,7 @@ export function buildCity(scene) {
   const headMat = glow(0xffd9a0);
   const coneMat = new THREE.MeshBasicMaterial({ color: 0xffc078, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
   const coneGeo = new THREE.CylinderGeometry(0.3, 3.4, 5.6, 10, 1, true);
-  const poolMat = new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, map: radialTexture() });
+  const poolMat = decal(new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, map: radialTexture() }), 2);
   const poolGeo = new THREE.PlaneGeometry(11, 11);
   for (const side of [1, -1]) {
     for (let d = side === 1 ? 18 : 36; d < L - 20; d += 36) {
