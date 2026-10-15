@@ -213,26 +213,27 @@ export function buildBus(scene) {
   put(bus, box(0.55, 0.12, 0.55, mat({ color: 0x1c1d20 })), 0.7, 0.95, 4.75);
   put(bus, box(0.55, 0.5, 0.1, mat({ color: 0x1c1d20 })), 0.7, 1.22, 4.45);   // low, so you can look back over it
   // steering wheel: rim, three spokes, hub, column
-  const wheelG = put(bus, new THREE.Group(), 0.7, 1.42, 5.32);
-  wheelG.rotation.x = -1.1;
+  const wheelG = put(bus, new THREE.Group(), 0.7, 1.4, 5.3);
+  wheelG.rotation.x = -2.39;          // face tilted up toward the driver, so you see the whole rim
   wheelG.add(new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.022, 6, 24), mat({ color: 0x3a3b40 })));
   // worn grip wrap at ten and two
-  for (const a of [0.55, Math.PI - 0.55]) {
+  for (const a of [-0.55, Math.PI + 0.55]) {        // (the wheel is flipped, so these sit up top)
     const grip = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.026, 6, 6, 0.7), mat({ color: 0x25262a }));
     grip.rotation.z = a - 0.35;
     wheelG.add(grip);
   }
   for (const a of [0, (2 * Math.PI) / 3, (4 * Math.PI) / 3]) {
     const spoke = box(0.2, 0.026, 0.016, mat({ color: 0x7a8086 }));
-    spoke.position.set(Math.cos(a - Math.PI / 2) * 0.1, Math.sin(a - Math.PI / 2) * 0.1, 0);
-    spoke.rotation.z = a - Math.PI / 2;
+    spoke.position.set(Math.cos(a + Math.PI / 2) * 0.1, Math.sin(a + Math.PI / 2) * 0.1, 0);
+    spoke.rotation.z = a + Math.PI / 2;
     wheelG.add(spoke);
   }
   wheelG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.05, 12).rotateX(Math.PI / 2), mat({ color: 0x2a2c30 })));
   const badge = new THREE.Mesh(new THREE.CircleGeometry(0.03, 12), mat({ color: 0xa8a090 }));
   badge.position.z = 0.027;
   wheelG.add(badge);
-  put(bus, box(0.06, 0.06, 0.4, trim), 0.7, 1.3, 5.45);
+  const column = put(bus, box(0.07, 0.07, 0.42, trim), 0.7, 1.26, 5.45);
+  column.rotation.x = 0.75;            // runs down from the hub into the dash
   // fare box: body, coin slot, glowing display, ticket slot
   const fare = put(bus, new THREE.Group(), -0.05, 0, 5.05);
   put(fare, box(0.3, 0.95, 0.3, mat({ color: 0x3d4045 })), 0, 0.92, 0);
