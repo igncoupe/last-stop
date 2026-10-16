@@ -98,24 +98,30 @@ export async function night1(g) {
   stopped = await g.arrive("Market St");
   await maraChat;
   if (stopped && (await openUp(g))) {
-    await jun.walk([doorOutside()], { speed: 1.3 });
-    await jun.walk([g.bus.boardPath[1]], { speed: 1.3, parent: g.bus.group, ground: g.bus.groundAt });   // up the steps
-    await g.say("jun", "I don't... I don't have the fare. I just need to get to Northgate. Please. I'll pay you back tomorrow, I swear.");
-    await g.say("rhee", "Reminder, driver. No. Free. Rides.");
-    const c = await g.choose(["“Sit down. This one's on me.”", "“Sorry, kid. Rules.”"]);
-    if (c === 0) {
-      f.junRode = true;
-      f.junNamed = true;
-      g.kind();
-      g.warn();
-      await g.board("jun", "R2");
-      await g.say("jun", "Thanks. I'm Jun. In case you need it for, like, a report.");
-      await g.say("rhee", "I saw that, driver. That's your one warning.");
-    } else {
+    const stayed = await g.atStop(async (g) => {
+      await jun.walk([doorOutside()], { speed: 1.3 });
+      await jun.walk([g.bus.boardPath[1]], { speed: 1.3, parent: g.bus.group, ground: g.bus.groundAt });   // up the steps
+      await g.say("jun", "I don't... I don't have the fare. I just need to get to Northgate. Please. I'll pay you back tomorrow, I swear.");
+      await g.say("rhee", "Reminder, driver. No. Free. Rides.");
+      const c = await g.choose(["“Sit down. This one's on me.”", "“Sorry, kid. Rules.”"]);
+      if (c === 0) {
+        f.junRode = true;
+        f.junNamed = true;
+        g.kind();
+        g.warn();
+        await g.board("jun", "R2");
+        await g.say("jun", "Thanks. I'm Jun. In case you need it for, like, a report.");
+        await g.say("rhee", "I saw that, driver. That's your one warning.");
+      } else {
+        f.junLeft = true;
+        await jun.walk([g.bus.boardPath[0]], { speed: 1, ground: g.bus.groundAt });   // back down the steps
+        await jun.walk([curb("Market St", 1)], { speed: 1, parent: jun.scene });
+        await g.think("He nodded like he'd heard it before. It's six miles to Northgate.");
+      }
+    });
+    if (!stayed) {
       f.junLeft = true;
-      await jun.walk([g.bus.boardPath[0]], { speed: 1, ground: g.bus.groundAt });   // back down the steps
-      await jun.walk([curb("Market St", 1)], { speed: 1, parent: jun.scene });
-      await g.think("He nodded like he'd heard it before. It's six miles to Northgate.");
+      await g.think("There was a kid on the bench at Market. He watched the bus go by.");
     }
   } else {
     f.junLeft = true;
@@ -185,36 +191,39 @@ export async function night1(g) {
     f.maraAboard = false;
   }
   if (stopped && (g.bus.doorsOpen || (await openUp(g, 12000)))) {
-    f.metWet = true;
-    g.kind();
-    g.late(1);
-    g.mood("dread");
-    await g.wait(1500);
-    await g.think("Nobody. Just water on the road. It hasn't rained all week.");
-    g.spawn("daniel", "daniel", { at: g.bus.group.localToWorld(g.bus.boardPath[0].clone()), yaw: route.heading(STOPS["Canal Row"]) + Math.PI / 2 });
-    g.hint("Look at the door");
-    await g.until(() => g.gazing(g.bus.group.localToWorld(new THREE.Vector3(-1.2, 1.6, 4.6)), 25), 12000);
-    g.hint(null);
-    await g.scare("face");
-    await g.say("daniel", "Ashgrove, please.");
-    await g.say("you", "This bus doesn't go to Ashgrove.");
-    await g.wait(900);
-    await g.say("daniel", "No. I suppose it doesn't. Not anymore.");
-    await g.board("daniel", "L0", 1.0);
-    g.sfx("drip");
-    await g.think("He sat right behind me. I can hear him dripping.");
-    await closeDoorsAndGo(g);
-    await g.wait(5000);
-    g.hint("Check your mirror");
-    await g.until(() => g.lookingAtMirror(), 15000);
-    g.hint(null);
-    await g.think("He's staring at the back of my head.");
-    g.interior("flicker");
-    g.sfx("lightsout");
-    await g.wait(1400);
-    g.vanish("daniel");
-    g.interior("on");
-    await g.think("He's gone. There's just a puddle on his seat, spreading.");
+    const stayed = await g.atStop(async (g) => {
+      f.metWet = true;
+      g.kind();
+      g.late(1);
+      g.mood("dread");
+      await g.wait(1500);
+      await g.think("Nobody. Just water on the road. It hasn't rained all week.");
+      g.spawn("daniel", "daniel", { at: g.bus.group.localToWorld(g.bus.boardPath[0].clone()), yaw: route.heading(STOPS["Canal Row"]) + Math.PI / 2 });
+      g.hint("Look at the door");
+      await g.until(() => g.gazing(g.bus.group.localToWorld(new THREE.Vector3(-1.2, 1.6, 4.6)), 25), 12000);
+      g.hint(null);
+      await g.scare("face");
+      await g.say("daniel", "Ashgrove, please.");
+      await g.say("you", "This bus doesn't go to Ashgrove.");
+      await g.wait(900);
+      await g.say("daniel", "No. I suppose it doesn't. Not anymore.");
+      await g.board("daniel", "L0", 1.0);
+      g.sfx("drip");
+      await g.think("He sat right behind me. I can hear him dripping.");
+      await closeDoorsAndGo(g);
+      await g.wait(5000);
+      g.hint("Check your mirror");
+      await g.until(() => g.lookingAtMirror(), 15000);
+      g.hint(null);
+      await g.think("He's staring at the back of my head.");
+      g.interior("flicker");
+      g.sfx("lightsout");
+      await g.wait(1400);
+      g.vanish("daniel");
+      g.interior("on");
+      await g.think("He's gone. There's just a puddle on his seat, spreading.");
+    });
+    if (!stayed) g.vanish("daniel");          // drove off on him: he's just not there any more
   } else {
     // drove past: someone was waiting after all
     g.spawn("daniel", "daniel", { at: curb("Canal Row", 2), yaw: route.heading(STOPS["Canal Row"]) + Math.PI / 2 });

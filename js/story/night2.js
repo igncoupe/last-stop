@@ -38,9 +38,10 @@ export async function night2(g) {
   }
   await closeDoorsAndGo(g);
 
-  // ---------- an old tape comes over the radio (Elm waits for it)
+  // ---------- an old tape comes over the radio, on the drive to Elm (as soon as you pull out, so it's
+  // over before you get there; Elm still waits for it, just in case)
   const tape = (async () => {
-    await g.wait(4000);
+    await g.wait(1200);
     g.sfx("static", 1.2);
     g.radio("CH 9 ····");
     await g.wait(900);
@@ -52,10 +53,13 @@ export async function night2(g) {
     g.radio("CH 9");
     await g.wait(1200);
     await g.say("rhee", "Old tapes, driver. The system plays them back sometimes. Ignore it.");
-    g.hint("Check your mirror");
-    await g.until(() => g.lookingAtMirror(), 9000);
-    g.hint(null);
-    await g.think("The old man in the back row is crying. He isn't making a sound.");
+    // only if there's still road before Elm: never while you're pulling in for Mara
+    if (g.d < STOPS["Elm & 4th"] - 170) {
+      g.hint("Check your mirror");
+      await g.until(() => g.lookingAtMirror() || g.d > STOPS["Elm & 4th"] - 90, 9000);
+      g.hint(null);
+      if (g.d < STOPS["Elm & 4th"] - 90) await g.think("The old man in the back row is crying. He isn't making a sound.");
+    }
   })();
 
   // ---------- Elm & 4th: Mara again
@@ -63,24 +67,31 @@ export async function night2(g) {
   let stopped = await g.arrive("Elm & 4th");
   await tape;
   if (stopped && (await openUp(g))) {
-    await g.board("mara", "R0");
-    f.maraAboard = true;
-    if (f.maraHelped) {
-      await g.say("mara", "Figured I owe you a coffee. It's terrible. Hospital coffee always is.");
-      await g.say("mara", "Heads up. A water main burst on Canal Row. It's deep. Take it slow, or you'll stall out in the middle of it.");
-      f.maraTip = true;
-    } else {
-      await g.say("mara", "I got written up. One more and I'm off nights. So thanks for that.");
-      const c = await g.choose(["“I'm sorry. I should have waited.”", "[Say nothing]"]);
-      if (c === 0) {
-        g.kind();
-        f.maraHelped = true;
-        f.maraForgave = true;
-        await g.wait(1500);
-        await g.say("mara", "Yeah. Okay. Everybody's got a schedule. I get it.");
-        await g.say("mara", "Canal Row's flooded tonight. Go slow or you'll stall in it.");
+    const stayed = await g.atStop(async (g) => {
+      await g.board("mara", "R0");
+      f.maraAboard = true;
+      if (f.maraHelped) {
+        await g.say("mara", "Figured I owe you a coffee. It's terrible. Hospital coffee always is.");
+        await g.say("mara", "Heads up. A water main burst on Canal Row. It's deep. Take it slow, or you'll stall out in the middle of it.");
         f.maraTip = true;
+      } else {
+        await g.say("mara", "I got written up. One more and I'm off nights. So thanks for that.");
+        const c = await g.choose(["“I'm sorry. I should have waited.”", "[Say nothing]"]);
+        if (c === 0) {
+          g.kind();
+          f.maraHelped = true;
+          f.maraForgave = true;
+          await g.wait(1500);
+          await g.say("mara", "Yeah. Okay. Everybody's got a schedule. I get it.");
+          await g.say("mara", "Canal Row's flooded tonight. Go slow or you'll stall in it.");
+          f.maraTip = true;
+        }
       }
+    });
+    if (!stayed) {
+      await g.think("Mara was at the stop. I didn't pick her up. Again.");
+      f.maraLeft = true;
+      g.despawn("mara");
     }
   } else {
     await g.think("Mara was at the stop. I didn't pick her up. Again.");
@@ -112,20 +123,26 @@ export async function night2(g) {
   await chat;
   if (f.junRode) {
     if (stopped && (await openUp(g))) {
-      await g.board("jun", "R2");
-      f.junAboard = true;
-      await g.say("jun", "I'm paying tonight. And here's yesterday's. Don't want you getting in trouble.");
-      const c = await g.choose(["“Why do you ride to Northgate every night?”", "[Nod]"]);
-      if (c === 0) {
-        f.junTalked = true;
-        g.kind();
-        await g.say("jun", "My mom cleans the Northgate depot. Nights. She works two jobs, so nights are kind of the only time I see her.");
-        await g.say("jun", "She gets off at twelve thirty. If I'm there before then, we walk home together.");
-        await g.wait(1200);
-        await g.say("jun", "Can I ask you something weird? Last night, when we got to Northgate. Did you count how many people got off?");
-        await g.say("you", "Just you.");
-        await g.wait(1200);
-        await g.say("jun", "There were six people in the back when I got off. All wet. All looking at you.");
+      const stayed = await g.atStop(async (g) => {
+        await g.board("jun", "R2");
+        f.junAboard = true;
+        await g.say("jun", "I'm paying tonight. And here's yesterday's. Don't want you getting in trouble.");
+        const c = await g.choose(["“Why do you ride to Northgate every night?”", "[Nod]"]);
+        if (c === 0) {
+          f.junTalked = true;
+          g.kind();
+          await g.say("jun", "My mom cleans the Northgate depot. Nights. She works two jobs, so nights are kind of the only time I see her.");
+          await g.say("jun", "She gets off at twelve thirty. If I'm there before then, we walk home together.");
+          await g.wait(1200);
+          await g.say("jun", "Can I ask you something weird? Last night, when we got to Northgate. Did you count how many people got off?");
+          await g.say("you", "Just you.");
+          await g.wait(1200);
+          await g.say("jun", "There were six people in the back when I got off. All wet. All looking at you.");
+        }
+      });
+      if (!stayed) {
+        await g.think("Jun was waiting with exact change. I left him there.");
+        g.despawn("jun");
       }
     } else {
       await g.think("Jun was waiting with exact change. I left him there.");
@@ -213,39 +230,46 @@ export async function night2(g) {
   const opened = await g.until(() => g.bus.doorsOpen || g.drive.moving, 20000);
   g.hint(null);
   if (opened && g.bus.doorsOpen) {
-    f.knowsDaniel = true;
-    await g.say("daniel", "Ashgrove, please.");
-    if (f.knowsAshgrove) await g.say("you", "The bridge is gone. It's been gone a long time.");
-    else await g.say("you", "This bus doesn't go there.");
-    await g.say("daniel", "Everyone keeps telling me.");
-    await g.board("daniel", "L0", 1.0);
-    await g.say("daniel", "I'm Daniel. My daughter's Rosie. She turns six tonight. I promised her I'd be home before she fell asleep.");
-    await g.say("daniel", "I think I'm very late.");
-    await g.think("He's shivering so hard his teeth click.");
-    const c = await g.choose(["[Give him your jacket]", "[Leave him be]"]);
-    if (c === 0) {
-      f.gaveJacket = true;
-      g.kind();
-      await g.say("daniel", "You're kind. He was kind too. The driver.");
-      await g.say("daniel", "He wanted to wait out the storm. But the man on the radio kept saying make up the time. Make up the time.");
-    } else {
-      await g.say("daniel", "The man on the radio told him to make up the time. Did you know that? He wanted to wait.");
+    const stayed = await g.atStop(async (g) => {
+      f.knowsDaniel = true;
+      await g.say("daniel", "Ashgrove, please.");
+      if (f.knowsAshgrove) await g.say("you", "The bridge is gone. It's been gone a long time.");
+      else await g.say("you", "This bus doesn't go there.");
+      await g.say("daniel", "Everyone keeps telling me.");
+      await g.board("daniel", "L0", 1.0);
+      await g.say("daniel", "I'm Daniel. My daughter's Rosie. She turns six tonight. I promised her I'd be home before she fell asleep.");
+      await g.say("daniel", "I think I'm very late.");
+      await g.think("He's shivering so hard his teeth click.");
+      const c = await g.choose(["[Give him your jacket]", "[Leave him be]"]);
+      if (c === 0) {
+        f.gaveJacket = true;
+        g.kind();
+        await g.say("daniel", "You're kind. He was kind too. The driver.");
+        await g.say("daniel", "He wanted to wait out the storm. But the man on the radio kept saying make up the time. Make up the time.");
+      } else {
+        await g.say("daniel", "The man on the radio told him to make up the time. Did you know that? He wanted to wait.");
+      }
+      await g.wait(800);
+      g.interior("off");
+      g.sfx("lightsout");
+      g.amb({ engine: 0 });
+      g.mood("terror");
+      await g.wait(1500);
+      g.sfx("breath");
+      await g.wait(2200);
+      await g.think("Something wet is touching the back of my neck.");
+      await g.scare("eyes");
+      g.vanish("daniel");
+      g.interior("on");
+      g.amb({ engine: 0.3 });
+      await g.think(f.gaveJacket ? "The lights are back. He's gone. My jacket is folded on his seat. Soaked through. Still warm." : "The lights are back. His seat is empty, and dark with water.");
+      if (g.bus.doorsOpen) g.setDoors(false);
+    });
+    if (!stayed) {
+      g.vanish("daniel");
+      g.interior("on");
+      g.amb({ engine: 0.3 });
     }
-    await g.wait(800);
-    g.interior("off");
-    g.sfx("lightsout");
-    g.amb({ engine: 0 });
-    g.mood("terror");
-    await g.wait(1500);
-    g.sfx("breath");
-    await g.wait(2200);
-    await g.think("Something wet is touching the back of my neck.");
-    await g.scare("eyes");
-    g.vanish("daniel");
-    g.interior("on");
-    g.amb({ engine: 0.3 });
-    await g.think(f.gaveJacket ? "The lights are back. He's gone. My jacket is folded on his seat. Soaked through. Still warm." : "The lights are back. His seat is empty, and dark with water.");
-    if (g.bus.doorsOpen) g.setDoors(false);
   } else {
     await g.think("I'm not opening those doors.");
     await g.wait(1500);

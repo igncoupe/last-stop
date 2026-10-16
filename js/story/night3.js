@@ -27,17 +27,23 @@ export async function night3(g) {
   if (f.maraHelped) g.spawn("mara", "mara", { at: curb("Elm & 4th", 1), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
   let stopped = await g.arrive("Elm & 4th");
   if (f.maraHelped && stopped && (await openUp(g))) {
-    await g.board("mara", "L0");
-    f.maraAboard = true;
-    await g.say("mara", "It's like the sky is falling. Thank you.");
-    await g.say("mara", "Can I ask you something, and you don't think I'm crazy? Mr. Varga, in four B. He's getting worse. Tonight or tomorrow, the doctors say.");
-    await g.say("mara", "He's stopped asking if Route 9 is running. Now he asks for the driver. The new driver. By name.");
-    await g.wait(1300);
-    await g.say("mara", "I never told him your name.");
-    await g.say("mara", "Would you come up? When we get to St. Agnes? Just for a minute. I think he's waiting for you.");
-    const c = await g.choose(["“I'll try.”", "“I don't get breaks on Route 9.”"]);
-    f.maraAsked = true;
-    if (c === 1) await g.say("mara", "Right. The schedule.");
+    const stayed = await g.atStop(async (g) => {
+      await g.board("mara", "L0");
+      f.maraAboard = true;
+      await g.say("mara", "It's like the sky is falling. Thank you.");
+      await g.say("mara", "Can I ask you something, and you don't think I'm crazy? Mr. Varga, in four B. He's getting worse. Tonight or tomorrow, the doctors say.");
+      await g.say("mara", "He's stopped asking if Route 9 is running. Now he asks for the driver. The new driver. By name.");
+      await g.wait(1300);
+      await g.say("mara", "I never told him your name.");
+      await g.say("mara", "Would you come up? When we get to St. Agnes? Just for a minute. I think he's waiting for you.");
+      const c = await g.choose(["“I'll try.”", "“I don't get breaks on Route 9.”"]);
+      f.maraAsked = true;
+      if (c === 1) await g.say("mara", "Right. The schedule.");
+    });
+    if (!stayed) {
+      await g.think("Mara was waiting in the rain. I didn't stop.");
+      g.despawn("mara");
+    }
   } else if (f.maraHelped) {
     await g.think("Mara was waiting in the rain. I didn't stop.");
     g.despawn("mara");
@@ -52,28 +58,34 @@ export async function night3(g) {
   if (!f.junRode && !f.calledMom) g.props.missingPoster.visible = true;
   stopped = await g.arrive("Market St");
   if (stopped && (f.junRode || f.calledMom) && (await openUp(g))) {
-    if (f.junRode) {
-      await g.board("jun", "R1");
-      f.junAboard = true;
-      await g.say("jun", "I almost didn't come. I didn't want to ride tonight. But Mom's working, and the trains are down.");
-      await g.say("jun", "Are they real? The people in the back? Please don't tell me I'm crazy.");
-      const c = await g.choose(["“They're real. Sit up front with me. You're safe up here.”", "“It's just the storm. Sit down.”"]);
-      if (c === 0) {
-        f.junComforted = true;
-        g.kind();
-        g.seat("jun", "R0");
-        await g.say("jun", "Okay. Real. That's better than being crazy, actually.");
-        await g.say("jun", "They don't look mean. They look sad. Like when you wait for someone at the airport and they never come out.");
+    const stayed = await g.atStop(async (g) => {
+      if (f.junRode) {
+        await g.board("jun", "R1");
+        f.junAboard = true;
+        await g.say("jun", "I almost didn't come. I didn't want to ride tonight. But Mom's working, and the trains are down.");
+        await g.say("jun", "Are they real? The people in the back? Please don't tell me I'm crazy.");
+        const c = await g.choose(["“They're real. Sit up front with me. You're safe up here.”", "“It's just the storm. Sit down.”"]);
+        if (c === 0) {
+          f.junComforted = true;
+          g.kind();
+          g.seat("jun", "R0");
+          await g.say("jun", "Okay. Real. That's better than being crazy, actually.");
+          await g.say("jun", "They don't look mean. They look sad. Like when you wait for someone at the airport and they never come out.");
+        }
+      } else {
+        f.junFound = true;
+        await g.read({ kind: "poster", kicker: "FOUND SAFE · THANK YOU", title: "Missing", photo: "JUN PARK", lines: ["JUN PARK, 15", "Last seen Market Street, around midnight."] }, [
+          "The missing poster has a strip pasted across it. FOUND SAFE.",
+        ]);
+        await g.board("junmom", "R1");
+        await g.say("junmom", "You. You're the driver who called.");
+        await g.say("junmom", "The police found him on the road to Northgate. Halfway there, in the dark. He was walking to me.");
+        await g.say("junmom", "He's home. He's asleep in his bed right now. Because you called.");
       }
-    } else {
-      f.junFound = true;
-      await g.read({ kind: "poster", kicker: "FOUND SAFE · THANK YOU", title: "Missing", photo: "JUN PARK", lines: ["JUN PARK, 15", "Last seen Market Street, around midnight."] }, [
-        "The missing poster has a strip pasted across it. FOUND SAFE.",
-      ]);
-      await g.board("junmom", "R1");
-      await g.say("junmom", "You. You're the driver who called.");
-      await g.say("junmom", "The police found him on the road to Northgate. Halfway there, in the dark. He was walking to me.");
-      await g.say("junmom", "He's home. He's asleep in his bed right now. Because you called.");
+    });
+    if (!stayed) {
+      g.despawn("jun");
+      g.despawn("junmom");
     }
   } else if (stopped) {
     await g.think("The poster's pulped by the rain. Someone has put up two more.");

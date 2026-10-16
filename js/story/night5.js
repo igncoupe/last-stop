@@ -31,6 +31,7 @@ export async function night5(g) {
   await g.until(() => g.drive.speed < 0.3, 25000);
   g.release();
   await openUp(g, 60000);
+  g.lockDoors(true);           // the doors stay open until they're done
   f.knowsVarga = true;
   await g.actor("rosie").walk([doorOutside()], { speed: 1 });
   await g.say("rosie", "Sorry. I'm not riding. I just come here. Every year, on this night. I don't even really know why.");
@@ -83,6 +84,7 @@ export async function night5(g) {
     await g.say("teodor", "Because you're who's driving. And because I'm out of nights.");
   }
   await g.say("rhee", "Don't listen to him, driver. He's the one who drowned them.");
+  g.lockDoors(false);
   await closeDoorsAndGo(g);
 
   // ---------- Ashgrove

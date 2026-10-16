@@ -174,6 +174,10 @@ export function startBot(strategy = "kind") {
             if (left > brakeDist + 12) { w = true; s = false; }
             else if (left > brakeDist) { w = drive.speed < 3; s = false; }
             else { w = false; s = true; }
+            // the bus pulls in by itself from 60 m out: coast into it, hands off (a fresh W would drive past)
+            const toDock = nav.stop.d - 3.9 - drive.d;
+            const dock = drive.state.dock;
+            if (drive.docking || (toDock > 0 && toDock < 66 && !(dock && (dock.done || dock.skipped)))) { w = false; s = false; }
           }
         }
         // the shadow crouched in the road: the kind driver brakes (it comes for you anyway)

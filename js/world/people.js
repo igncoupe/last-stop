@@ -187,6 +187,12 @@ export class Person {
     this.hips.forEach((h) => { h.rotation.x = 0; });
     this.knees.forEach((k) => { k.rotation.x = 0; });
   }
+  // stop right where they are; whatever was waiting for them to arrive keeps waiting
+  halt() {
+    this.path = [];
+    this.onArrive = null;
+    if (this.mode === "walk") this.stand();
+  }
   lookAt(worldPoint) { this.headTarget = worldPoint ? worldPoint.clone() : null; }
   remove() {
     this.root.removeFromParent();

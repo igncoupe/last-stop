@@ -98,6 +98,8 @@ const g = director.g;
 // the green door button on the dash (F does the same thing)
 function toggleDoors() {
   if (player.mode !== "seat" || !g.doorControl || drive.speed > 0.5) return;
+  // like a real bus: the doors won't close on someone standing on the steps
+  if (bus.doorsOpen && g.someoneInDoorway()) { ui.toast("Someone's on the steps"); Sound.sfx("click"); return; }
   g.setDoors(!bus.doorsOpen);
 }
 player.addInteract({

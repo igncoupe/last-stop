@@ -37,7 +37,7 @@ export function createDirector(w) {
   let routeOverride = null;
   let stormT = 0;
   let storm = false;
-  const s = { flags: {}, kind: 0, late: 0, warn: 0, lateAtNight: 0, night: 1, waiting: "" };
+  const s = { flags: {}, kind: 0, late: 0, warn: 0, lateAtNight: 0, night: 1, waiting: "", unheard: [] };
 
   // who is sitting where, so nobody sits on anybody: a taken seat sends you to the nearest free one
   const seated = new Map();            // seat name -> actor key
@@ -55,13 +55,43 @@ export function createDirector(w) {
     return seat;
   }
 
+  // anyone standing or sitting in the bus counts as on it
+  function onBus(p) {
+    for (let o = p.root.parent; o; o = o.parent) if (o === bus.group) return true;
+    return false;
+  }
+  // a voice is only heard when whoever's talking is close: drive away from someone at a stop and they're
+  // gone mid-sentence. Thoughts, the radio, the phone and anyone on the bus are always heard.
+  const HEAR = 22;
+  const earA = new THREE.Vector3();
+  const earB = new THREE.Vector3();
+  function outOfEarshot(who) {
+    const c = CAST[who];
+    if (who === "you" || !c || c.fx === "radio" || c.fx === "phone") return false;
+    const a = actors.get(who);
+    if (!a || !a.root.parent || !a.root.visible || onBus(a)) return false;
+    return a.root.getWorldPosition(earA).distanceTo(camera.getWorldPosition(earB)) > HEAR;
+  }
+
+  let boardings = 0;                   // how many people have got on so far (scenes at a stop look at this)
+
   let speech = Promise.resolve();
   let cutLine = null;                  // ends the line that's playing now (g.interrupt)
   async function speak(who, text, { keep = false, after = 260 } = {}) {
     s.waiting = `line (${who})`;
+    if (outOfEarshot(who)) { s.unheard.push(`${who}: ${text}`); return; }
     const c = CAST[who];
     ui.subtitle(nameOf(who), c.color, text);
     const cut = new Promise((r) => { cutLine = () => r("cut"); });
+    let over = false;
+    until(() => over || outOfEarshot(who)).then(() => { if (!over) { s.unheard.push(`${who} (cut off): ${text}`); g.interrupt(); } });
+    try {
+      return await speakOut(who, text, c, cut, keep, after);
+    } finally {
+      over = true;
+    }
+  }
+  async function speakOut(who, text, c, cut, keep, after) {
     // a line can never hold up the story: whatever happens to its audio, it ends in a bounded time
     const cap = new Promise((r) => setTimeout(() => r("cap"), 9000 + text.length * 110));
     let played = await Promise.race([Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) }), cap, cut]);
@@ -159,13 +189,65 @@ export function createDirector(w) {
       s.waiting = "arrive " + name;
       const d = name === "???" ? props.mystery.d : STOPS[name];
       if (hint) nav = { stop: { d, name: name === "???" ? "???" : name } };
+      drive.dockAt(d);
       await until(() => drive.stoppedNear(d) || drive.passed(d));
+      drive.dockAt(null);
       if (nav && nav.stop) nav = null;
       return drive.stoppedNear(d);
     },
     get navTarget() { return nav; },
     // point the arrow at a place on foot (cleared with navTo(null))
     navTo(point) { nav = point ? { point: point.clone() } : null; },
+    // a scene at a stop with someone outside the doors. Close the doors and drive off in the middle of it
+    // and the scene is over: whoever's talking stops, whoever's walking stops where they are, the
+    // choices go away, and the story carries on from after the scene. Returns true if it played out.
+    async atStop(scene) {
+      const startD = drive.d;
+      let alive = true;
+      let finished = false;
+      const gone = () => { throw new Error("drove off"); };
+      const sg = new Proxy(g, {
+        get(target, key) {
+          if (!alive) gone();
+          const v = target[key];
+          if (typeof v !== "function") return v;
+          return (...args) => {
+            const r = v.apply(target, args);
+            // once you have driven off, nothing the scene was waiting on ever comes back to it
+            return r && typeof r.then === "function" ? r.then((x) => (alive ? x : new Promise(() => {}))) : r;
+          };
+        },
+      });
+      const someoneOutside = () => [...actors.values()].some((p) => p.root.visible && !onBus(p) && !p.leaving
+        && p.root.getWorldPosition(earA).distanceTo(bus.group.localToWorld(earB.copy(bus.boardPath[0]))) < 25);
+      // driving off ends the scene while someone's still outside, or before anyone has got on
+      const boarded = boardings;
+      const run = scene(sg);
+      const left = until(() => finished || (drive.state.control === "player" && !bus.doorsOpen && drive.moving && drive.d > startD + 1.5
+        && (someoneOutside() || boardings === boarded)));
+      const outcome = await Promise.race([run.then(() => "done", (err) => ({ err })), left.then(() => (finished ? "done" : "left"))]);
+      finished = true;
+      if (outcome === "done") return true;
+      if (outcome.err) {
+        if (alive) throw outcome.err;
+        return false;
+      }
+      alive = false;
+      g.interrupt();
+      ui.cancelChoices();
+      ui.hint(null);
+      ui.paper(null);
+      for (const p of actors.values()) if (!onBus(p)) p.halt();
+      return false;
+    },
+    // is someone on the steps or in the doorway? (the doors won't close on them)
+    someoneInDoorway() {
+      return [...actors.values()].some((p) => {
+        if (!p.root.visible) return false;
+        const at = bus.group.worldToLocal(p.root.getWorldPosition(earA));
+        return at.x < -0.3 && at.x > -1.6 && at.z > 3.4 && at.z < 5.9 && Math.abs(at.y) < 1.2;
+      });
+    },
     // wait for the doors (F) to be opened/closed, or for a timeout. Returns true if they did.
     async doors(open, timeoutMs = 0, hintText = null) {
       s.waiting = "doors " + (open ? "open" : "closed");
@@ -250,6 +332,7 @@ export function createDirector(w) {
       // the last step is up to the seat's own height (seats over the wheels sit on a platform)
       await p.walk([new THREE.Vector3(0, 0.45, seatPos.z + 0.4), new THREE.Vector3(seatPos.x * 0.6, seatPos.y, seatPos.z + 0.1)], { speed, parent: bus.group, ground: bus.groundAt });
       p.sit(bus.group, seatPos, 0);
+      boardings++;
     },
     // get off the bus and walk somewhere (a world position), then vanish
     async alight(key, to = null, { vanish = true, speed = 1.4 } = {}) {
@@ -260,8 +343,12 @@ export function createDirector(w) {
       freeSeatOf(key);
       p.stand();
       await p.walk([new THREE.Vector3(0, 0.45, z), bus.boardPath[2], bus.boardPath[1], bus.boardPath[0]], { speed, parent: bus.group, ground: bus.groundAt });
-      if (to) await p.walk([to], { speed, parent: scene });
-      if (vanish) g.despawn(key);
+      p.leaving = true;
+      if (to) {
+        // they walk off on their own; if the bus pulls away first, the story doesn't wait for them
+        const walked = p.walk([to], { speed, parent: scene }).then(() => { if (vanish && actors.get(key) === p) g.despawn(key); });
+        await Promise.race([walked, until(() => drive.moving)]);
+      } else if (vanish) g.despawn(key);
     },
     // the drowned don't walk off. They're just gone when you look again.
     vanish(key) { g.despawn(key); },
@@ -585,6 +672,8 @@ export function createDirector(w) {
     waiters.clear();
     speech = Promise.resolve();          // a night that's over doesn't hold up the next one's lines
     seated.clear();
+    drive.dockAt(null);
+    s.unheard = [];
     g.despawnAll();
     routeOverride = null;
     doorControl = true;
@@ -626,13 +715,18 @@ export function createDirector(w) {
         marker.position.copy(route.at(nav.stop.d - 6, 2.3, 4.6 + Math.sin(bob * 3) * 0.25));
         marker.scale.setScalar(1);
         marker.userData.beam.visible = true;
-        if (drive.inZone(nav.stop.d)) {
+        const dock = drive.state.dock;
+        if (drive.docking) {
+          text = `Pulling in: ${nav.stop.name}  ·  press W to drive past`;
+        } else if (dock && dock.skipped) {
+          text = left > -7 ? `Driving past ${nav.stop.name}` : "";
+        } else if (drive.inZone(nav.stop.d)) {
           text = drive.speed > 0.35 ? "Stop here  ·  brake  [S]" : "";
           urgent = drive.speed > 0.35;
-        } else if (left > 70) {
+        } else if (left > 60) {
           text = `Next stop: ${nav.stop.name}  ·  ${Math.round(left)} m`;
         } else if (left > 0) {
-          text = `${nav.stop.name}  ·  slow down, pull into the yellow box`;
+          text = `${nav.stop.name}  ·  brake  [S]`;
           urgent = drive.speed > 9;
         }
       } else if (nav && (nav.mesh || nav.point)) {

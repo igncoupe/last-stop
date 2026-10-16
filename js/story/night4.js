@@ -52,17 +52,20 @@ export async function night4(g) {
   if (f.maraHelped) g.spawn("mara", "mara", { at: curb("Elm & 4th", 1), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
   let stopped = await g.arrive("Elm & 4th");
   if (f.maraHelped && stopped && (await openUp(g))) {
-    await g.actor("mara").walk([doorOutside()], { speed: 1.2 });
-    await g.say("mara", "I'm not riding. I'm walking in. It's Mr. Varga. They think it's tonight. Maybe tomorrow.");
-    if (f.visitedVarga) {
-      await g.say("mara", "He woke up for about a minute after you left. He said, give this to the driver.");
-      await g.think("A brass name badge. The pin's bent. The letters are worn soft by a thumb. T. Varga. Route 9.");
-      f.hasBadge = true;
-    } else {
-      await g.say("mara", "He keeps saying fourteen. Just the number. Over and over.");
-    }
-    await g.say("mara", "I'll be with him. He won't be alone. I promise.");
-    g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
+    const stayed = await g.atStop(async (g) => {
+      await g.actor("mara").walk([doorOutside()], { speed: 1.2 });
+      await g.say("mara", "I'm not riding. I'm walking in. It's Mr. Varga. They think it's tonight. Maybe tomorrow.");
+      if (f.visitedVarga) {
+        await g.say("mara", "He woke up for about a minute after you left. He said, give this to the driver.");
+        await g.think("A brass name badge. The pin's bent. The letters are worn soft by a thumb. T. Varga. Route 9.");
+        f.hasBadge = true;
+      } else {
+        await g.say("mara", "He keeps saying fourteen. Just the number. Over and over.");
+      }
+      await g.say("mara", "I'll be with him. He won't be alone. I promise.");
+      g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
+    });
+    if (!stayed && g.actor("mara")) g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
   }
   // the clipping happens while the bus is parked (if you drove past Elm, the bus stops itself)
   if (g.drive.moving) {
@@ -112,12 +115,15 @@ export async function night4(g) {
   if (junOk) g.spawn("jun", "jun", { at: curb("Market St", 1), yaw: route.heading(STOPS["Market St"]) + Math.PI / 2 });
   stopped = await g.arrive("Market St");
   if (junOk && stopped && (await openUp(g))) {
-    f.junNamed = true;
-    await g.actor("jun").walk([doorOutside()], { speed: 1.2 });
-    await g.say("jun", "From my mom. Soup. She says you look like you don't eat.");
-    await g.say("jun", "Don't go past Market tonight. Please. I had a dream. The bus was in the river, and you were driving, and all the windows were full of faces.");
-    await g.say("jun", "Just. If something tells you to go faster? Don't.");
-    g.actor("jun").walk([curb("Market St", 3)], { speed: 1 });
+    const stayed = await g.atStop(async (g) => {
+      f.junNamed = true;
+      await g.actor("jun").walk([doorOutside()], { speed: 1.2 });
+      await g.say("jun", "From my mom. Soup. She says you look like you don't eat.");
+      await g.say("jun", "Don't go past Market tonight. Please. I had a dream. The bus was in the river, and you were driving, and all the windows were full of faces.");
+      await g.say("jun", "Just. If something tells you to go faster? Don't.");
+      g.actor("jun").walk([curb("Market St", 3)], { speed: 1 });
+    });
+    if (!stayed && g.actor("jun")) g.actor("jun").walk([curb("Market St", 3)], { speed: 1 });
   } else if (stopped) {
     await g.think("The posters are gone. Washed off, or torn down. There's a soaked backpack on the bench nobody's claimed.");
   }

@@ -91,7 +91,14 @@ export const ui = {
       const pick = (i) => {
         removeEventListener("keydown", onKey);
         el.choices.replaceChildren();
+        this.cancelChoices = () => {};
         done(i);
+      };
+      // called off (you drove away from whoever was asking): the question just goes away, unanswered
+      this.cancelChoices = () => {
+        removeEventListener("keydown", onKey);
+        el.choices.replaceChildren();
+        this.cancelChoices = () => {};
       };
       const onKey = (e) => {
         const n = Number(e.key);
@@ -112,7 +119,16 @@ export const ui = {
       addEventListener("keydown", onKey);
     });
   },
-  clearChoices() { el.choices.replaceChildren(); },
+  clearChoices() { this.cancelChoices(); el.choices.replaceChildren(); },
+  cancelChoices() {},
+  // a short message in the middle of the screen
+  toast(text, ms = 1800) {
+    const t = document.getElementById("toast");
+    t.textContent = text;
+    t.classList.add("on");
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => t.classList.remove("on"), ms);
+  },
 
   async fade(to, ms = 1200, white = false) {
     el.fade.classList.toggle("white", white);

@@ -10,6 +10,11 @@ const DRAG = 0.35;
 // a stop counts when the bus is stopped with its door near the shelter
 export const STOP_BEFORE = 18;
 export const STOP_AFTER = 7;      // a little forgiving if you roll past the box
+// pulling in by itself: from this far out, it stops with the door (4.65 m ahead of the bus's middle)
+// level with the shelter
+const DOCK_FROM = 60;
+const DOOR_AHEAD = 3.9;
+const DOCK_BRAKE = 2.4;
 
 export function createDrive(bus) {
   const s = {
@@ -22,6 +27,8 @@ export function createDrive(bus) {
     endD: route.length - 29,      // the road ends inside the Northgate stop zone (stop at length - 30)
     pitch: 0,
     roll: 0,
+    dock: null,           // { at, engaged, skipped, done, cruise } the stop the bus pulls in to by itself
+    gasLatch: false,      // after pulling in, W has to be let go and pressed again to drive off
   };
   const pos = new THREE.Vector3();
 
@@ -46,6 +53,9 @@ export function createDrive(bus) {
     // scripts: drive yourself at a speed, optionally stopping at a distance
     auto(speed, stopAt = null) { s.control = "auto"; s.autoSpeed = speed; s.autoStopAt = stopAt; },
     release() { s.control = "player"; s.autoStopAt = null; },
+    // the stop the story is waiting at (null: none)
+    dockAt(stopD) { s.dock = stopD === null || stopD === undefined ? null : { at: stopD - DOOR_AHEAD, engaged: false, skipped: false, done: false, cruise: 0 }; },
+    get docking() { return !!(s.dock && s.dock.engaged); },
     park() { s.control = "parked"; },
     setLimit(v) { s.limit = v; },
     // a scene can take the bus off the route (the bridge); the script moves it
@@ -54,8 +64,34 @@ export function createDrive(bus) {
     update(dt, input, seated) {
       if (s.detached) return;
       const prev = s.speed;
-      if (s.control === "player") {
-        const gas = seated && (input.down("KeyW") || input.down("ArrowUp"));
+      const k = s.dock;
+      if (s.control === "player" && k && !k.skipped && !k.done) {
+        const left = k.at - s.d;
+        if (!k.engaged && left < DOCK_FROM && left > -1 && !bus.doorsOpen) { k.engaged = true; k.cruise = Math.max(4, s.speed); }
+        // a fresh press of W (not one held from before) means drive past this one
+        if (k.engaged && seated && (input.hit("KeyW") || input.hit("ArrowUp"))) { k.engaged = false; k.skipped = true; }
+      }
+      const wantGas = seated && (input.down("KeyW") || input.down("ArrowUp"));
+      if (s.gasLatch && !wantGas) s.gasLatch = false;
+      if (s.control === "player" && k && k.engaged) {
+        const left = k.at - s.d;
+        const brake = seated && (input.down("KeyS") || input.down("ArrowDown") || input.down("Space"));
+        let target = Math.min(k.cruise, s.limit, Math.sqrt(Math.max(0, left) * 2 * DOCK_BRAKE));
+        if (left < 0.12) target = 0;
+        if (brake || bus.doorsOpen) s.speed = Math.max(0, s.speed - BRAKE * dt);
+        else {
+          const rate = target > s.speed ? ACCEL : BRAKE * 0.75;
+          s.speed += Math.sign(target - s.speed) * Math.min(Math.abs(target - s.speed), rate * dt);
+        }
+        if (s.speed < 0.05 && (left < 0.5 || brake)) {
+          // in (or stopped short on purpose): the player has the bus again
+          s.speed = 0;
+          k.engaged = false;
+          k.done = true;
+          s.gasLatch = true;
+        }
+      } else if (s.control === "player") {
+        const gas = wantGas && !s.gasLatch;
         const brake = seated && (input.down("KeyS") || input.down("ArrowDown") || input.down("Space"));
         if (bus.doorsOpen) {
           s.speed = Math.max(0, s.speed - BRAKE * dt);
