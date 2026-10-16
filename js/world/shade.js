@@ -215,10 +215,13 @@ export function createShade(scene) {
       watch = true;
     },
     // jump from where it is onto something that moves (the windshield), landing in `endLocal` of `parent`
-    leap(parent, endLocal, duration = 0.45) {
+    // from: a start in the parent's space instead (a drop off the roof), out: how far it swings forward on the way
+    leap(parent, endLocal, duration = 0.45, { from = null, arc = 1.3, out = 0 } = {}) {
       return new Promise((done) => {
+        toScene();
+        if (from) hazeMat.opacity = 0.3;
         const start = root.getWorldPosition(new THREE.Vector3());
-        leapState = { t: 0, duration, start, parent, endLocal, done };
+        leapState = { t: 0, duration, start, parent, endLocal, done, from, arc, out };
         setPose("leap", 0.25);
         mode = "leap";
         watch = null;
@@ -275,9 +278,17 @@ export function createShade(scene) {
         const L = leapState;
         L.t += dt;
         const k = Math.min(1, L.t / L.duration);
-        const end = L.parent.localToWorld(L.endLocal.clone());
-        tmp.lerpVectors(L.start, end, k * k * (3 - 2 * k));
-        tmp.y += Math.sin(Math.PI * k) * 1.3;
+        if (L.from) {
+          // falling: slow off the edge, then fast
+          tmp.lerpVectors(L.from, L.endLocal, k * k);
+          tmp.y += Math.sin(Math.PI * k) * L.arc;
+          tmp.z += Math.sin(Math.PI * k) * L.out;
+          L.parent.localToWorld(tmp);
+        } else {
+          const end = L.parent.localToWorld(L.endLocal.clone());
+          tmp.lerpVectors(L.start, end, k * k * (3 - 2 * k));
+          tmp.y += Math.sin(Math.PI * k) * L.arc;
+        }
         root.position.copy(tmp);
         root.rotation.set(-0.5 * Math.sin(Math.PI * k), faceYaw(tmp, camPos), 0);
         if (k >= 1) {

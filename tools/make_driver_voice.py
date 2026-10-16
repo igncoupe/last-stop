@@ -45,7 +45,7 @@ TERRIFIED = re.compile(
     r"something wet|breathing|can't feel|staring|not blinking|standing in the road|keeping up|\bash\b|knocking|"
     r"under the floor|faces under|struck match|getting on|cold coming|the shadow|smoke|doesn't have|shape of a man|"
     r"head turned|light went out|pedal is going|trying to get in|back of the bus|i'm not opening|grey|gray hands|"
-    r"wrinkled|water is creeping|underwater", re.I)
+    r"wrinkled|water is creeping|underwater|off the roof", re.I)
 WEARY = re.compile(
     r"\bmom\b|mother|first night|asked for it|keys|i was four|lena marsh|the kid is me|made it home|keeping route 9|"
     r"music box|coffee|morning|i missed you|thirty-two years|nobody ever told me|barely slept|somewhere across town|"

@@ -56,14 +56,18 @@ export function createDirector(w) {
   }
 
   let speech = Promise.resolve();
+  let cutLine = null;                  // ends the line that's playing now (g.interrupt)
   async function speak(who, text, { keep = false, after = 260 } = {}) {
     s.waiting = `line (${who})`;
     const c = CAST[who];
     ui.subtitle(nameOf(who), c.color, text);
+    const cut = new Promise((r) => { cutLine = () => r("cut"); });
     // a line can never hold up the story: whatever happens to its audio, it ends in a bounded time
     const cap = new Promise((r) => setTimeout(() => r("cap"), 9000 + text.length * 110));
-    const played = await Promise.race([Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) }), cap]);
-    if (!played) await g.wait(Math.max(1500, text.length * 60 + 500));
+    let played = await Promise.race([Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) }), cap, cut]);
+    if (!played) played = await Promise.race([g.wait(Math.max(1500, text.length * 60 + 500)), cut]);
+    cutLine = null;
+    if (played === "cut") return;
     if (!keep) ui.clearSubtitle();
     if (after) await g.wait(after);
   }
@@ -118,6 +122,12 @@ export function createDirector(w) {
       return turn;
     },
     think(text, opts) { return g.say("you", text, opts); },
+    // whoever is talking stops, mid-word
+    interrupt() {
+      Sound.stopVoices();
+      if (cutLine) cutLine();
+      ui.clearSubtitle();
+    },
     // hold a document up close (null puts it away)
     paper(doc) { ui.paper(doc); },
     // read a document: it stays up while the lines are thought out loud
@@ -437,6 +447,29 @@ export function createDirector(w) {
     const land = bus.group.localToWorld(bus.windshieldLanding.clone());
     const dist = shade.root.getWorldPosition(new THREE.Vector3()).distanceTo(land);
     await shade.leap(bus.group, bus.windshieldLanding, THREE.MathUtils.clamp(dist / 32, 0.3, 0.6));
+    await hitGlass({ hold, crack, keepParked });
+  };
+  // no warning at all: it was on the roof, and it comes down over the windshield
+  g.shadeDrop = async ({ hold = 1500, keepParked = false } = {}) => {
+    w.traffic.hold(30);
+    s.waiting = "scare drop";
+    g.interrupt();
+    if (!settings.scares) {
+      bus.setInterior("flicker");
+      Sound.sfx("lightsout");
+      await g.wait(500);
+      bus.setInterior("on");
+      Sound.sfx("heartbeat", 3, 96);
+      return;
+    }
+    const roof = new THREE.Vector3(0.3, 3.25, 5.3);
+    shade.standIn(bus.group, roof, new THREE.Vector3(0.3, 3.25, 12), "crouch");
+    player.lookAtSoon(bus.group.localToWorld(new THREE.Vector3(0.3, 2.0, 6)));
+    Sound.sfx("shriek");
+    await shade.leap(bus.group, bus.windshieldLanding, 0.24, { from: roof, arc: 0, out: 0.7 });
+    await hitGlass({ hold, crack: true, keepParked });
+  };
+  async function hitGlass({ hold, crack, keepParked }) {
     Sound.sfx("slam");
     if (crack) Sound.sfx("crack");
     Sound.sfx("sting");
@@ -456,7 +489,7 @@ export function createDirector(w) {
     shade.hide();
     bus.setInterior("on");
     if (wasControl === "player" && !keepParked) drive.release();   // (or the script lets go when it is ready)
-  };
+  }
 
   // the shadow in the aisle: only in the mirror, a few rows closer every time you look
   g.shadeCreep = async () => {

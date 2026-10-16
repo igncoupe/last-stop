@@ -227,15 +227,24 @@ export async function night1(g) {
     if (g.bus.doorsOpen) await closeDoorsAndGo(g);
   }
   g.amb({ water: 0 });
-  g.dread(true);
+  g.mood("uneasy");
 
-  // ---------- the shadow again: crouched in the road, and then it jumps
-  await g.until(() => g.d > 2130);
-  g.mood("dread");
-  await g.shadeLeap({ ahead: 48, keepParked: true });
+  // ---------- the shadow again. No warning this time: a quiet stretch, a routine call from dispatch,
+  // and somewhere in the middle of it, it comes down off the roof. It's been up there since Canal Row.
+  await g.wait(3000 + Math.random() * 4000);
+  await g.think("Okay. Breathe. Northgate's not far now. Just drive the bus.");
+  const dropAt = Math.min(2240, Math.max(g.d + 60, 1990 + Math.random() * 200));
+  await g.until(() => g.d > dropAt, 40000);
+  const ahead = () => g.bus.group.localToWorld(new THREE.Vector3(0.7, 1.6, 12));
+  await g.until(() => g.drive.speed > 4 && !g.lookingAtMirror() && g.gazing(ahead(), 35), 8000);
+  g.say("rhee", "Dispatch to Route 9. Northgate's clear tonight. Pull in, sign the log, and leave the keys in the—").catch(() => {});
+  await g.wait(1300 + Math.random() * 1600);
+  await g.shadeDrop({ keepParked: true });
+  g.dread(true);
   g.mood("terror");
   if (f.junRode) await g.say("jun", "What was that? What WAS that?");
   await g.think("It hit the glass. It was on the glass, pressed flat, looking in at me. It doesn't have a face. It doesn't have anything.");
+  await g.think("It came down off the roof. How long was it up there? How long was it riding with me?");
   await g.say("rhee", "Eyes on the road, driver. You'll see all sorts of things on nights.");
   await g.think("There are handprints on the windshield. On the outside. They're not wet. They're ash.");
   g.release();
