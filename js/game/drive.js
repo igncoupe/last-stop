@@ -29,8 +29,7 @@ export function createDrive(bus) {
     pitch: 0,
     roll: 0,
     dock: null,           // { at, engaged, skipped, done, cruise } the stop the bus pulls in to by itself
-    gasLatch: false,      // after pulling in, W has to be let go and pressed again to drive off
-    holdT: 0,             // ...and not before the bus has stood still for DOCK_HOLD seconds
+    holdT: 0,             // after pulling in, the bus stands still this long before W does anything
   };
   const pos = new THREE.Vector3();
 
@@ -78,7 +77,6 @@ export function createDrive(bus) {
       }
       const wantGas = seated && (input.down("KeyW") || input.down("ArrowUp"));
       s.holdT = Math.max(0, s.holdT - dt);
-      if (s.gasLatch && !wantGas) s.gasLatch = false;
       if (s.control === "player" && k && k.engaged) {
         // pulling in is the bus's job: the pedals do nothing until it's stopped at the shelter
         const left = k.at - s.d;
@@ -96,11 +94,10 @@ export function createDrive(bus) {
           s.speed = 0;
           k.engaged = false;
           k.done = true;
-          s.gasLatch = true;
           s.holdT = DOCK_HOLD;
         }
       } else if (s.control === "player") {
-        const gas = wantGas && !s.gasLatch && s.holdT <= 0;
+        const gas = wantGas && s.holdT <= 0;             // still for a couple of seconds after pulling in, then it goes
         const brake = seated && (input.down("KeyS") || input.down("ArrowDown") || input.down("Space"));
         if (bus.doorsOpen) {
           s.speed = Math.max(0, s.speed - BRAKE * dt);
