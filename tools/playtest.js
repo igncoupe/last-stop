@@ -43,7 +43,7 @@ export function startBot(strategy = "kind") {
   const walkTo = (v, back = 1.0) => {
     const st = player.state;
     const dir = st.pos.clone().sub(v).setY(0).normalize();
-    st.pos.set(v.x + dir.x * back, 1.7, v.z + dir.z * back);
+    st.pos.set(v.x + dir.x * back, st.pos.y, v.z + dir.z * back);       // same floor (4 West is upstairs)
   };
   const hintEl = document.getElementById("hint");
   const hint = () => (hintEl.classList.contains("on") ? hintEl.textContent : "");
@@ -127,7 +127,7 @@ export function startBot(strategy = "kind") {
       else if (/Look at the shelter/.test(h) && g.actor("drowned1")) aim(g.actor("drowned1").root.localToWorld(new V(0, 1.4, 0)));
       else if (/Look out the window/.test(h)) { walkTo(L.g.places.hospital.win.getWorldPosition(new V()), 1.2); aim(L.g.places.hospital.win.getWorldPosition(new V())); }
       else if (/Turn back to the bed/.test(h)) { walkTo(L.g.places.hospital.bedHead, 1.0); aim(L.g.places.hospital.bedHead); }
-      else if (/Go to Room 4B/.test(h)) { const r = L.g.places.hospital.roomPos; player.state.pos.set(r.x + 1.2, 1.7, r.z); }
+      else if (/Go to Room 4B/.test(h)) { const r = L.g.places.hospital.roomPos; player.state.pos.set(r.x + 1.2, player.state.pos.y, r.z); }
       else if (seat && !g.navTarget) aim(busPoint(0.7, 1.6, 30));
 
       // things to use

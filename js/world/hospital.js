@@ -350,14 +350,14 @@ export function buildHospital(scene) {
     return panels;
   }
   // a door in a wall along z, seen from the corridor; open: 0 shut, else the angle it stands open at
-  function door(x, zc, face, { m = M.door, open = 0, w = DOOR_W, label = null, name = null, dispenser = true } = {}) {
+  function door(x, zc, face, { m = M.door, open = 0, w = DOOR_W, label = null, name = null, dispenser = true, hinge = -1 } = {}) {
     // the steel frame
     for (const s of [-1, 1]) blk(0.08, DOOR_H + 0.05, 0.06, M.frame, x + face * 0.06, (DOOR_H + 0.05) / 2, zc + s * (w / 2 + 0.03));
     blk(0.08, 0.06, w + 0.12, M.frame, x + face * 0.06, DOOR_H + 0.03, zc);
-    // the leaf, hinged on the -z side
-    const pivot = add(inside, new THREE.Group(), x - face * 0.01, 0, zc - w / 2);
-    const leaf = blk(0.05, DOOR_H - 0.02, w - 0.02, m, 0, DOOR_H / 2, w / 2, { parent: pivot });
-    pivot.rotation.y = -face * open;         // opens away from the corridor, into the room
+    // the leaf, hinged on one side (-z or +z), opening away from the corridor into the room
+    const pivot = add(inside, new THREE.Group(), x - face * 0.01, 0, zc + hinge * w / 2);
+    const leaf = blk(0.05, DOOR_H - 0.02, w - 0.02, m, 0, DOOR_H / 2, -hinge * w / 2, { parent: pivot });
+    pivot.rotation.y = hinge > 0 ? face * open : -face * open;
     solids.push(leaf);
     // the room sign beside it, with a name slot
     if (label) {
@@ -385,7 +385,7 @@ export function buildHospital(scene) {
   wallZ(CORR_OUT + WALL_T / 2, Z0, Z1, -1, { gaps: outGaps });
   const NAMES = { "4B": "VARGA, T.", "4D": "HOLLIS, R.", "4F": "ADEYEMI, O.", "4H": "PRZYBYL, A." };
   for (const [n, zc] of ROOMS) {
-    door(CORR_OUT, doorZ(zc), -1, { open: n === "4B" ? 1.45 : n === "4E" ? 0.55 : 0, label: n, name: NAMES[n] });
+    door(CORR_OUT, doorZ(zc), -1, { open: n === "4B" ? 1.45 : n === "4E" ? 0.55 : 0, label: n, name: NAMES[n], hinge: n === "4B" ? 1 : -1 });
   }
 
   // inside: the elevators, two service doors, the nurses' station, the staff lounge, more rooms
@@ -616,11 +616,12 @@ export function buildHospital(scene) {
   blk(0.85, 0.03, 0.42, M.laminate, BX + 0.35, 0.97, BZ + 0.55);
   add(inside, new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), mat({ color: 0xc0c4c6 })), BX + 0.25, 0.99, BZ + 0.55);
   blk(0.1, 0.08, 0.18, M.white, BX + 0.6, 1.02, BZ + 0.45);
-  // the privacy curtain, half drawn on its ceiling track
-  blk(0.03, 0.03, 3.0, M.chrome, BX - 0.75, H - 0.04, R0 + 1.6);
-  blk(1.6, 0.03, 0.03, M.chrome, BX + 0.05, H - 0.04, R0 + 3.1);
-  const curtain = plane(1.3, 2.55, M.curtain, BX - 0.75, 1.72, R0 + 0.8, Math.PI / 2);
-  curtain.scale.x = 1;
+  // the privacy curtain on its ceiling track round the bed, pushed back against the wall by the door
+  blk(0.03, 0.03, 3.0, M.chrome, BX - 0.85, H - 0.04, R0 + 1.5);
+  blk(1.75, 0.03, 0.03, M.chrome, BX + 0.02, H - 0.04, R0 + 3.0);
+  blk(0.03, 0.03, 3.0, M.chrome, BX + 0.9, H - 0.04, R0 + 1.5);
+  plane(0.62, 2.55, M.curtain, BX - 1.55, 1.72, R0 + 0.06, 0);
+  for (let i = 0; i < 6; i++) blk(0.02, 0.02, 0.02, M.chrome, BX - 1.8 + i * 0.1, H - 0.07, R0 + 0.06);
   // a visitor's recliner by the window, a plastic chair by the bed
   recliner(-0.95, R1 - 0.85, -2.3);
   chair(BX - 1.15, BZ + 0.9, 1.8);
@@ -659,8 +660,8 @@ export function buildHospital(scene) {
     new THREE.PointLight(0xffdcb0, 0, 6.5, 1.5),
   ];
   const LIGHT_ON = [7, 7, 2.6];
-  add(g, lights[0], CX, 2.7, 9);
-  add(g, lights[1], CX, 2.7, 27);
+  add(g, lights[0], CX - 0.6, 2.7, 12.5);         // over the station
+  add(g, lights[1], CX, 2.7, 28);
   add(g, lights[2], BX + 0.1, 2.3, R0 + 0.8);
   void eMon;
 
