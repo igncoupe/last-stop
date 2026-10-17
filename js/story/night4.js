@@ -56,14 +56,16 @@ export async function night4(g) {
       await g.actor("mara").walk([doorOutside()], { speed: 1.2 });
       await g.say("mara", "I'm not riding. I'm walking in. It's Mr. Varga. They think it's tonight. Maybe tomorrow.");
       if (f.visitedVarga) {
+        const give = g.handOver("mara", "badge");
         await g.say("mara", "He woke up for about a minute after you left. He said, give this to the driver.");
+        await give;
         await g.think("A brass name badge. The pin's bent. The letters are worn soft by a thumb. T. Varga. Route 9.");
         f.hasBadge = true;
       } else {
         await g.say("mara", "He keeps saying fourteen. Just the number. Over and over.");
       }
       await g.say("mara", "I'll be with him. He won't be alone. I promise.");
-      g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
+      g.actor("mara").walk([g.bus.group.localToWorld(g.bus.boardPath[0].clone()), curb("Elm & 4th", 40)], { speed: 1.2, parent: g.actor("mara").scene });
     });
     if (!stayed && g.actor("mara")) g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
   }
@@ -118,10 +120,12 @@ export async function night4(g) {
     const stayed = await g.atStop(async (g) => {
       f.junNamed = true;
       await g.actor("jun").walk([doorOutside()], { speed: 1.2 });
+      const give = g.handOver("jun", "soup");
       await g.say("jun", "From my mom. Soup. She says you look like you don't eat.");
+      await give;
       await g.say("jun", "Don't go past Market tonight. Please. I had a dream. The bus was in the river, and you were driving, and all the windows were full of faces.");
       await g.say("jun", "Just. If something tells you to go faster? Don't.");
-      g.actor("jun").walk([curb("Market St", 3)], { speed: 1 });
+      g.actor("jun").walk([g.bus.group.localToWorld(g.bus.boardPath[0].clone()), curb("Market St", 3)], { speed: 1, parent: g.actor("jun").scene });
     });
     if (!stayed && g.actor("jun")) g.actor("jun").walk([curb("Market St", 3)], { speed: 1 });
   } else if (stopped) {

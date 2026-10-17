@@ -75,6 +75,38 @@ export function createDirector(w) {
 
   let boardings = 0;                   // how many people have got on so far (scenes at a stop look at this)
 
+  // things people hand you, and where they end up: on the dash in front of you, or in your hand on foot
+  const ITEMS = {
+    coffee: () => {
+      const gr = new THREE.Group();
+      gr.add(new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.033, 0.12, 10), new THREE.MeshLambertMaterial({ color: 0xece8de })));
+      const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.04, 0.05, 10), new THREE.MeshLambertMaterial({ color: 0x8a6440 }));
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.014, 10), new THREE.MeshLambertMaterial({ color: 0x2a2a2a }));
+      lid.position.y = 0.066;
+      gr.add(sleeve, lid);
+      return gr;
+    },
+    soup: () => {
+      const gr = new THREE.Group();
+      gr.add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.09, 12), new THREE.MeshLambertMaterial({ color: 0xf2f0ea })));
+      const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.073, 0.073, 0.012, 12), new THREE.MeshLambertMaterial({ color: 0xd6d2c8 }));
+      lid.position.y = 0.05;
+      gr.add(lid);
+      const bag = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.03, 0.17), new THREE.MeshLambertMaterial({ color: 0xb8ad8a }));
+      bag.position.y = -0.055;
+      gr.add(bag);
+      return gr;
+    },
+    badge: () => {
+      const gr = new THREE.Group();
+      gr.add(new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.025, 0.008), new THREE.MeshLambertMaterial({ color: 0xb8913a, emissive: 0x2a1e08 })));
+      return gr;
+    },
+  };
+  const DASH_SPOT = { coffee: new THREE.Vector3(0.18, 1.45, 5.72), soup: new THREE.Vector3(-0.5, 1.44, 5.82), badge: new THREE.Vector3(1.02, 1.4, 5.58) };
+  let held = null;                     // what you're holding on foot
+  const handed = [];                   // everything you've been given tonight (cleared each night)
+
   let speech = Promise.resolve();
   let cutLine = null;                  // ends the line that's playing now (g.interrupt)
   async function speak(who, text, { keep = false, after = 260 } = {}) {
@@ -152,6 +184,7 @@ export function createDirector(w) {
       return turn;
     },
     think(text, opts) { return g.say("you", text, opts); },
+    caption(kicker, text) { ui.caption(kicker, text); },
     // whoever is talking stops, mid-word
     interrupt() {
       Sound.stopVoices();
@@ -350,6 +383,57 @@ export function createDirector(w) {
         await Promise.race([walked, until(() => drive.moving)]);
       } else if (vanish) g.despawn(key);
     },
+    // someone hands you something: they come up close (onto the bottom step, if you're in your seat),
+    // hold it out, and you take it. In the bus it goes on the dash; on foot you hold it.
+    async handOver(key, kind, { speed = 1.4 } = {}) {
+      const p = actors.get(key);
+      if (!p || !ITEMS[kind]) return;
+      s.waiting = `${key} handing you ${kind}`;
+      const item = ITEMS[kind]();
+      p.rightHand.add(item);
+      item.position.set(0, -0.06, 0.07);
+      const me = camera.getWorldPosition(new THREE.Vector3());
+      if (player.mode === "seat") {
+        if (!onBus(p)) await p.walk([bus.boardPath[0], bus.boardPath[1]], { speed: 1.3, parent: bus.group, ground: bus.groundAt });
+        const local = bus.group.worldToLocal(me.clone());
+        p.root.rotation.y = Math.atan2(local.x - p.root.position.x, local.z - p.root.position.z);
+      } else {
+        const st = player.state;
+        const to = new THREE.Vector3(st.pos.x - Math.sin(st.yaw) * 0.85, 0, st.pos.z - Math.cos(st.yaw) * 0.85);
+        const from = p.root.getWorldPosition(new THREE.Vector3()).setY(0);
+        if (from.distanceTo(to) > 0.3) await p.walk([to.clone().setY(p.root.position.y)], { speed, parent: scene });
+        p.root.rotation.y = Math.atan2(me.x - to.x, me.z - to.z);
+      }
+      p.lookAt(me);
+      p.reachOut(true);
+      await g.wait(1000);
+      // you take it: it comes across to you
+      const start = item.getWorldPosition(new THREE.Vector3());
+      scene.attach(item);
+      const onFoot = player.mode !== "seat";
+      const end = () => (onFoot
+        ? camera.localToWorld(new THREE.Vector3(0.2, -0.24, -0.42))
+        : bus.group.localToWorld(DASH_SPOT[kind].clone()));
+      let t = 0;
+      await until((dt) => {
+        t = Math.min(1, t + dt / 0.55);
+        item.position.lerpVectors(start, end(), t * t * (3 - 2 * t));
+        return t >= 1;
+      });
+      if (onFoot) {
+        camera.attach(item);
+        if (held) held.removeFromParent();
+        held = item;
+      } else {
+        bus.group.attach(item);
+        item.position.copy(DASH_SPOT[kind]);
+        item.rotation.set(0, Math.random() * 0.6 - 0.3, 0);
+      }
+      Sound.sfx("click");
+      p.reachOut(false);
+      p.lookAt(null);
+      handed.push(item);
+    },
     // the drowned don't walk off. They're just gone when you look again.
     vanish(key) { g.despawn(key); },
 
@@ -529,7 +613,7 @@ export function createDirector(w) {
       Sound.sfx("heartbeat", 3, 96);
       return;
     }
-    player.lookAtSoon(bus.group.localToWorld(new THREE.Vector3(0.3, 2.0, 6)));   // you look up when it moves
+    player.lookAtSoon(() => bus.group.localToWorld(new THREE.Vector3(0.3, 2.0, 6)));   // you look up when it moves (the point rides with the bus)
     Sound.sfx("shriek");
     const land = bus.group.localToWorld(bus.windshieldLanding.clone());
     const dist = shade.root.getWorldPosition(new THREE.Vector3()).distanceTo(land);
@@ -551,7 +635,8 @@ export function createDirector(w) {
     }
     const roof = new THREE.Vector3(0.3, 3.25, 5.3);
     shade.standIn(bus.group, roof, new THREE.Vector3(0.3, 3.25, 12), "crouch");
-    player.lookAtSoon(bus.group.localToWorld(new THREE.Vector3(0.3, 2.0, 6)));
+    // if you're not already looking out the front, you look up at it (a point on the glass, which travels with the bus)
+    if (!g.gazing(bus.group.localToWorld(new THREE.Vector3(0.5, 1.8, 7)), 40)) player.lookAtSoon(() => bus.group.localToWorld(new THREE.Vector3(0.4, 1.75, 6.1)));
     Sound.sfx("shriek");
     await shade.leap(bus.group, bus.windshieldLanding, 0.24, { from: roof, arc: 0, out: 0.7 });
     await hitGlass({ hold, crack: true, keepParked });
@@ -569,7 +654,17 @@ export function createDirector(w) {
     const wasControl = drive.state.control;
     if (wasControl === "player") drive.park();       // you stand on the brake without meaning to
     Sound.sfx("brake");
-    await g.wait(hold);
+    // it doesn't just hang there. It beats on the glass, twice, and the crack spreads
+    await g.wait(Math.min(650, hold * 0.4));
+    Sound.sfx("bang");
+    player.shake(1.8);
+    await g.wait(330);
+    Sound.sfx("bang");
+    Sound.sfx("crack");
+    player.shake(2.2);
+    bus.setSmudge(2);
+    Sound.sfx("whisper");
+    await g.wait(Math.max(300, hold - 980));
     bus.setInterior("off");
     Sound.sfx("lightsout");
     await g.wait(550);
@@ -673,6 +768,9 @@ export function createDirector(w) {
     speech = Promise.resolve();          // a night that's over doesn't hold up the next one's lines
     seated.clear();
     drive.dockAt(null);
+    handed.forEach((it) => it.removeFromParent());
+    handed.length = 0;
+    held = null;
     s.unheard = [];
     g.despawnAll();
     routeOverride = null;
@@ -684,6 +782,7 @@ export function createDirector(w) {
     ui.clearSubtitle();
     ui.clearChoices();
     ui.paper(null);
+    ui.caption(null);
     w.shade.hide();
   }
 
@@ -717,7 +816,7 @@ export function createDirector(w) {
         marker.userData.beam.visible = true;
         const dock = drive.state.dock;
         if (drive.docking) {
-          text = `Pulling in: ${nav.stop.name}  ·  press W to drive past`;
+          text = dock.braking ? `Stopping: ${nav.stop.name}` : `Pulling in: ${nav.stop.name}  ·  press W to drive past`;
         } else if (dock && dock.skipped) {
           text = left > -7 ? `Driving past ${nav.stop.name}` : "";
         } else if (drive.inZone(nav.stop.d)) {

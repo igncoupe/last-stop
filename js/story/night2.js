@@ -68,10 +68,15 @@ export async function night2(g) {
   await tape;
   if (stopped && (await openUp(g))) {
     const stayed = await g.atStop(async (g) => {
+      if (f.maraHelped) {
+        // she comes up the steps and hands you a coffee before she sits down
+        const give = g.handOver("mara", "coffee");
+        await g.say("mara", "Figured I owe you a coffee. It's terrible. Hospital coffee always is.");
+        await give;
+      }
       await g.board("mara", "R0");
       f.maraAboard = true;
       if (f.maraHelped) {
-        await g.say("mara", "Figured I owe you a coffee. It's terrible. Hospital coffee always is.");
         await g.say("mara", "Heads up. A water main burst on Canal Row. It's deep. Take it slow, or you'll stall out in the middle of it.");
         f.maraTip = true;
       } else {
@@ -349,8 +354,9 @@ export async function night2(g) {
     f.junAboard = false;
   }
   g.vanish("teodor");
-  g.sfx("coin");
-  await g.think("The back row is empty again. Another coin. Another wet seat.");
+  g.sfx("coindrop");
+  await g.wait(1300);
+  await g.think("The back row is empty again. Something hit the floor back there and rolled. Another wet seat.");
   await rheeLateness(g);
   await g.say("rhee", "Storm's coming in off the river tomorrow. A big one. Like the old days.");
   await g.say("rhee", "You'll want to make up the time.");

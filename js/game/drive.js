@@ -10,11 +10,12 @@ const DRAG = 0.35;
 // a stop counts when the bus is stopped with its door near the shelter
 export const STOP_BEFORE = 18;
 export const STOP_AFTER = 7;      // a little forgiving if you roll past the box
-// pulling in by itself: from this far out, it stops with the door (4.65 m ahead of the bus's middle)
-// level with the shelter
+// pulling in by itself: from this far out it keeps (or gets up to) full speed, then brakes hard at the
+// yellow box and stops with the door level with the shelter, and stays put for a couple of seconds
 const DOCK_FROM = 60;
 const DOOR_AHEAD = 3.9;
-const DOCK_BRAKE = 2.4;
+const DOCK_BRAKE = 7.2;          // hard enough to go from full speed to a stop inside the yellow box
+const DOCK_HOLD = 2.2;           // seconds the bus stands still once it has pulled in
 
 export function createDrive(bus) {
   const s = {
@@ -29,6 +30,7 @@ export function createDrive(bus) {
     roll: 0,
     dock: null,           // { at, engaged, skipped, done, cruise } the stop the bus pulls in to by itself
     gasLatch: false,      // after pulling in, W has to be let go and pressed again to drive off
+    holdT: 0,             // ...and not before the bus has stood still for DOCK_HOLD seconds
   };
   const pos = new THREE.Vector3();
 
@@ -67,31 +69,38 @@ export function createDrive(bus) {
       const k = s.dock;
       if (s.control === "player" && k && !k.skipped && !k.done) {
         const left = k.at - s.d;
-        if (!k.engaged && left < DOCK_FROM && left > -1 && !bus.doorsOpen) { k.engaged = true; k.cruise = Math.max(4, s.speed); }
-        // a fresh press of W (not one held from before) means drive past this one
-        if (k.engaged && seated && (input.hit("KeyW") || input.hit("ArrowUp"))) { k.engaged = false; k.skipped = true; }
+        if (!k.engaged && left < DOCK_FROM && left > -1 && !bus.doorsOpen) { k.engaged = true; k.cruise = s.limit; }
+        // a fresh press of W (not one held from before) means drive past this one, but only before it
+        // starts braking: once it's braking, it's stopping
+        const braking = Math.sqrt(Math.max(0, left) * 2 * DOCK_BRAKE) < s.speed + 0.5;
+        k.braking = k.engaged && braking;
+        if (k.engaged && !braking && seated && (input.hit("KeyW") || input.hit("ArrowUp"))) { k.engaged = false; k.skipped = true; }
       }
       const wantGas = seated && (input.down("KeyW") || input.down("ArrowUp"));
+      s.holdT = Math.max(0, s.holdT - dt);
       if (s.gasLatch && !wantGas) s.gasLatch = false;
       if (s.control === "player" && k && k.engaged) {
+        // pulling in is the bus's job: the pedals do nothing until it's stopped at the shelter
         const left = k.at - s.d;
-        const brake = seated && (input.down("KeyS") || input.down("ArrowDown") || input.down("Space"));
         let target = Math.min(k.cruise, s.limit, Math.sqrt(Math.max(0, left) * 2 * DOCK_BRAKE));
         if (left < 0.12) target = 0;
-        if (brake || bus.doorsOpen) s.speed = Math.max(0, s.speed - BRAKE * dt);
+        if (bus.doorsOpen) s.speed = Math.max(0, s.speed - BRAKE * dt);
         else {
-          const rate = target > s.speed ? ACCEL : BRAKE * 0.75;
+          const rate = target > s.speed ? ACCEL : DOCK_BRAKE * 1.25;      // brakes can always keep up with the curve
           s.speed += Math.sign(target - s.speed) * Math.min(Math.abs(target - s.speed), rate * dt);
         }
-        if (s.speed < 0.05 && (left < 0.5 || brake)) {
-          // in (or stopped short on purpose): the player has the bus again
+        // exactly at the shelter, every time
+        if (left <= 0.02 || (s.speed < 0.05 && left < 0.5)) {
+          s.d = k.at;
+          // in: the player has the bus again, after a moment
           s.speed = 0;
           k.engaged = false;
           k.done = true;
           s.gasLatch = true;
+          s.holdT = DOCK_HOLD;
         }
       } else if (s.control === "player") {
-        const gas = wantGas && !s.gasLatch;
+        const gas = wantGas && !s.gasLatch && s.holdT <= 0;
         const brake = seated && (input.down("KeyS") || input.down("ArrowDown") || input.down("Space"));
         if (bus.doorsOpen) {
           s.speed = Math.max(0, s.speed - BRAKE * dt);

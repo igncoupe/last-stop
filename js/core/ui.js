@@ -63,6 +63,14 @@ export const ui = {
     el.subtitle.classList.add("on");
   },
   clearSubtitle() { el.subtitle.classList.remove("on"); },
+  // big words in the middle of the screen (over black, in the endings); null takes them away
+  caption(kicker, text) {
+    const c = document.getElementById("caption");
+    if (!kicker && !text) { c.classList.remove("on"); return; }
+    c.querySelector(".c-kicker").textContent = kicker || "";
+    c.querySelector(".c-text").textContent = text || "";
+    c.classList.add("on");
+  },
 
   hint(text) {
     if (text) el.hint.textContent = text;
@@ -191,7 +199,32 @@ export const ui = {
     if (doc.title) { const h = document.createElement("div"); h.className = "p-title"; h.textContent = doc.title; sheet.append(h); }
     if (doc.photo) { const ph = document.createElement("div"); ph.className = "p-photo"; ph.textContent = doc.photo; sheet.append(ph); }
     for (const line of doc.lines || []) { const l = document.createElement("p"); l.textContent = line; sheet.append(l); }
-    if (doc.scrawl) { const s = document.createElement("div"); s.className = "p-scrawl"; s.textContent = doc.scrawl; sheet.append(s); }
+    if (doc.scrawl) {
+      const s = document.createElement("div");
+      s.className = doc.neat ? "p-scrawl" : "p-scrawl rushed";
+      if (doc.neat) s.textContent = doc.scrawl;
+      else {
+        // written in a hurry: each letter its own size and angle, the line sliding downhill, worse at the end
+        const chars = [...doc.scrawl];
+        chars.forEach((ch, i) => {
+          const k = i / Math.max(1, chars.length - 1);
+          const c = document.createElement("span");
+          c.textContent = ch;
+          const r = (Math.random() - 0.5) * (14 + k * 22);
+          const y = (Math.random() - 0.5) * (3 + k * 6) + k * 9;
+          const sc = 0.82 + Math.random() * (0.35 + k * 0.3);
+          c.style.transform = `translateY(${y.toFixed(1)}px) rotate(${r.toFixed(1)}deg) scale(${sc.toFixed(2)})`;
+          c.style.marginRight = `${(Math.random() * 3 - 1).toFixed(1)}px`;
+          c.style.opacity = (0.65 + Math.random() * 0.35).toFixed(2);
+          if (Math.random() < 0.18) c.classList.add("hard");                // pressed so hard it's darker
+          s.append(c);
+        });
+        const tail = document.createElement("span");
+        tail.className = "tail";                                            // the pencil skidding off the page
+        s.append(tail);
+      }
+      sheet.append(s);
+    }
     p.append(sheet);
     void p.offsetWidth;
     p.classList.add("on");

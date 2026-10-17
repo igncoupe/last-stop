@@ -198,10 +198,11 @@ export async function night1(g) {
       g.mood("dread");
       await g.wait(1500);
       await g.think("Nobody. Just water on the road. It hasn't rained all week.");
+      // nobody there, so you close up and go. That's when it comes: a hand stops the doors
+      await g.doors(false, 14000, "Close the doors  [F]");
       g.spawn("daniel", "daniel", { at: g.bus.group.localToWorld(g.bus.boardPath[0].clone()), yaw: route.heading(STOPS["Canal Row"]) + Math.PI / 2 });
-      g.hint("Look at the door");
-      await g.until(() => g.gazing(g.bus.group.localToWorld(new THREE.Vector3(-1.2, 1.6, 4.6)), 25), 12000);
-      g.hint(null);
+      g.setDoors(true);
+      g.sfx("bang");
       await g.scare("face");
       await g.say("daniel", "Ashgrove, please.");
       await g.say("you", "This bus doesn't go to Ashgrove.");
@@ -294,11 +295,12 @@ export async function night1(g) {
   await g.say("rhee", "Driver. Your display is malfunctioning. Ignore it.");
   await g.say("rhee", "Whatever it shows you. Ignore it.");
   g.vanish("teodor");
+  g.sfx("coindrop");                   // something small and metal, hitting the floor at the back, rolling
+  await g.wait(1400);
   g.hint("Look at the back row");
   await g.until(() => g.lookingBack(), 15000);
   g.hint(null);
-  g.sfx("coin");
-  await g.think("He's gone. I didn't hear the doors. There's a coin on his seat. Old. Worn smooth. And the seat is soaking wet.");
+  await g.think("He's gone. I didn't hear the doors. Something fell back there. I heard it hit the floor and roll. His seat is soaking wet.");
   g.dread(false);
   await g.wait(1500);
   g.sfx("whisper");

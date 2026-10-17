@@ -18,6 +18,7 @@ import { createHorror } from "./world/horror.js";
 import { createShade } from "./world/shade.js";
 import { createTraffic } from "./world/traffic.js";
 import { createMenuArt } from "./core/menuArt.js";
+import { createSelfBody } from "./world/selfBody.js";
 import { NIGHTS, ENDINGS, CREDITS } from "./story/nights.js";
 import { KIND_ENOUGH } from "./story/common.js";
 
@@ -94,6 +95,7 @@ const shade = createShade(scene);
 const traffic = createTraffic(scene, (name, ...args) => Sound.sfx(name, ...args));
 const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, lightning, input, horror, shade, traffic };
 const director = createDirector(world);
+const self = createSelfBody(scene, bus, player, camera);
 const g = director.g;
 
 // the green door button on the dash (F does the same thing)
@@ -189,6 +191,7 @@ function frame(now) {
   if (playing && input.hit("KeyF")) toggleDoors();
   player.state.vibration = drive.speed / 14;
   player.update(dt, input);
+  self.update(dt);
   // look at the rear-view mirror and your eyes focus on it: the view narrows so you can see who's back there
   const wantFov = player.mode === "seat" && g.lookingAtMirror() ? 34 : settings.fov;
   if (Math.abs(camera.fov - wantFov) > 0.05) {

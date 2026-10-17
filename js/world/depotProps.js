@@ -193,13 +193,26 @@ export function makeNoticeBoard() {
     };
     paper(14, 14, 230, 200, -0.03, "#f3eedf", (main.title || "").toUpperCase(), main.lines, { titleSize: 15, size: 11, kicker: main.kicker });
     if (main.scrawl) {
-      // someone's written underneath in pencil
+      // someone's written underneath in pencil, fast, like they were being chased
       x.save();
-      x.translate(40, 200);
-      x.rotate(-0.08);
-      x.fillStyle = "rgba(40,40,48,.85)";
-      x.font = "italic 17px 'Segoe Print', cursive";
-      x.fillText(main.scrawl, 0, 0);
+      x.translate(36, 196);
+      x.rotate(-0.09);
+      let cx = 0;
+      [...main.scrawl].forEach((ch, i, all) => {
+        const k = i / Math.max(1, all.length - 1);
+        const size = 15 + Math.random() * (4 + k * 5);
+        x.font = `italic ${size.toFixed(0)}px 'Segoe Print', cursive`;
+        x.save();
+        x.translate(cx, k * 7 + (Math.random() - 0.5) * (2 + k * 4));
+        x.rotate((Math.random() - 0.5) * (0.25 + k * 0.4));
+        x.fillStyle = Math.random() < 0.2 ? "rgba(25,25,30,.95)" : "rgba(45,45,52,.8)";
+        x.fillText(ch, 0, 0);
+        x.restore();
+        cx += x.measureText(ch).width * (0.85 + Math.random() * 0.3);
+      });
+      x.strokeStyle = "rgba(45,45,52,.55)";
+      x.lineWidth = 1.2;
+      x.beginPath(); x.moveTo(cx + 2, 6); x.lineTo(cx + 30, 13); x.stroke();      // the pencil skids off
       x.restore();
     }
     paper(262, 18, 230, 118, 0.025, "#fdf6c8", "ROUTE 9 - NIGHT TIMETABLE", [

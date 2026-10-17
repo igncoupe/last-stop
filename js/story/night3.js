@@ -273,7 +273,7 @@ export async function night3(g) {
     await g.alight("junmom", terminalDoor());
   }
   g.vanish("teodor");
-  g.sfx("coin");
+  g.sfx("coindrop");
   await rheeLateness(g);
   await g.think("There's a sheet of paper under my windshield wiper.");
   await g.read({ kind: "notice", kicker: "Metro Transit · Radio", title: "Notice", lines: ["Route 9 radio moves to CHANNEL 4 starting tomorrow.", "Channel 9 has been OUT OF SERVICE since 1994.", "If you hear anything on channel 9, do not answer it.", "- Dana, Night Dispatch"] }, [

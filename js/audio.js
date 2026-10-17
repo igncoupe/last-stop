@@ -328,6 +328,21 @@ const SFX = {
   splash(t) { out(noise(t, 1.2, "lowpass", 1400), 0.7, t, 0.01, 1.1, 0.4); out(tone(t, 0.6, "sine", 200, 60), 0.4, t, 0.01, 0.5); },
   spark(t) { for (let i = 0; i < 6; i++) out(noise(t + i * 0.05 + Math.random() * 0.04, 0.05, "highpass", 4000), 0.5, t + i * 0.05, 0.001, 0.04); },
   rip(t) { out(noise(t, 0.5, "bandpass", 900, 1), 0.9, t, 0.005, 0.45); out(tone(t, 0.3, "sawtooth", 300, 80), 0.2, t, 0.002, 0.3); },
+  // a coin dropped in the back of the bus: a few bounces, then it rolls and wobbles still
+  coindrop(t) {
+    [0, 0.17, 0.29, 0.37, 0.43, 0.47].forEach((b, i) => {
+      const tt = t + b;
+      out(tone(tt, 0.14, "sine", 3150 - i * 70), 0.16 * (1 - i * 0.13), tt, 0.001, 0.12, 0.7);
+      out(tone(tt, 0.09, "sine", 4800 - i * 90), 0.05, tt, 0.001, 0.07, 0.7);
+    });
+    const r = noise(t + 0.52, 1.5, "bandpass", 3400, 7);
+    const g = gainNode(0);
+    r.connect(g);
+    let tt = t + 0.52;
+    for (let i = 0; i < 26; i++) { g.gain.setValueAtTime(i % 2 ? 0.03 : 0.1 * (1 - i / 28), tt); tt += 0.045 * (1 + i / 18); }
+    g.gain.setValueAtTime(0, tt);
+    out(g, 0.55, t + 0.52, 0.01, tt - t - 0.52, 0.5);
+  },
   // ---- the other rooms on the fourth floor
   // an old man coughing, wet and tired
   cough(t, times = 2) {

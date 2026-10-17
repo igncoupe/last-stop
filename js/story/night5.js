@@ -63,7 +63,10 @@ export async function night5(g) {
   }
   g.actor("rosie").walk([curb("Elm & 4th", -1, 7.1)], { speed: 0.8 });
   g.mood("grief");
+  // he takes his cap off before he gets on, the way you would at a door you've come back to
+  const cap = g.actor("teodor").capOff(1.8);
   await g.think("The man in the uniform took off his cap. He's getting on.");
+  await cap;
   await g.board("teodor", "L0", 1.1);
   g.sfx("coin");
   await g.say("teodor", "March fourteenth, nineteen ninety-four. I was eleven minutes late.");
@@ -180,13 +183,36 @@ async function endHome(g, crowd, deadAir) {
   g.rain(false);
   g.lockDoors(true);
   await g.wait(1500);
-  if (!deadAir && g.shade.visible) await g.think("The shadow stepped back from the doors. Just one step. Enough to let them through. It's still watching.");
+  if (!deadAir && g.shade.visible) {
+    // one step back and to the side, out of their way, arms down. It doesn't leave.
+    const sh = g.shade.root;
+    const from = sh.position.clone();
+    const to = mysteryCurb(g, 4.6 + 2.4, 6.2);
+    g.sfx("skitter", 0.5);
+    let t = 0;
+    await g.frames((dt) => {
+      t = Math.min(1, t + dt / 0.7);
+      sh.position.lerpVectors(from, to, t * t * (3 - 2 * t));
+      return t >= 1;
+    });
+    g.shadeAt(to, "stand", g.bus.group.localToWorld(new THREE.Vector3(-1.2, 1.6, 4.6)));
+    await g.think("The shadow stepped back from the doors. Just one step. Enough to let them through. It's still watching.");
+  }
+  // they come aboard one at a time: Daniel first, while you watch
+  const order = [["g1", "L1"], ["g0", "R1"], ["g2", "R0"], ["g3", "L2"], ["g4", "R2"], ["g5", "L3"], ["g6", "R3"],
+    ["g7", "L4"], ["g8", "R4"], ["g9", "L5"], ["g10", "R5"], ["g11", "L6"], ["g12", "B0"], ["g13", "B1"]];
+  const first = g.board("g1", "L1", 1.3);
+  await g.wait(400);
   await g.think("For a moment, nobody moves. Then Daniel climbs the steps. He isn't dripping anymore.");
-  const order = [["g1", "L1"], ["g0", "R1"], ["g2", "R0"], ["g3", "L2"]];
-  for (const [k, seat] of order) g.board(k, seat, 1.5);
-  await g.wait(5000);
-  ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "R6", "B0", "B1"].forEach((seat, i) => { g.despawn(`g${i + 4}`); g.spawn(`s${i}`, "drowned", { ghost: true }); g.seat(`s${i}`, seat); });
+  await first;
+  const boarded = [];
+  for (const [k, seat] of order.slice(1)) {
+    boarded.push(g.board(k, seat, 1.6));
+    await g.wait(k === "g2" ? 1900 : 1100);          // a little gap after Ivy, who takes her time on the steps
+  }
+  await Promise.all(boarded);
   g.sfx("bell");
+  await g.wait(500);
   await g.think("Fourteen fares. Fourteen old coins in the box. Ivy rang the bell and giggled.");
   await g.say("lena", "Thank you for stopping.");
   if (deadAir) {
@@ -198,51 +224,117 @@ async function endHome(g, crowd, deadAir) {
   await g.say("you", "I missed you.");
   await g.say("lena", "I know. I was always on my way back. Always.");
   await g.say("teodor", "Mind if I drive the last bit?");
-  // you give him the seat
+  // everyone's on: the doors close, and you give him the seat
+  g.setDoors(false);
+  await g.wait(900);
   await g.fade(1, 1000);
   const P = g.places.bridge;
   g.drive.detach(true);
   P.group.visible = true;
   g.sky("void");
   g.bus.group.position.copy(P.start);
+  g.bus.group.position.z = P.edge - 120;            // the last stretch of road, then the bridge
   g.bus.group.rotation.set(0, 0, 0);
+  g.bus.setDoors(false);
   g.despawn("teodor");
   g.spawn("teodor", "uniform");
   g.actor("teodor").sit(g.bus.group, new THREE.Vector3(0.7, 0.5, 4.75), 0);
   // you stand in the aisle behind him, looking out through the windshield
   g.fixedCamera(g.bus.group, new THREE.Vector3(0.0, 1.78, 3.75), new THREE.Euler(-0.07, Math.PI + 0.08, 0, "YXZ"));
-  const stars = starField();
+  const stars = starField(P.edge, P.start.x);
   P.group.add(stars);
   P.water.visible = false;           // tonight the river is made of stars
   await g.fade(0, 1400);
-  await g.think("He drives like he never left. The road ends. The bridge isn't there anymore. We just keep going.");
+  // he drives; as the bridge runs out, a road of starlight lays itself down under the wheels
+  const busZ = () => g.bus.group.position.z;
+  let said = false;
+  let below = false;
+  let thought = Promise.resolve();
   await g.frames((dt) => {
     g.bus.group.position.z += 9 * dt;
-    return g.bus.group.position.z > P.edge + 120;
+    stars.userData.update(dt, busZ());
+    if (!said && busZ() > P.edge - 55) {
+      said = true;
+      thought = g.think("He drives like he never left. The road ends. The bridge isn't there anymore. We just keep going.");
+    }
+    if (!below && busZ() > P.edge + 55) {
+      below = true;
+      thought = g.think("Below us, the river is full of stars.");
+    }
+    return busZ() > P.edge + 140;
   });
-  await g.think("Below us, the river is full of stars.");
+  await thought;                                   // let the last thought finish
   await g.fade(1, 2500, true);
   await dawn(g, deadAir);
   return deadAir ? "deadair" : "home";
 }
 
-// stars above, and stars in the river below: the bus drives through them
-function starField() {
+// stars above, and stars in the river below; where the bridge ends, a road of starlight carries on
+function starField(edge, laneX) {
   const group = new THREE.Group();
-  const layer = (n, size, color, yMin, yMax) => {
+  // a soft round star, not a square
+  const c = document.createElement("canvas");
+  c.width = c.height = 16;
+  const x = c.getContext("2d");
+  const grad = x.createRadialGradient(8, 8, 0, 8, 8, 8);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.35, "rgba(255,250,235,.7)");
+  grad.addColorStop(1, "rgba(255,250,235,0)");
+  x.fillStyle = grad;
+  x.fillRect(0, 0, 16, 16);
+  const starTex = new THREE.CanvasTexture(c);
+  const twinkle = [];
+  const layer = (n, size, color, yMin, yMax, spread = 420) => {
     const pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 420;
+      pos[i * 3] = (Math.random() - 0.5) * spread;
       pos[i * 3 + 1] = yMin + Math.random() * (yMax - yMin);
-      pos[i * 3 + 2] = 60 + Math.random() * 700;
+      pos[i * 3 + 2] = 60 + Math.random() * 760;
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    group.add(new THREE.Points(geo, new THREE.PointsMaterial({ color, size, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.95 })));
+    const m = new THREE.PointsMaterial({ color, size, map: starTex, sizeAttenuation: true, fog: false, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+    twinkle.push(m);
+    group.add(new THREE.Points(geo, m));
   };
-  layer(3000, 3, 0xfff4d8, -45, -4);     // the river
-  layer(1200, 2, 0xd8e4ff, 8, 120);      // the sky
-  layer(250, 5, 0xffe2a8, -30, 60);      // a few bright ones
+  layer(2600, 0.9, 0xfff4d8, -45, -6);       // the river, deep below
+  layer(1400, 1.1, 0xd8e4ff, 10, 140);       // the sky
+  layer(240, 2.4, 0xffe2a8, -30, 70);        // a few bright ones
+  // the road of light: it lays itself down just ahead of the wheels as the bus leaves the bridge
+  const rc = document.createElement("canvas");
+  rc.width = 32;
+  rc.height = 64;
+  const r = rc.getContext("2d");
+  const rg = r.createLinearGradient(0, 0, 32, 0);
+  rg.addColorStop(0, "rgba(255,230,180,0)");
+  rg.addColorStop(0.2, "rgba(255,236,196,.55)");
+  rg.addColorStop(0.5, "rgba(255,244,220,.85)");
+  rg.addColorStop(0.8, "rgba(255,236,196,.55)");
+  rg.addColorStop(1, "rgba(255,230,180,0)");
+  r.fillStyle = rg;
+  r.fillRect(0, 0, 32, 64);
+  for (let i = 0; i < 60; i++) { r.fillStyle = "rgba(255,255,255,.9)"; r.fillRect(Math.floor(4 + Math.random() * 24), Math.floor(Math.random() * 64), 1, 1); }
+  const roadTex = new THREE.CanvasTexture(rc);
+  roadTex.wrapT = THREE.RepeatWrapping;
+  const roadLen = 420;
+  roadTex.repeat.set(1, roadLen / 8);
+  const road = new THREE.Mesh(new THREE.PlaneGeometry(6.5, roadLen), new THREE.MeshBasicMaterial({ map: roadTex, transparent: true, opacity: 0.0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+  road.rotation.x = -Math.PI / 2;
+  road.position.set(laneX - 3000, 0.02, edge - 8 + roadLen / 2);
+  group.add(road);
+  // and it lays itself down from the end of the bridge, just ahead of the bus
+  const cut = (z) => Math.max(0.001, Math.min(1, (z + 26 - (edge - 8)) / roadLen));
+  let t = 0;
+  group.userData.update = (dt, busZ) => {
+    t += dt;
+    road.material.opacity = busZ > edge - 30 ? Math.min(0.85, road.material.opacity + dt * 0.8) : 0;
+    const k = cut(busZ);
+    road.scale.y = k;
+    road.position.z = edge - 8 + (roadLen * k) / 2;
+    roadTex.repeat.set(1, (roadLen * k) / 8);
+    roadTex.offset.y -= dt * 0.15;
+    twinkle.forEach((m, i) => { m.opacity = 0.75 + Math.sin(t * (1.3 + i) + i) * 0.15; });
+  };
   return group;
 }
 
@@ -261,20 +353,25 @@ async function dawn(g, deadAir) {
   const busDoor = g.bus.group.localToWorld(new THREE.Vector3(-3.2, 1.7, 3.5));
   g.walkAt(busDoor, route.heading(route.length - 32) + Math.PI);
   g.mood("grief");
+  const junComes = f.junRode || f.junFound;
+  if (junComes) {
+    const jun = g.spawn("jun", "jun", { at: g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)) });
+    jun.walk([busDoor.clone().setY(0).add(new THREE.Vector3(2.2, 0, 0))], { speed: 1.8 });
+  }
   await g.fade(0, 3000, true);
   await g.think("Northgate. Morning. The bus is empty, and dry.");
   await g.think("For the first time in thirty-two years, I think she made it home.");
   if (f.maraHelped) {
-    await g.read({ kind: "note", lines: ["Mr. Varga passed at 12:31.", "Peacefully.", "He asked if Route 9 was running, and I said yes, and he smiled."], scrawl: "- Mara" }, [
+    await g.read({ kind: "note", lines: ["Mr. Varga passed at 12:31.", "Peacefully.", "He asked if Route 9 was running, and I said yes, and he smiled."], scrawl: "- Mara", neat: true }, [
       "There's a note taped to the driver's window. Mr. Varga passed at twelve thirty-one. Peacefully. He asked if Route 9 was running, and I said yes, and he smiled. Mara.",
     ]);
   }
   if (f.gaveRosie) await g.think("Somewhere across town, a music box is playing on a kitchen table. And a woman is finally asleep.");
-  if (f.junRode || f.junFound) {
-    const jun = g.spawn("jun", "jun", { at: g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)) });
-    jun.walk([busDoor.clone().setY(0).add(new THREE.Vector3(1.2, 0, 0))], { speed: 1.1 });
-    await g.wait(5000);
+  if (junComes) {
+    const give = g.handOver("jun", "coffee", { speed: 1.8 });
+    await g.wait(700);
     await g.think("Jun is here with two coffees. He doesn't say anything. He just hands me one.");
+    await give;
   }
   if (deadAir) {
     g.sfx("static", 0.8);
@@ -285,9 +382,15 @@ async function dawn(g, deadAir) {
   } else {
     await g.think("I'm keeping Route 9. Somebody has to stop.");
     await g.fade(1, 2500);
+    g.caption("Three weeks later", "Route 7. A new driver. First night. Last bus.");
     await g.think("Three weeks later. A new driver starts on Route 7. First night. Last bus.");
+    await g.wait(800);
+    g.caption("Channel 9", "Somebody is still on the radio.");
     g.sfx("static", 1);
     await g.say("rhee", "Evening, new driver. This is Rhee, night dispatch. You'll be hearing a lot of me.");
+    await g.wait(1600);
+    g.caption(null);
+    await g.wait(1300);
   }
   await g.fade(1, 2000);
 }
@@ -306,7 +409,11 @@ async function endNotYet(g) {
   g.auto(8);
   await g.wait(4000);
   await g.fade(1, 2500);
+  g.caption("Clocking out", "Ashgrove is still on the route display.");
   await g.think("Ashgrove is still on my route display when I clock out. It'll be there tomorrow, too.");
+  await g.wait(1500);
+  g.caption(null);
+  await g.wait(1300);
   return "notyet";
 }
 

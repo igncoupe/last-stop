@@ -24,9 +24,14 @@ function buildBridge(scene) {
   g.visible = false;
   scene.add(g);
   put(g, box(10, 0.1, 200, mat({ map: tex.asphalt() }), [5, 5]), 0, 0, 100);
-  put(g, box(7, 0.6, 70, mat({ map: tex.concrete(), color: 0x777777 }), [3, 3]), 0, -0.25, 235);
+  put(g, box(9, 0.6, 70, mat({ map: tex.concrete(), color: 0x777777 }), [3, 3]), 0, -0.25, 235);
   put(g, box(3.5, 0.6, 9, mat({ map: tex.concrete(), color: 0x777777 })), -1.6, -0.3, 274);
-  for (const x of [-3.4, 3.4]) for (let z = 202; z < 268; z += 2.5) put(g, box(0.1, 1, 0.1, mat({ color: 0x3b3f45 })), x, 0.5, z);
+  // posts and a rail along both edges, well clear of the bus (which drives 2.3 m right of center)
+  for (const x of [-4.3, 4.3]) {
+    for (let z = 202; z < 268; z += 2.5) put(g, box(0.12, 1, 0.12, mat({ color: 0x3b3f45 })), x, 0.5, z);
+    put(g, box(0.08, 0.08, 66, mat({ color: 0x4a4e55 })), x, 1.0, 235);
+    put(g, box(0.06, 0.06, 66, mat({ color: 0x3b3f45 })), x, 0.55, 235);
+  }
   const water = new THREE.Mesh(new THREE.PlaneGeometry(600, 600, 30, 30), new THREE.MeshPhongMaterial({ color: 0x050b10, map: tex.water(), shininess: 60 }));
   water.material.map.repeat.set(40, 40);
   water.rotation.x = -Math.PI / 2;
@@ -35,7 +40,7 @@ function buildBridge(scene) {
   const paint = decal(glow(0xb59a52), 2);
   for (const x of [-4.6, 4.6]) put(g, box(0.14, 0.02, 200, paint), x, 0.06, 100);
   for (let z = 4; z < 200; z += 9) put(g, box(0.14, 0.02, 3, paint), 0, 0.06, z);
-  for (const x of [-3.2, 3.2]) put(g, box(0.12, 0.02, 66, paint), x, 0.06, 235);
+  for (const x of [-3.9, 3.9]) put(g, box(0.12, 0.02, 66, paint), x, 0.06, 235);
   // streetlights, dying the closer you get to the river (the last ones are dead)
   const pool = decal(new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false, map: radialTexture() }), 2);
   for (let z = 20; z < 270; z += 30) {

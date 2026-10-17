@@ -610,6 +610,7 @@ export function buildBus(scene) {
       return x < -1.29 ? 0 : 0.45;        // the floor
     },
     driverEye: new THREE.Vector3(0.7, 1.72, 4.78),
+    steeringWheel: wheelG,
     get doorsOpen() { return state.doorsOpen; },
     setDoors(open) {
       if (open !== state.doorsOpen) state.btnT = 0.18;     // the button clicks down

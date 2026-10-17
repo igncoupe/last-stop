@@ -81,7 +81,7 @@ body.scare-flash #view { filter: contrast(1.7) brightness(1.35) saturate(.4); }
 .prompt kbd { display: inline-block; min-width: 22px; padding: 1px 6px; margin-right: 6px; border: 2px solid #fff; border-radius: 4px; font-family: var(--ui); font-size: 12px; text-align: center; }
 
 .subtitle {
-  position: absolute; left: 50%; bottom: 9vh;
+  position: fixed; left: 50%; bottom: 9vh; z-index: 9; pointer-events: none;
   transform: translateX(-50%);
   width: min(900px, 88vw);
   text-align: center;
@@ -145,6 +145,15 @@ body.scare-flash #view { filter: contrast(1.7) brightness(1.35) saturate(.4); }
 .choice .num { font-weight: 700; color: var(--led); }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
 
+/* words on a black screen (the endings) */
+.caption {
+  position: fixed; left: 50%; top: 40%; z-index: 9; transform: translate(-50%, -50%);
+  width: min(760px, 88vw); text-align: center; pointer-events: none;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.caption.on { opacity: 1; }
+.caption .c-kicker { font-family: var(--led-font); font-size: 20px; letter-spacing: .22em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+.caption .c-text { font-family: var(--led-font); font-size: clamp(30px, 4.4vw, 52px); line-height: 1.15; color: var(--led); text-shadow: 0 0 16px rgba(255, 181, 74, .4); }
 .fade { position: fixed; inset: 0; z-index: 8; background: #000; opacity: 1; pointer-events: none; transition: opacity 1.2s ease; }
 .fade.white { background: #f4f1ea; }
 
@@ -317,6 +326,13 @@ body[data-subs="large"] .subtitle { font-size: clamp(20px, 2.15vw, 30px); }
 .p-kicker { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #6a5e48; margin-bottom: 6px; }
 .p-title { font-weight: 700; font-size: 20px; text-transform: uppercase; margin-bottom: 12px; border-bottom: 2px solid #1d1b17; padding-bottom: 6px; }
 .p-scrawl { font-family: "Segoe Print", "Bradley Hand", cursive; color: #2c3a73; font-size: 22px; transform: rotate(-4deg); margin-top: 14px; }
+/* pencil, in a hurry */
+.p-scrawl.rushed { color: #3b3b40; font-size: 23px; transform: rotate(-5deg) skewX(-8deg); white-space: nowrap; letter-spacing: -0.5px;
+  text-shadow: 0.6px 0.4px 0 rgba(70,70,76,.45), -0.4px 0 0.6px rgba(40,40,44,.35); }
+.p-scrawl.rushed span { display: inline-block; }
+.p-scrawl.rushed span.hard { color: #1d1d21; text-shadow: 0.8px 0.6px 0 rgba(30,30,34,.6); }
+.p-scrawl.rushed .tail { width: 46px; height: 2px; margin-left: 2px; vertical-align: middle; transform: translateY(10px) rotate(14deg);
+  background: linear-gradient(90deg, rgba(50,50,56,.75), rgba(50,50,56,0)); }
 .p-photo {
   height: 120px; margin: 4px 0 12px;
   display: grid; place-items: end start; padding: 6px;

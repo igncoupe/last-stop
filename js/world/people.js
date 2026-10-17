@@ -104,7 +104,18 @@ export class Person {
     }
     // extras
     if (look.backpack) { const b = box(0.36, 0.45, 0.2, m(look.backpack)); b.position.set(0, leg + torso * 0.55, -0.22); this.body.add(b); }
-    if (look.cap) { const c = box(0.26, 0.06, 0.32, m(look.cap)); c.position.set(0, 0.32, 0.03); this.neck.add(c); }
+    if (look.cap) {
+      // a driver's cap: crown and a peak
+      const c = new THREE.Group();
+      const crown = box(0.26, 0.08, 0.28, m(look.cap));
+      crown.position.y = 0.01;
+      const peak = box(0.22, 0.02, 0.1, m(0x1a140e));
+      peak.position.set(0, -0.02, 0.17);
+      c.add(crown, peak);
+      c.position.set(0, 0.32, 0.01);
+      this.neck.add(c);
+      this.cap = c;
+    }
     if (look.hood) { const h = box(0.27, 0.12, 0.08, shirt); h.position.set(0, 0.06, -0.16); this.neck.add(h); }
     if (look.lanyard) { const l = box(0.05, 0.08, 0.02, m(0xeeeeee)); l.position.set(0.06, leg + torso * 0.55, 0.13); this.body.add(l); }
     if (look.gift) {
@@ -193,6 +204,17 @@ export class Person {
     this.onArrive = null;
     if (this.mode === "walk") this.stand();
   }
+  // hold the right hand out (to give you something), or put it back down
+  reachOut(on) {
+    this.reaching = on;
+    this.arms[1].rotation.set(on ? -1.35 : 0, 0, on ? 0.12 : 0);
+  }
+  get rightHand() { return this.arms[1].children[1]; }
+  // take the cap off: the hand comes up, lifts it, and holds it against the chest
+  capOff(seconds = 1.6) {
+    if (!this.cap || this.capAnim || this.capHeld) return Promise.resolve();
+    return new Promise((done) => { this.capAnim = { t: 0, seconds, done, moved: false }; });
+  }
   lookAt(worldPoint) { this.headTarget = worldPoint ? worldPoint.clone() : null; }
   remove() {
     this.root.removeFromParent();
@@ -243,9 +265,38 @@ export class Person {
         }
         if (!this.look.gift) {
           this.arms[0].rotation.x = -s * 0.4;
-          this.arms[1].rotation.x = s * 0.4;
+          if (!this.capHeld && !this.reaching) this.arms[1].rotation.x = s * 0.4;
         }
         this.body.position.y = Math.abs(Math.cos(this.walkT)) * 0.03;
+      }
+    }
+    // the cap coming off: arm up to the head (lift), then down to the chest, holding it
+    if (this.capAnim) {
+      const A = this.capAnim;
+      A.t += dt;
+      const k = Math.min(1, A.t / A.seconds);
+      const arm = this.arms[1];
+      if (k < 0.45) {
+        arm.rotation.x = -2.7 * (k / 0.45);
+        arm.rotation.z = -0.35 * (k / 0.45);
+      } else {
+        if (!A.moved) {
+          // the hand has it: the cap moves from the head to the hand
+          A.moved = true;
+          const hand = arm.children[1];
+          hand.attach(this.cap);
+          this.cap.position.set(0, -0.04, 0.12);
+          this.cap.rotation.set(-1.2, 0, 0);
+        }
+        const u = (k - 0.45) / 0.55;
+        arm.rotation.x = -2.7 + (2.7 - 0.95) * u;
+        arm.rotation.z = -0.35 * (1 - u);
+      }
+      if (k >= 1) {
+        this.capAnim = null;
+        this.capHeld = true;
+        arm.rotation.set(-0.95, 0, 0);
+        A.done();
       }
     }
     // turn the head toward something

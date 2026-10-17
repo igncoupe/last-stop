@@ -10,38 +10,39 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Inter:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=b4f2bd10">
+  <link rel="stylesheet" href="css/style.css?v=2794165d">
   <script type="importmap">
     {
      "imports": {
       "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "./js/audio.js": "./js/audio.js?v=c9cfc1c8",
+      "./js/audio.js": "./js/audio.js?v=402f58cf",
       "./js/core/input.js": "./js/core/input.js?v=a7c510b7",
       "./js/core/menuArt.js": "./js/core/menuArt.js?v=5e867793",
       "./js/core/ps1.js": "./js/core/ps1.js?v=8e802927",
       "./js/core/textures.js": "./js/core/textures.js?v=d4ab434a",
-      "./js/core/ui.js": "./js/core/ui.js?v=8c89775b",
-      "./js/game/director.js": "./js/game/director.js?v=5c28a57f",
-      "./js/game/drive.js": "./js/game/drive.js?v=3f1f39a2",
+      "./js/core/ui.js": "./js/core/ui.js?v=d869577e",
+      "./js/game/director.js": "./js/game/director.js?v=8b3388ad",
+      "./js/game/drive.js": "./js/game/drive.js?v=b208c9f3",
       "./js/game/player.js": "./js/game/player.js?v=43bc322d",
-      "./js/main.js": "./js/main.js?v=e6be6526",
+      "./js/main.js": "./js/main.js?v=d7e2baab",
       "./js/story/cast.js": "./js/story/cast.js?v=5540802e",
       "./js/story/common.js": "./js/story/common.js?v=7b1df325",
-      "./js/story/night1.js": "./js/story/night1.js?v=f8d09d1b",
-      "./js/story/night2.js": "./js/story/night2.js?v=cc3288fb",
-      "./js/story/night3.js": "./js/story/night3.js?v=5e16aff2",
-      "./js/story/night4.js": "./js/story/night4.js?v=d8a8b165",
-      "./js/story/night5.js": "./js/story/night5.js?v=a207eaf8",
+      "./js/story/night1.js": "./js/story/night1.js?v=267a60ab",
+      "./js/story/night2.js": "./js/story/night2.js?v=272927a6",
+      "./js/story/night3.js": "./js/story/night3.js?v=682d7ad9",
+      "./js/story/night4.js": "./js/story/night4.js?v=a1ebe018",
+      "./js/story/night5.js": "./js/story/night5.js?v=e75a22a1",
       "./js/story/nights.js": "./js/story/nights.js?v=2f392f3a",
-      "./js/world/bus.js": "./js/world/bus.js?v=add5d835",
+      "./js/world/bus.js": "./js/world/bus.js?v=430c76c1",
       "./js/world/city.js": "./js/world/city.js?v=c8f7fa88",
-      "./js/world/depotProps.js": "./js/world/depotProps.js?v=38a704b3",
+      "./js/world/depotProps.js": "./js/world/depotProps.js?v=a217be65",
       "./js/world/horror.js": "./js/world/horror.js?v=04b38b89",
       "./js/world/hospital.js": "./js/world/hospital.js?v=109385fd",
-      "./js/world/people.js": "./js/world/people.js?v=c090c5d4",
-      "./js/world/places.js": "./js/world/places.js?v=0cba5d2e",
+      "./js/world/people.js": "./js/world/people.js?v=c913a76a",
+      "./js/world/places.js": "./js/world/places.js?v=bb48f5ef",
       "./js/world/props.js": "./js/world/props.js?v=ba7a8db6",
       "./js/world/route.js": "./js/world/route.js?v=348dd19b",
+      "./js/world/selfBody.js": "./js/world/selfBody.js?v=86a2db00",
       "./js/world/shade.js": "./js/world/shade.js?v=88a19a8d",
       "./js/world/traffic.js": "./js/world/traffic.js?v=ded67324",
       "./tools/playtest.js": "./tools/playtest.js?v=97ca91d9"
@@ -64,8 +65,10 @@
     <div id="crosshair" class="crosshair"></div>
     <div id="prompt" class="prompt"></div>
     <div id="choices" class="choices"></div>
-    <div id="subtitle" class="subtitle"></div>
   </div>
+  <!-- above the fade, so lines over a black screen can still be read -->
+  <div id="subtitle" class="subtitle"></div>
+  <div id="caption" class="caption" aria-live="polite"><div class="c-kicker"></div><div class="c-text"></div></div>
   <div id="fade" class="fade"></div>
   <div id="scare" class="scare" hidden></div>
 
@@ -153,6 +156,6 @@
     </div>
   </section>
 
-  <script type="module" src="js/main.js?v=e6be6526"></script>
+  <script type="module" src="js/main.js?v=d7e2baab"></script>
 </body>
 </html>
