@@ -314,6 +314,7 @@ export function createDirector(w) {
       drive.dockAt(stopD, { force: true, brake });
       await until(() => (drive.state.dock && drive.state.dock.done) || !drive.state.dock, 40000);
       drive.dockAt(null);
+      drive.park();                        // and it stays put until the story lets you go (g.release)
     },
     // ...and the moment it starts braking
     braking() { return until(() => !drive.state.dock || drive.state.dock.braking || drive.state.dock.done, 40000); },
