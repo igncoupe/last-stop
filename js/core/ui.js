@@ -209,7 +209,7 @@ export const ui = {
         chars.forEach((ch, i) => {
           const k = i / Math.max(1, chars.length - 1);
           const c = document.createElement("span");
-          c.textContent = ch;
+          c.textContent = ch === " " ? "  " : ch;        // (a plain space would collapse to nothing)
           const r = (Math.random() - 0.5) * (14 + k * 22);
           const y = (Math.random() - 0.5) * (3 + k * 6) + k * 9;
           const sc = 0.82 + Math.random() * (0.35 + k * 0.3);
