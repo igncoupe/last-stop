@@ -55,9 +55,13 @@ export function createDrive(bus) {
     auto(speed, stopAt = null) { s.control = "auto"; s.autoSpeed = speed; s.autoStopAt = stopAt; },
     release() { s.control = "player"; s.autoStopAt = null; },
     // the stop the story is waiting at (null: none)
-    dockAt(stopD) { s.dock = stopD === null || stopD === undefined ? null : { at: stopD - DOOR_AHEAD, engaged: false, skipped: false, done: false, cruise: 0 }; },
+    // force: the bus stops there by itself, whatever you do (and from any distance); brake: how hard
+    dockAt(stopD, { force = false, brake = DOCK_BRAKE } = {}) {
+      s.dock = stopD === null || stopD === undefined ? null : { at: stopD - DOOR_AHEAD, engaged: false, skipped: false, done: false, cruise: 0, force, brake };
+    },
     get docking() { return !!(s.dock && s.dock.engaged); },
     park() { s.control = "parked"; },
+    coast() { s.control = "coast"; },
     setLimit(v) { s.limit = v; },
     // a scene can take the bus off the route (the bridge); the script moves it
     detach(on) { s.detached = on; if (!on) place(); },
@@ -68,23 +72,23 @@ export function createDrive(bus) {
       const k = s.dock;
       if (s.control === "player" && k && !k.skipped && !k.done) {
         const left = k.at - s.d;
-        if (!k.engaged && left < DOCK_FROM && left > -1 && !bus.doorsOpen) { k.engaged = true; k.cruise = s.limit; }
+        if (!k.engaged && (left < DOCK_FROM || k.force) && left > -1 && !bus.doorsOpen) { k.engaged = true; k.cruise = s.limit; }
         // a fresh press of W (not one held from before) means drive past this one, but only before it
         // starts braking: once it's braking, it's stopping
-        const braking = Math.sqrt(Math.max(0, left) * 2 * DOCK_BRAKE) < s.speed + 0.5;
+        const braking = Math.sqrt(Math.max(0, left) * 2 * k.brake) < s.speed + 0.5;
         k.braking = k.engaged && braking;
-        if (k.engaged && !braking && seated && (input.hit("KeyW") || input.hit("ArrowUp"))) { k.engaged = false; k.skipped = true; }
+        if (k.engaged && !k.force && !braking && seated && (input.hit("KeyW") || input.hit("ArrowUp"))) { k.engaged = false; k.skipped = true; }
       }
       const wantGas = seated && (input.down("KeyW") || input.down("ArrowUp"));
       s.holdT = Math.max(0, s.holdT - dt);
       if (s.control === "player" && k && k.engaged) {
         // pulling in is the bus's job: the pedals do nothing until it's stopped at the shelter
         const left = k.at - s.d;
-        let target = Math.min(k.cruise, s.limit, Math.sqrt(Math.max(0, left) * 2 * DOCK_BRAKE));
+        let target = Math.min(k.cruise, s.limit, Math.sqrt(Math.max(0, left) * 2 * k.brake));
         if (left < 0.12) target = 0;
         if (bus.doorsOpen) s.speed = Math.max(0, s.speed - BRAKE * dt);
         else {
-          const rate = target > s.speed ? ACCEL : DOCK_BRAKE * 1.25;      // brakes can always keep up with the curve
+          const rate = target > s.speed ? ACCEL : k.brake * 1.25;      // brakes can always keep up with the curve
           s.speed += Math.sign(target - s.speed) * Math.min(Math.abs(target - s.speed), rate * dt);
         }
         // exactly at the shelter, every time
@@ -117,6 +121,8 @@ export function createDrive(bus) {
         }
         const rate = target > s.speed ? ACCEL * 1.4 : BRAKE * 0.6;
         s.speed += Math.sign(target - s.speed) * Math.min(Math.abs(target - s.speed), rate * dt);
+      } else if (s.control === "coast") {
+        s.speed = Math.max(0, s.speed - (0.9 + s.speed * 0.08) * dt);
       } else {
         s.speed = Math.max(0, s.speed - BRAKE * dt);
       }

@@ -653,6 +653,37 @@ export function buildHospital(scene) {
   blk(0.4, 0.16, 0.3, M.blanket, -2.6, 0.82, E0 + 0.45);
   const eMon = blk(0.06, 0.04, 0.02, glow(0x3fe07a), -3.6, 1.75, E0 + 0.2);
 
+  // ================================================================ 4B's window from the street
+  // (outside the street wall: you only ever see it from down there, and from inside it's behind you)
+  const winTex = tex.live(64, 48);
+  const winOut = plane(2.2, 1.5, glow(0xffffff, { map: winTex.texture }), 0.04, 1.6, WZ, Math.PI / 2, g);
+  function drawWindow(pose, dim) {
+    const c = winTex.ctx;
+    const glowC = dim ? ["#6a4a26", "#3a2914"] : ["#ffd9a0", "#b98a4a"];
+    const grad = c.createLinearGradient(0, 0, 0, 48);
+    grad.addColorStop(0, glowC[0]);
+    grad.addColorStop(1, glowC[1]);
+    c.fillStyle = grad;
+    c.fillRect(0, 0, 64, 48);
+    c.fillStyle = "rgba(220,220,210,.55)";
+    for (let y = 1; y < 9; y += 2) c.fillRect(0, y, 64, 1);           // the blinds, pulled up
+    c.fillStyle = "#3a3d40";
+    c.fillRect(0, 0, 64, 2); c.fillRect(0, 46, 64, 2); c.fillRect(0, 0, 2, 48); c.fillRect(62, 0, 2, 48); c.fillRect(31, 0, 2, 48);
+    if (pose) {
+      // the thin figure: too thin, too still
+      c.fillStyle = "#0b0a09";
+      c.fillRect(22, 12, 6, 7);                                        // head
+      c.fillRect(21, 19, 8, 16);                                       // body
+      c.fillRect(22, 35, 2, 13); c.fillRect(26, 35, 2, 13);            // legs
+      c.fillRect(19, 20, 2, 13);                                       // left arm, hanging
+      if (pose === "hand") { c.fillRect(29, 18, 6, 2); c.fillRect(34, 12, 2, 8); c.fillRect(33, 10, 4, 4); }       // a hand on the glass
+      else if (pose === "finger") { c.fillRect(29, 18, 4, 2); c.fillRect(31, 10, 2, 9); c.fillRect(31, 7, 2, 4); } // one finger up
+      else c.fillRect(29, 20, 2, 13);                                 // just standing there
+    }
+    winTex.texture.needsUpdate = true;
+  }
+  drawWindow(null, false);
+
   // ================================================================ lights
   const lights = [
     new THREE.PointLight(0xe6efe2, 0, 13, 1.4),
@@ -843,6 +874,9 @@ export function buildHospital(scene) {
       p.root.rotation.set(-Math.PI / 2 + 0.1, 0, 0);
     },
     get active() { return active; },
+    // the window from outside: who's standing in it (null, "stand", "hand", "finger"), and how lit it is
+    setWindowFigure(pose, dim = false) { drawWindow(pose, dim); },
+    windowOutside: toWorld(0.04, 1.6, WZ),
     setActive(on) {
       active = on;
       inside.visible = on;

@@ -363,7 +363,7 @@ export function buildBus(scene) {
   routeScreen.rotation.y = Math.PI;
 
   // the two-way radio: body, display, a channel knob and a handset on a hook
-  const radioTex = tex.live(48, 16);
+  const radioTex = tex.live(96, 32);
   const radio = put(bus, box(0.32, 0.11, 0.03, binMat), 0.13, 1.28, 5.437);           // faceplate, set into the dash face
   radio.userData.interact = "radio";
   const radioScreen = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.06), glow(0xffffff, { map: radioTex.texture })), 0.07, 1.28, 5.42);
@@ -470,6 +470,50 @@ export function buildBus(scene) {
   // Opening, the outer half swings in from the post while the inner half folds back against it,
   // so the whole leaf tucks up beside its post in the stairwell (half a leaf deep) and never
   // reaches the dash or the handrails.
+  // ---- hands on the glass (hidden until a scene wants them)
+  const handMat = mat({ color: 0x7f898c, emissive: 0x0b1316 });
+  const ashMat = mat({ color: 0x2c2a28 });
+  function hand(m, size = 1) {
+    const h = new THREE.Group();
+    h.add(box(0.1 * size, 0.12 * size, 0.012, m));                                   // the palm, flat on the glass
+    for (let i = 0; i < 4; i++) {
+      const f = box(0.019 * size, (0.075 + (i === 1 || i === 2 ? 0.015 : 0)) * size, 0.012, m);
+      const a = (i - 1.5) * 0.17;
+      f.position.set((i - 1.5) * 0.026 * size + Math.sin(a) * 0.05 * size, 0.1 * size, 0);
+      f.rotation.z = -a;
+      h.add(f);
+    }
+    const thumb = box(0.022 * size, 0.06 * size, 0.012, m);
+    thumb.position.set(-0.065 * size, 0.01 * size, 0);
+    thumb.rotation.z = 0.9;
+    h.add(thumb);
+    return h;
+  }
+  const handSets = { door: new THREE.Group(), windows: new THREE.Group(), ash: new THREE.Group() };
+  Object.values(handSets).forEach((gr) => { gr.visible = false; bus.add(gr); });
+  let handT = 0;
+  const pressOn = (gr, m, x, y, z, side, tilt, size = 1) => {
+    const h = hand(m, size);
+    h.position.set(x, y, z);
+    h.rotation.set(0, side > 0 ? Math.PI / 2 : -Math.PI / 2, tilt);      // palm toward the inside of the bus
+    h.userData.baseY = y;
+    gr.add(h);
+  };
+  // the door glass: a crowd of hands, high and low
+  for (const [y, z, t] of [[1.95, 3.95, 0.2], [1.62, 4.25, -0.3], [2.1, 4.55, 0.1], [1.35, 4.8, 0.4], [1.8, 5.05, -0.15], [2.05, 5.35, 0.3], [1.1, 4.1, -0.5], [1.5, 5.4, 0.15]]) {
+    pressOn(handSets.door, handMat, -W - 0.035, y, z, -1, t, 0.95 + Math.random() * 0.2);
+  }
+  // every window: pairs of hands, both sides, all the way down the bus
+  for (const side of [-1, 1]) {
+    for (let z = -5.2; z < (side < 0 ? 3.3 : 5.4); z += 1.05 + Math.random() * 0.4) {
+      const y = 1.7 + Math.random() * 0.55;
+      pressOn(handSets.windows, handMat, side * (W + 0.035), y, z, side, (Math.random() - 0.5) * 0.9);
+      if (Math.random() < 0.7) pressOn(handSets.windows, handMat, side * (W + 0.035), y + (Math.random() - 0.5) * 0.3, z + 0.28, side, (Math.random() - 0.5) * 0.9);
+    }
+  }
+  // the driver's window: prints in ash, where it held on
+  for (const [y, z, t] of [[2.05, 4.3, 0.3], [1.8, 5.1, -0.2], [2.25, 4.95, 0.1]]) pressOn(handSets.ash, ashMat, W + 0.03, y, z, 1, t, 1.1);
+
   const doorPanels = [];
   const leafW = (DZ1 - DZ0) / 2;
   const half = leafW / 2;
@@ -580,11 +624,16 @@ export function buildBus(scene) {
   function drawRadio() {
     const c = radioTex.ctx;
     c.fillStyle = "#050505";
-    c.fillRect(0, 0, 48, 16);
+    c.fillRect(0, 0, 96, 32);
     if (state.radio) {
+      // the whole thing always fits: long text gets a smaller font
       c.fillStyle = "#86cf9b";
-      c.font = "bold 11px monospace";
-      c.fillText(state.radio, 4, 12);
+      let size = 21;
+      c.font = `bold ${size}px monospace`;
+      const w = c.measureText(state.radio).width;
+      if (w > 86) { size = Math.max(10, Math.floor(size * 86 / w)); c.font = `bold ${size}px monospace`; }
+      c.textBaseline = "middle";
+      c.fillText(state.radio, 5, 16);
     }
     radioTex.texture.needsUpdate = true;
   }
@@ -626,6 +675,11 @@ export function buildBus(scene) {
     // the folded clipping tucked into the visor strap
     setClipping(on) { tucked.visible = on; },
     // 0 = clean glass, 1 = ash handprints, 2 = handprints and a crack
+    // hands on the outside of the glass: null | "door" | "windows" | "ash" (prints on the driver's window)
+    setHands(set) {
+      for (const [name, group] of Object.entries(handSets)) group.visible = name === set || (set === "windows" && name === "door");
+      handT = 0;
+    },
     setSmudge(level) { if (level) smudge.material.map = smudgeTexes[level - 1]; smudge.visible = level > 0; },
     smudgeTextures: smudgeTexes,
     // where something lands on the windshield (bus space, feet of a 2 m figure)
@@ -642,6 +696,11 @@ export function buildBus(scene) {
       state.doorAmt += Math.sign(target - state.doorAmt) * Math.min(Math.abs(target - state.doorAmt), dt * 2.2);
       // leaves fold inward into the stairwell (eased, like air doors)
       const eased = state.doorAmt * state.doorAmt * (3 - 2 * state.doorAmt);
+      handT += dt;
+      for (const name of ["door", "windows"]) {
+        if (!handSets[name].visible) continue;
+        for (const h of handSets[name].children) h.position.y = h.userData.baseY - Math.min(0.12, handT * 0.02) + Math.sin(handT * 3 + h.position.z * 5) * 0.004;
+      }
       doorPanels.forEach(({ pivot, fold, dir }) => {
         pivot.rotation.y = dir * eased * 1.45;        // the outer half swings in...
         fold.rotation.y = -dir * eased * 2.9;         // ...and the inner half folds back against it

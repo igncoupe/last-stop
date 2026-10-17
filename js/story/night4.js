@@ -69,13 +69,20 @@ export async function night4(g) {
     });
     if (!stayed && g.actor("mara")) g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
   }
-  // the clipping happens while the bus is parked (if you drove past Elm, the bus stops itself)
-  if (g.drive.moving) {
-    g.auto(5, g.d + 30);
-    await g.until(() => g.drive.speed < 0.3, 15000);
-    await g.think("The bus coughed and rolled to a stop on its own. The engine's still running.");
-  }
+  // a block past Elm, the engine dies under you: it coughs, the lights stutter, and the bus coasts to a stop
+  if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
+  await g.until(() => g.d > STOPS["Elm & 4th"] + 120, 40000);
+  g.sfx("sputter");
+  g.interior("flicker");
+  await g.wait(650);
+  g.sfx("sputter");
+  g.amb({ engine: 0 });
+  g.drive.coast();
+  await g.wait(500);
+  g.interior("on");
+  await g.until(() => g.drive.speed < 0.15, 15000);
   g.park();
+  await g.think("The engine coughed twice and died. The bus rolled to a stop on its own, in the middle of the block.");
   await g.wait(1500);
   await g.think("A streetlight glare, right in my eyes.");
   g.hint("Pull down the sun visor");
@@ -109,12 +116,17 @@ export async function night4(g) {
     await g.say("rhee", "Put that away, driver. Teodor kept that for thirty years. Look where it got him.");
   }
   g.visor(false);
+  // and it starts again, first try, like nothing happened
+  g.sfx("ignition");
+  await g.wait(1500);
+  g.amb({ engine: 0.3 });
   g.release();
   await closeDoorsAndGo(g);
 
   // ---------- Market St
   const junOk = f.junRode || f.junFound;
   if (junOk) g.spawn("jun", "jun", { at: curb("Market St", 1), yaw: route.heading(STOPS["Market St"]) + Math.PI / 2 });
+  else g.prop("backpack", { stop: "Market St", at: [-0.55, 0.62, 0.7] });       // on the bench, nobody's
   stopped = await g.arrive("Market St");
   if (junOk && stopped && (await openUp(g))) {
     const stayed = await g.atStop(async (g) => {
@@ -138,23 +150,22 @@ export async function night4(g) {
   await g.until(() => g.d > md - 90);
   g.despawn("jun");
   g.despawn("mara");
-  g.auto(7, md);
-  await g.until(() => g.drive.speed < 0.3, 25000);
+  // they're waiting in a line along the curb, one behind the other
+  const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"], ["d11", "drowned", "R1"], ["d12", "drowned", "R2"]];
+  walkers.forEach(([key, look], i) => g.spawn(key, look, { ghost: true, at: mysteryCurb(g, -0.6 - i * 1.05, 6.3), yaw: route.heading(md) }));
+  await g.autoStop(md);
   g.lockDoors(true);
   g.setDoors(true);
   g.rain(true);
-  const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"]];
-  for (const [key, look, seat] of walkers) {
-    g.spawn(key, look, { ghost: true, at: mysteryCurb(g, 0, 6.6), yaw: route.heading(md) + Math.PI / 2 });
-  }
   await g.think("The doors opened by themselves. This time they don't wait for me. They're getting on.");
-  for (const [key, , seat] of walkers) g.board(key, seat, 1.6);
-  await g.wait(6000);
-  for (let i = 1; i <= 10; i++) {
-    const seat = ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "B0", "B1", "B2"][i - 1];
-    g.spawn(`d${i}`, "drowned", { ghost: true });
-    g.seat(`d${i}`, seat);
+  // the others are already sitting in the back. Nobody saw them get on.
+  ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "B0"].forEach((seat, i) => { g.spawn(`d${i + 1}`, "drowned", { ghost: true }); g.seat(`d${i + 1}`, seat); });
+  const boarding = [];
+  for (const [key, , seat] of walkers) {
+    boarding.push(g.board(key, seat, 1.5));
+    await g.wait(1300);
   }
+  await Promise.all(boarding);
   g.setDoors(false);
   g.sfx("drip");
   g.mood("dread");
@@ -197,7 +208,7 @@ async function bridge(g) {
   g.sky("void");
   bus.position.copy(B.start);
   bus.rotation.set(0, 0, 0);
-  let speed = 11;
+  let speed = 13;
   await g.fade(0, 700);
   await g.think("The street's gone. The buildings are gone. The road is getting narrower.");
   // under the last good streetlight: the shadow, pointing the way onto the bridge
@@ -212,16 +223,18 @@ async function bridge(g) {
     g.shadeHide();
   })();
   // roll toward the edge; slow to a crawl near it so there's time to choose
-  const roll = (until) => g.frames((dt) => {
+  // full speed down the road; only the last stretch before the choice slows to a crawl
+  const roll = (until, slowFrom, minSpeed) => g.frames((dt) => {
     const left = until - bus.position.z;
-    const want = left > 60 ? speed : Math.max(1.2, left * 0.1);
+    const want = left > slowFrom ? speed : Math.max(minSpeed, speed * (left / slowFrom));
     bus.position.z += want * dt;
+    g.drive.state.speed = want;               // the dash shows what the bus is really doing
     return bus.position.z >= until;
   });
-  await roll(edgeZ - 40);
+  await roll(edgeZ - 40, 45, 3);
   const options = ["[Stand on the brake]", "[Floor it. Do what he says]"];
   if (f.rheeTruth) options.splice(1, 0, "“You said that to him too.” [Brake, and don't let go]");
-  const rolling = roll(edgeZ - 6);
+  const rolling = roll(edgeZ - 6, 34, 1.2);
   await pointing;
   const c = await g.choose(options, { silent: true });
   const obey = c === options.length - 1;
@@ -301,15 +314,15 @@ async function bridge(g) {
     if (keep === 0) { f.keptPresent = true; g.kind(); gift.removeFromParent(); }
     f.hasPresent = true;
   }
-  await g.think("Up on the fourth floor, the window of four B is lit. Dimmer now. The thin figure is holding up one finger.");
+  await g.peekWindow("finger", "Up on the fourth floor, the window of four B is lit. Dimmer now. The thin figure is holding up one finger.", { dim: true });
   await g.think("One more night.");
   g.release();
   await closeDoorsAndGo(g);
 
   // ---------- the long way to Northgate: Dana breaks through, and something rides in the back
-  await g.wait(5000);
+  await g.wait(1500);
   g.sfx("static", 1.4);
-  await g.wait(800);
+  await g.wait(600);
   await g.say("dana", "Route 9, if you can hear this, it's Dana. Don't answer. Just listen.");
   await g.say("dana", "I pulled Harold Rhee's file. After the inquiry he never went home. He slept in the dispatch office.");
   await g.say("dana", "Every night at twelve nineteen he read out the Route 9 stops on channel 9. To nobody. Elm and Fourth. Market. St. Agnes. Canal Row. Northgate. Ashgrove.");
@@ -317,11 +330,14 @@ async function bridge(g) {
   g.sfx("static", 0.8);
   await g.say("rhee", "That's enough, Dana.");
   g.mood("dread");
-  await g.wait(2500);
-  await g.think("Someone's standing at the back of the bus. I can see them in the mirror.");
-  await g.shadeCreep();
-  await g.think("Nobody. Nothing. But the air back here smells like a struck match.");
-  await g.say("rhee", "Eyes front, driver. You've got a schedule to keep.");
+  // (only with enough road left: Northgate's doors are never waiting on this)
+  if (g.d < STOPS["Northgate"] - 650) {
+    await g.wait(2000);
+    await g.think("Someone's standing at the back of the bus. I can see them in the mirror.");
+    await g.shadeCreep();
+    await g.think("Nobody. Nothing. But the air back here smells like a struck match.");
+    await g.say("rhee", "Eyes front, driver. You've got a schedule to keep.");
+  }
   g.mood("uneasy");
 
   // the rest of the run, then Northgate

@@ -333,26 +333,17 @@ body[data-subs="large"] .subtitle { font-size: clamp(20px, 2.15vw, 30px); }
 .p-scrawl.rushed span.hard { color: #1d1d21; text-shadow: 0.8px 0.6px 0 rgba(30,30,34,.6); }
 .p-scrawl.rushed .tail { width: 46px; height: 2px; margin-left: 2px; vertical-align: middle; transform: translateY(10px) rotate(14deg);
   background: linear-gradient(90deg, rgba(50,50,56,.75), rgba(50,50,56,0)); }
+/* a photo (painted by portraits.js: real people, the way they look in the game) */
 .p-photo {
   height: 120px; margin: 4px 0 12px;
   display: grid; place-items: end start; padding: 6px;
-  font-size: 11px; color: #ddd;
-  /* a faded group photo: two rows of heads and shoulders */
-  background:
-    radial-gradient(circle at 50% 34%, rgba(28, 27, 25, .85) 0 8px, transparent 9px) 0 4px / 34px 56px,
-    radial-gradient(ellipse 15px 12px at 50% 100%, rgba(28, 27, 25, .85) 0 99%, transparent 100%) 0 4px / 34px 56px,
-    radial-gradient(ellipse at 30% 40%, #8c8c86, #44443f 70%), #555;
-  filter: sepia(.5) contrast(1.1) blur(.4px);
+  font-size: 11px; color: #f2eee4; text-shadow: 0 1px 2px #000;
+  background: #555 center / cover no-repeat;
+  image-rendering: pixelated;
+  box-shadow: inset 0 0 0 3px rgba(240, 236, 226, .85);
 }
 /* one face on a missing poster */
-.paper-poster .p-photo {
-  width: 130px; height: 150px; margin: 4px auto 12px;
-  background:
-    radial-gradient(ellipse 26px 32px at 50% 38%, #34322e 0 99%, transparent 100%),
-    radial-gradient(ellipse 58px 40px at 50% 112%, #34322e 0 99%, transparent 100%),
-    #85827a;
-  filter: grayscale(1) contrast(1.2);
-}
+.paper-poster .p-photo { width: 130px; height: 150px; margin: 4px auto 12px; filter: contrast(1.15); }
 /* a yellowed newspaper clipping */
 .paper-clipping .sheet { background: #d9cba3; font-family: Georgia, "Times New Roman", serif; font-size: 15px; transform: rotate(1.5deg); }
 .paper-clipping.on .sheet { transform: rotate(1.5deg); }

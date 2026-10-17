@@ -32,14 +32,25 @@ function buildBridge(scene) {
     put(g, box(0.08, 0.08, 66, mat({ color: 0x4a4e55 })), x, 1.0, 235);
     put(g, box(0.06, 0.06, 66, mat({ color: 0x3b3f45 })), x, 0.55, 235);
   }
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(600, 600, 30, 30), new THREE.MeshPhongMaterial({ color: 0x050b10, map: tex.water(), shininess: 60 }));
-  water.material.map.repeat.set(40, 40);
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(600, 600, 30, 30), new THREE.MeshPhongMaterial({ color: 0x7f8f98, map: tex.waterBase().clone(), shininess: 90, specular: 0x4a5c68 }));
+  water.material.map.needsUpdate = true;
+  water.material.map.repeat.set(60, 60);
+  const riverShine = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshBasicMaterial({ map: tex.waterShine().clone(), transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
+  riverShine.material.map.needsUpdate = true;
+  riverShine.material.map.repeat.set(45, 45);
+  riverShine.rotation.x = -Math.PI / 2;
+  riverShine.position.y = 0.05;
+  water.add(riverShine);
+  riverShine.rotation.x = 0;
   water.rotation.x = -Math.PI / 2;
   put(g, water, 0, -6, 300);
   // painted lines so the road reads in the dark: edges and a dashed center
   const paint = decal(glow(0xb59a52), 2);
   for (const x of [-4.6, 4.6]) put(g, box(0.14, 0.02, 200, paint), x, 0.06, 100);
   for (let z = 4; z < 200; z += 9) put(g, box(0.14, 0.02, 3, paint), 0, 0.06, z);
+  // reflective road studs along both edges: they catch the headlights and flick past
+  const stud = glow(0xffe0a0);
+  for (let z = 3; z < 266; z += 6) for (const x of [-4.4, 4.4]) put(g, box(0.12, 0.04, 0.12, stud), z < 200 ? x : x * 0.86, 0.07, z);
   for (const x of [-3.9, 3.9]) put(g, box(0.12, 0.02, 66, paint), x, 0.06, 235);
   // streetlights, dying the closer you get to the river (the last ones are dead)
   const pool = decal(new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false, map: radialTexture() }), 2);
@@ -72,6 +83,8 @@ function buildBridge(scene) {
     water,
     update(dt) {
       water.material.map.offset.y += dt * 0.01;
+      riverShine.material.map.offset.x -= dt * 0.012;
+      riverShine.material.map.offset.y += dt * 0.02;
       for (const l of bridgeLights) l.intensity = g.visible ? l.userData.base : 0;
     },
   };

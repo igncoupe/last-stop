@@ -16,6 +16,7 @@ export async function night3(g) {
   await clockIn(g);
   g.spawn("teodor", "oldman");
   g.seat("teodor", "B3");
+  if (f.gaveJacket) g.prop("jacketHung", { bus: [0.7, 1.46, 4.38] });
   if (f.gaveJacket) await g.think("My jacket is hanging behind the driver's seat. I left it soaked on Canal Row. It's dry now. It smells like the river.");
   await g.think("He's back there again. He looks worse tonight. Grayer. Like a photo left in the sun.");
   if (g.state.late === 0) await g.say("rhee", "Two perfect nights, driver. Don't spoil it in the rain.");
@@ -25,6 +26,7 @@ export async function night3(g) {
 
   // ---------- Elm & 4th
   if (f.maraHelped) g.spawn("mara", "mara", { at: curb("Elm & 4th", 1), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
+  else g.prop("lanyard", { stop: "Elm & 4th", at: [0.8, 1.95, -2.2] });          // hanging off the shelter's front post
   let stopped = await g.arrive("Elm & 4th");
   if (f.maraHelped && stopped && (await openUp(g))) {
     const stayed = await g.atStop(async (g) => {
@@ -55,7 +57,10 @@ export async function night3(g) {
   // ---------- Market St
   if (f.junRode) g.spawn("jun", "jun", { at: curb("Market St", 1), yaw: route.heading(STOPS["Market St"]) + Math.PI / 2 });
   if (f.calledMom) g.spawn("junmom", "junmom", { at: curb("Market St", 2), yaw: route.heading(STOPS["Market St"]) + Math.PI / 2 });
-  if (!f.junRode && !f.calledMom) g.props.missingPoster.visible = true;
+  if (!f.junRode && !f.calledMom) {
+    g.props.missingPoster.visible = true;
+    g.prop("posters", { stop: "Market St", at: [-0.89, 1.42, -0.4] });            // two more, already pulped
+  }
   stopped = await g.arrive("Market St");
   if (stopped && (f.junRode || f.calledMom) && (await openUp(g))) {
     const stayed = await g.atStop(async (g) => {
@@ -157,7 +162,7 @@ export async function night3(g) {
     }
     f.maraAboard = false;
   } else if (stopped) {
-    await g.think("Up on the fourth floor, a thin figure is pressing one hand against the window glass.");
+    await g.peekWindow("hand", "Up on the fourth floor, a thin figure is pressing one hand against the window glass.");
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
@@ -170,9 +175,8 @@ export async function night3(g) {
   }
   const ivy = g.spawn("ivy", "ivy", { ghost: true, at: mysteryCurb(g, 1, 5.6), yaw: route.heading(md) + Math.PI / 2 });
   await g.until(() => g.d > md - 110);
-  g.auto(6, md);
   g.mood("dread");
-  await g.until(() => g.drive.speed < 0.3, 25000);
+  await g.autoStop(md);
   g.setDoors(true);
   g.lockDoors(true);
   await g.think("The doors opened by themselves.");
@@ -203,6 +207,7 @@ export async function night3(g) {
     await g.say("ivy", "That's my stop. That's always my stop.");
     await g.wait(1200);
     g.vanish("ivy");
+    g.prop("button", { seat: "R0" });
     await g.think("She's gone. The seat is soaking wet. There's a tiny yellow button on it.");
     await g.say("rhee", "You'll regret that, driver.");
     g.setDoors(false);
@@ -210,11 +215,18 @@ export async function night3(g) {
     g.setDoors(false);
     g.mood("terror");
     await g.wait(1600);
+    g.bus.setHands("windows");
     await g.scare("hands");
     g.sfx("bang");
+    g.sfx("knock", 8);
     g.shake(1.6);
     await g.think("Hands. On every window of the bus. Gray. Wrinkled. Pressing.");
     await g.say("rhee", "Good. Good driver.");
+    g.interior("flicker");
+    g.sfx("lightsout");
+    await g.wait(350);
+    g.bus.setHands(null);
+    g.interior("on");
     await g.think("I don't feel like a good driver.");
     g.vanish("ivy");
   }
@@ -249,11 +261,18 @@ export async function night3(g) {
     await g.shadeFlash(ahead);
     if (ahead === 85) await g.think("There's something standing in the road.");
   }
-  await g.wait(1100);
-  await g.shadeLeap({ ahead: 18, hold: 1700, keepParked: true });
+  // the next flashes show an empty road. It's gone. You stop looking for it.
+  for (let i = 0; i < 2; i++) {
+    await g.wait(1600 + Math.random() * 1400);
+    g.flash();
+  }
+  await g.wait(2500 + Math.random() * 4000);
+  await g.until(() => g.drive.speed > 3, 8000);
+  await g.shadeWindow({ hold: 1700 });
   g.mood("terror");
   if (f.junAboard) await g.say("jun", "It's on the glass! It's ON the glass!");
   await g.think("It's back. The thing from the first night. Spread across the glass like it's trying to get in.");
+  g.shadeHide();
   await g.think("Then the lights went, and it was gone. Only the handprints stayed. The rain won't wash them off.");
   g.release();
   await g.say("rhee", "Keep driving, driver. You don't stop for weather.");

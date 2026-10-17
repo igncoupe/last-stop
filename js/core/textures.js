@@ -1,6 +1,7 @@
 // Every texture in the game is painted here on small canvases, so there
 // are no image files. Low resolution + nearest filtering = PS1 look.
 import * as THREE from "three";
+import { drawPhoto } from "./portraits.js";
 
 let seed = 1;
 const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -112,6 +113,53 @@ export const tex = {
     }
     return toTexture(c);
   }),
+  // the surface of dark water: long soft swells, a few glints
+  waterBase: () => once("waterBase", () => {
+    const [c, x] = canvas(64, 64);
+    seed = 11;
+    for (let y = 0; y < 64; y++) {
+      for (let xx = 0; xx < 64; xx++) {
+        const v = Math.sin((y / 64) * Math.PI * 6 + Math.sin((xx / 64) * Math.PI * 4) * 1.4) * 0.5 + 0.5;
+        const k = 0.75 + v * 0.35 + (rand() - 0.5) * 0.08;
+        x.fillStyle = `rgb(${Math.round(9 * k)},${Math.round(21 * k)},${Math.round(29 * k)})`;
+        x.fillRect(xx, y, 1, 1);
+      }
+    }
+    for (let i = 0; i < 40; i++) {
+      x.fillStyle = `rgba(150,185,205,${0.12 + rand() * 0.2})`;
+      x.fillRect(Math.floor(rand() * 64), Math.floor(rand() * 64), 2 + Math.floor(rand() * 5), 1);
+    }
+    return toTexture(c);
+  }),
+  // light moving across the water (drawn on top, added on)
+  waterShine: () => once("waterShine", () => {
+    const [c, x] = canvas(64, 64);
+    x.clearRect(0, 0, 64, 64);
+    seed = 23;
+    for (let i = 0; i < 26; i++) {
+      const y = Math.floor(rand() * 64);
+      const x0 = Math.floor(rand() * 64);
+      const len = 6 + Math.floor(rand() * 18);
+      for (let k = 0; k < len; k++) {
+        const a = Math.sin((k / len) * Math.PI) * (0.25 + rand() * 0.2);
+        x.fillStyle = `rgba(170,200,220,${a.toFixed(2)})`;
+        x.fillRect((x0 + k) % 64, (y + Math.round(Math.sin(k / 3) * 1.2) + 64) % 64, 1, 1);
+      }
+    }
+    return toTexture(c);
+  }),
+  // one rain ring
+  ring: () => once("ring", () => {
+    const [c, x] = canvas(32, 32);
+    x.clearRect(0, 0, 32, 32);
+    x.strokeStyle = "rgba(200,220,235,.9)";
+    x.lineWidth = 2;
+    x.beginPath(); x.arc(16, 16, 13, 0, Math.PI * 2); x.stroke();
+    x.strokeStyle = "rgba(200,220,235,.35)";
+    x.lineWidth = 1;
+    x.beginPath(); x.arc(16, 16, 8, 0, Math.PI * 2); x.stroke();
+    return toTexture(c, false);
+  }),
   // a text sign. bg/fg colors, size in canvas pixels
   sign: (text, { bg = "#ffb54a", fg = "#140d03", w = 128, h = 32, font = 20, border = 0 } = {}) => {
     const [c, x] = canvas(w, h);
@@ -131,9 +179,7 @@ export const tex = {
     x.fillStyle = "#a51616"; x.font = "bold 22px sans-serif"; x.textAlign = "center";
     x.fillText(lines[0], 60, 24);
     // a photocopied photo: grey, a face, shoulders
-    x.fillStyle = "#77746c"; x.fillRect(26, 32, 68, 70);
-    x.fillStyle = "#3e3c38"; x.beginPath(); x.ellipse(60, 58, 14, 17, 0, 0, Math.PI * 2); x.fill();
-    x.fillRect(36, 78, 48, 24);
+    drawPhoto(x, "jun", 26, 32, 68, 70, { tone: "gray" });
     x.fillStyle = "#111"; x.font = "bold 11px monospace";
     lines.slice(1).forEach((ln, i) => x.fillText(ln, 60, 118 + i * 14));
     // rain streaks and a torn corner

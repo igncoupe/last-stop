@@ -1,5 +1,6 @@
 // HTML overlays on top of the 3D view: subtitles, dialogue options,
 // the objective hint, interaction prompts, fades, cards and jumpscares.
+import { photoURL } from "./portraits.js";
 const $ = (id) => document.getElementById(id);
 const el = {
   hud: $("hud"), hint: $("hint"), crosshair: $("crosshair"), prompt: $("prompt"),
@@ -197,7 +198,14 @@ export const ui = {
     sheet.className = "sheet";
     if (doc.kicker) { const k = document.createElement("div"); k.className = "p-kicker"; k.textContent = doc.kicker; sheet.append(k); }
     if (doc.title) { const h = document.createElement("div"); h.className = "p-title"; h.textContent = doc.title; sheet.append(h); }
-    if (doc.photo) { const ph = document.createElement("div"); ph.className = "p-photo"; ph.textContent = doc.photo; sheet.append(ph); }
+    if (doc.photo) {
+      const ph = document.createElement("div");
+      ph.className = "p-photo";
+      ph.textContent = doc.photo;
+      const poster = doc.kind === "poster";
+      ph.style.backgroundImage = `url(${photoURL(doc.photo, poster ? 130 : 200, poster ? 150 : 120)})`;
+      sheet.append(ph);
+    }
     for (const line of doc.lines || []) { const l = document.createElement("p"); l.textContent = line; sheet.append(l); }
     if (doc.scrawl) {
       const s = document.createElement("div");

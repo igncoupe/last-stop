@@ -4,6 +4,7 @@
 import * as THREE from "three";
 import { mat, glow, box } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
+import { drawPhoto } from "../core/portraits.js";
 
 const put = (parent, mesh, x, y, z) => {
   mesh.position.set(x, y, z);
@@ -179,13 +180,7 @@ export function makeNoticeBoard() {
       for (const l of lines) {
         for (const ln of wrap(x, l, w - 16)) { if (y < h / 2 - 6) x.fillText(ln, -w / 2 + 8, y); y += (opts.size || 10) + 3; }
       }
-      if (opts.photo) {
-        x.fillStyle = "#555";
-        x.fillRect(-w / 2 + 12, -h / 2 + 30, w - 24, h - 70);
-        x.fillStyle = "#3a3a3a";
-        x.fillRect(-12, -h / 2 + 40, 24, 22);
-        x.fillRect(-20, -h / 2 + 62, 40, 30);
-      }
+      if (opts.photo) drawPhoto(x, opts.photo === true ? "varga" : opts.photo, -w / 2 + 12, -h / 2 + 30, w - 24, h - 70);
       // push pin
       x.fillStyle = opts.pin || "#c0262c";
       x.beginPath(); x.arc(0, -h / 2 + 6, 5, 0, Math.PI * 2); x.fill();

@@ -216,12 +216,12 @@ export function createShade(scene) {
     },
     // jump from where it is onto something that moves (the windshield), landing in `endLocal` of `parent`
     // from: a start in the parent's space instead (a drop off the roof), out: how far it swings forward on the way
-    leap(parent, endLocal, duration = 0.45, { from = null, arc = 1.3, out = 0 } = {}) {
+    leap(parent, endLocal, duration = 0.45, { from = null, arc = 1.3, out = 0, faceY = Math.PI } = {}) {
       return new Promise((done) => {
         toScene();
         if (from) hazeMat.opacity = 0.3;
         const start = root.getWorldPosition(new THREE.Vector3());
-        leapState = { t: 0, duration, start, parent, endLocal, done, from, arc, out };
+        leapState = { t: 0, duration, start, parent, endLocal, done, from, arc, out, faceY };
         setPose("leap", 0.25);
         mode = "leap";
         watch = null;
@@ -294,7 +294,7 @@ export function createShade(scene) {
         if (k >= 1) {
           L.parent.attach(root);
           root.position.copy(L.endLocal);
-          root.rotation.set(0, Math.PI, 0);       // facing into the bus
+          root.rotation.set(0, L.faceY, 0);        // facing into the bus
           setPose("glass");
           applyPose(1);
           mode = "glass";

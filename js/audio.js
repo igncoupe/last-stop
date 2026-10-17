@@ -343,6 +343,27 @@ const SFX = {
     g.gain.setValueAtTime(0, tt);
     out(g, 0.55, t + 0.52, 0.01, tt - t - 0.52, 0.5);
   },
+  // the engine coughing (and dying)
+  sputter(t) {
+    for (let i = 0; i < 3; i++) {
+      const tt = t + i * (0.16 + Math.random() * 0.08);
+      out(noise(tt, 0.14, "lowpass", 260, 2), 0.9, tt, 0.004, 0.12, 0.2);
+      out(tone(tt, 0.12, "sawtooth", 62, 38), 0.18, tt, 0.004, 0.1);
+    }
+  },
+  // the starter grinding, then it catches
+  ignition(t) {
+    const f = ctx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = 900;
+    f.Q.value = 3;
+    const o = tone(t, 0.9, "sawtooth", 140);
+    for (let i = 0; i < 9; i++) o.frequency.setValueAtTime(i % 2 ? 120 : 160, t + i * 0.1);
+    o.connect(f);
+    out(f, 0.3, t, 0.02, 0.85);
+    out(noise(t + 0.9, 0.5, "lowpass", 300, 1.5), 0.8, t + 0.9, 0.01, 0.45, 0.2);
+    out(tone(t + 0.9, 0.5, "sawtooth", 55, 40), 0.25, t + 0.9, 0.01, 0.45);
+  },
   // ---- the other rooms on the fourth floor
   // an old man coughing, wet and tired
   cough(t, times = 2) {

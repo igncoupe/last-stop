@@ -155,7 +155,7 @@ export async function night1(g) {
       f.maraMissedStop = true;
     }
   } else if (stopped) {
-    await g.think("Every window in the hospital is lit. Someone's standing in a window on the fourth floor.");
+    await g.peekWindow("stand", "Every window in the hospital is lit. Someone's standing in a window on the fourth floor.");
   }
   if (g.bus.doorsOpen) await closeDoorsAndGo(g);
   if (f.maraAboard && !g.drive.moving) await g.departed();
@@ -221,6 +221,7 @@ export async function night1(g) {
       g.sfx("lightsout");
       await g.wait(1400);
       g.vanish("daniel");
+      g.prop("puddle", { seat: "L0" });
       g.interior("on");
       await g.think("He's gone. There's just a puddle on his seat, spreading.");
     });

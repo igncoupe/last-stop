@@ -41,10 +41,10 @@ export async function night2(g) {
   // ---------- an old tape comes over the radio, on the drive to Elm (as soon as you pull out, so it's
   // over before you get there; Elm still waits for it, just in case)
   const tape = (async () => {
-    await g.wait(1200);
-    g.sfx("static", 1.2);
+    await g.wait(300);
+    g.sfx("static", 0.8);
     g.radio("CH 9 ····");
-    await g.wait(900);
+    await g.wait(500);
     await g.say("teodor94", "Dispatch, this is Route 9. The river's coming over the road at Canal. I want to hold at Northgate till it passes.");
     await g.say("rhee94", "Negative, Nine. You're eleven minutes down. Make up the time.");
     await g.say("teodor94", "Harold, I've got kids on this bus.");
@@ -54,11 +54,12 @@ export async function night2(g) {
     await g.wait(1200);
     await g.say("rhee", "Old tapes, driver. The system plays them back sometimes. Ignore it.");
     // only if there's still road before Elm: never while you're pulling in for Mara
-    if (g.d < STOPS["Elm & 4th"] - 170) {
+    // (the mirror beat only if there's still a long way to go: the tape is never still running when you pull in)
+    if (g.d < STOPS["Elm & 4th"] - 260) {
       g.hint("Check your mirror");
-      await g.until(() => g.lookingAtMirror() || g.d > STOPS["Elm & 4th"] - 90, 9000);
+      await g.until(() => g.lookingAtMirror() || g.d > STOPS["Elm & 4th"] - 170, 9000);
       g.hint(null);
-      if (g.d < STOPS["Elm & 4th"] - 90) await g.think("The old man in the back row is crying. He isn't making a sound.");
+      if (g.d < STOPS["Elm & 4th"] - 170) await g.think("The old man in the back row is crying. He isn't making a sound.");
     }
   })();
 
@@ -265,6 +266,7 @@ export async function night2(g) {
       await g.think("Something wet is touching the back of my neck.");
       await g.scare("eyes");
       g.vanish("daniel");
+      g.prop(f.gaveJacket ? "jacketFolded" : "puddle", { seat: "L0" });
       g.interior("on");
       g.amb({ engine: 0.3 });
       await g.think(f.gaveJacket ? "The lights are back. He's gone. My jacket is folded on his seat. Soaked through. Still warm." : "The lights are back. His seat is empty, and dark with water.");
@@ -278,10 +280,18 @@ export async function night2(g) {
   } else {
     await g.think("I'm not opening those doors.");
     await g.wait(1500);
+    g.bus.setHands("door");
     await g.scare("hands");
     g.sfx("bang");
+    g.sfx("knock", 6);
     g.shake(1.5);
     await g.think("Hands. All over the door glass. Gray and wrinkled from the water.");
+    await g.wait(1500);
+    g.interior("flicker");
+    g.sfx("lightsout");
+    await g.wait(300);
+    g.bus.setHands(null);
+    g.interior("on");
     g.vanish("daniel");
   }
   g.release();
@@ -307,9 +317,11 @@ export async function night2(g) {
     crowd.push(g.spawn(`drowned${i}`, i === 0 ? "lena" : i === 3 ? "ivy" : "drowned", { ghost: true, at: mysteryCurb(g, -1.8 + (i % 4) * 1.2, 6.4 + Math.floor(i / 4) * 0.6), yaw: route.heading(md) + Math.PI / 2 }));
   }
   await g.until(() => g.d > md - 120);
-  g.auto(6, md);
+  // the bus brakes by itself, gently, from full speed
+  const pulled = g.autoStop(md, { brake: 3.2 });
+  await g.braking();
   await g.think("I'm slowing down. I'm not touching the brake.");
-  await g.until(() => g.drive.speed < 0.3, 25000);
+  await pulled;
   g.rain(true);
   await g.think("There's a shelter where there's never been a shelter. Lit up yellow. It's raining inside it. Only inside it.");
   await g.say("rhee", "Driver. Do NOT open those doors. They are not on the manifest.");

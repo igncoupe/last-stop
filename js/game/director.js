@@ -6,6 +6,7 @@ import { ui } from "../core/ui.js";
 import { Sound } from "../audio.js";
 import { CAST, spoken, lineId } from "../story/cast.js";
 import { Person } from "../world/people.js";
+import { makeStoryProp } from "../world/storyProps.js";
 import { route, STOPS, LANE } from "../world/route.js";
 
 // a glowing arrow (with a light beam) that bobs over wherever you need to go
@@ -106,6 +107,7 @@ export function createDirector(w) {
   const DASH_SPOT = { coffee: new THREE.Vector3(0.18, 1.45, 5.72), soup: new THREE.Vector3(-0.5, 1.44, 5.82), badge: new THREE.Vector3(1.02, 1.4, 5.58) };
   let held = null;                     // what you're holding on foot
   const handed = [];                   // everything you've been given tonight (cleared each night)
+  const storyProps = [];               // things the story talks about, put where it says (cleared each night)
 
   let speech = Promise.resolve();
   let cutLine = null;                  // ends the line that's playing now (g.interrupt)
@@ -305,6 +307,16 @@ export function createDirector(w) {
       return until(() => drive.moving || drive.d >= drive.state.endD - 1.5);
     },
     auto(speed, stopAtD = null) { drive.auto(speed, stopAtD); },
+    // the bus pulls in at a stop by itself: full speed, then the brakes, door at the shelter. Resolves when it's in.
+    async autoStop(stopD, { brake } = {}) {
+      s.waiting = "pulling in by itself";
+      drive.release();
+      drive.dockAt(stopD, { force: true, brake });
+      await until(() => (drive.state.dock && drive.state.dock.done) || !drive.state.dock, 40000);
+      drive.dockAt(null);
+    },
+    // ...and the moment it starts braking
+    braking() { return until(() => !drive.state.dock || drive.state.dock.braking || drive.state.dock.done, 40000); },
     release() { drive.release(); },
     park() { drive.park(); },
     get d() { return drive.d; },
@@ -433,6 +445,27 @@ export function createDirector(w) {
       p.reachOut(false);
       p.lookAt(null);
       handed.push(item);
+    },
+    // put a thing where the story says it is: at a stop's shelter ({ stop, at }), on a bus seat ({ seat }),
+    // or anywhere in the bus ({ bus })
+    prop(kind, where) {
+      const p = makeStoryProp(kind);
+      if (where.stop) {
+        const shelter = props.stops[where.stop].group;
+        shelter.add(p);
+        p.position.set(...where.at);
+      } else if (where.seat) {
+        bus.group.add(p);
+        const s = bus.seatSlots[where.seat];
+        p.position.set(s.x, 0.895, s.z + 0.05);
+      } else {
+        bus.group.add(p);
+        p.position.set(...where.bus);
+        if (where.rot) p.rotation.set(...where.rot);
+      }
+      p.userData.t0 = performance.now();
+      storyProps.push(p);
+      return p;
     },
     // the drowned don't walk off. They're just gone when you look again.
     vanish(key) { g.despawn(key); },
@@ -620,6 +653,64 @@ export function createDirector(w) {
     await shade.leap(bus.group, bus.windshieldLanding, THREE.MathUtils.clamp(dist / 32, 0.3, 0.6));
     await hitGlass({ hold, crack, keepParked });
   };
+  // out of the dark beside you: it hits the window right next to your head, holds on, and is gone
+  g.shadeWindow = async ({ hold = 1600 } = {}) => {
+    w.traffic.hold(30);
+    s.waiting = "scare window";
+    g.interrupt();
+    if (!settings.scares) {
+      bus.setInterior("flicker");
+      Sound.sfx("lightsout");
+      await g.wait(500);
+      bus.setInterior("on");
+      Sound.sfx("heartbeat", 3, 96);
+      return;
+    }
+    const from = new THREE.Vector3(3.8, 0.3, 8.5);         // out in the dark, ahead of you and off to the side
+    const land = new THREE.Vector3(1.34, 0.32, 4.85);      // its feet; its body flat on the glass beside your face
+    shade.standIn(bus.group, from, new THREE.Vector3(0.7, 1.7, 4.8), "crouch");
+    player.lookAtSoon(() => bus.group.localToWorld(new THREE.Vector3(1.3, 1.9, 4.9)));   // your head snaps round to it
+    Sound.sfx("shriek");
+    await shade.leap(bus.group, land, 0.2, { from, arc: 0.5, out: 0, faceY: -Math.PI / 2 });
+    await hitGlass({ hold, crack: true, keepParked: true, smudge: false });
+    bus.setHands("ash");                                    // where it held on
+  };
+  // a flash of lightning over an empty road
+  g.flash = () => { w.lightning(); setTimeout(() => Sound.sfx("thunder"), 300 + Math.random() * 600); };
+  // the camera leaves your seat: out the door, up at Room 4B's window on the fourth floor of St. Agnes, and
+  // back, while you say what you see. pose: what the figure in the window is doing
+  g.peekWindow = async (pose, line, { dim = false } = {}) => {
+    s.waiting = "looking up at 4B";
+    const H = places.hospital;
+    H.setWindowFigure(pose, dim);
+    const win = H.windowOutside;
+    const cam = camera.getWorldPosition(new THREE.Vector3());
+    const q0 = camera.getWorldQuaternion(new THREE.Quaternion());
+    const out = bus.group.localToWorld(new THREE.Vector3(-3.6, 1.45, 2.2));     // on the sidewalk by the doors
+    const look = new THREE.Matrix4().lookAt(out, win, new THREE.Vector3(0, 1, 0));
+    const q1 = new THREE.Quaternion().setFromRotationMatrix(look);
+    player.fixed(scene, cam, new THREE.Euler());
+    camera.quaternion.copy(q0);
+    const tween = (a, b, qa, qb, seconds) => {
+      let t = 0;
+      return until((dt) => {
+        t = Math.min(1, t + dt / seconds);
+        const e = t * t * (3 - 2 * t);
+        camera.position.lerpVectors(a, b, e);
+        camera.quaternion.slerpQuaternions(qa, qb, Math.min(1, e * 1.3));
+        return t >= 1;
+      });
+    };
+    const going = tween(cam, out, q0, q1, 2.2);
+    await g.wait(700);
+    const said = g.think(line);
+    await going;
+    await said;
+    await g.wait(700);
+    const back = bus.group.localToWorld(bus.driverEye.clone());
+    await tween(out, back, q1, q0, 1.6);
+    g.sitInBus();
+  };
   // no warning at all: it was on the roof, and it comes down over the windshield
   g.shadeDrop = async ({ hold = 1500, keepParked = false } = {}) => {
     w.traffic.hold(30);
@@ -641,14 +732,14 @@ export function createDirector(w) {
     await shade.leap(bus.group, bus.windshieldLanding, 0.24, { from: roof, arc: 0, out: 0.7 });
     await hitGlass({ hold, crack: true, keepParked });
   };
-  async function hitGlass({ hold, crack, keepParked }) {
+  async function hitGlass({ hold, crack, keepParked, smudge = true }) {
     Sound.sfx("slam");
     if (crack) Sound.sfx("crack");
     Sound.sfx("sting");
     Sound.sfx("scream", 1.7);
     player.shake(2.6);
     bus.setInterior("flicker");
-    bus.setSmudge(crack ? 2 : 1);
+    if (smudge) bus.setSmudge(crack ? 2 : 1);
     document.body.classList.add("scare-flash");
     setTimeout(() => document.body.classList.remove("scare-flash"), 110);
     const wasControl = drive.state.control;
@@ -662,7 +753,7 @@ export function createDirector(w) {
     Sound.sfx("bang");
     Sound.sfx("crack");
     player.shake(2.2);
-    bus.setSmudge(2);
+    if (smudge) bus.setSmudge(2);
     Sound.sfx("whisper");
     await g.wait(Math.max(300, hold - 980));
     bus.setInterior("off");
@@ -770,6 +861,9 @@ export function createDirector(w) {
     drive.dockAt(null);
     handed.forEach((it) => it.removeFromParent());
     handed.length = 0;
+    storyProps.forEach((it) => it.removeFromParent());
+    storyProps.length = 0;
+    bus.setHands(null);
     held = null;
     s.unheard = [];
     g.despawnAll();
@@ -804,6 +898,7 @@ export function createDirector(w) {
     },
     update(dt) {
       g.tickDread(dt);
+      for (const p of storyProps) if (p.userData.update) p.userData.update((performance.now() - p.userData.t0) / 1000);
       // guidance: an arrow over the target, and a distance readout while driving
       bob += dt;
       let text = "";

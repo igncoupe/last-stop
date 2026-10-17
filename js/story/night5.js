@@ -26,9 +26,9 @@ export async function night5(g) {
   const teo = g.spawn("teodor", "uniform", { at: curb("Elm & 4th", 3, 6.2), yaw: route.heading(elm) + Math.PI / 2 });
   await g.until(() => g.d > elm - 120 || g.drive.stoppedNear(elm));
   // tonight the bus knows where it's stopping
-  if (!g.drive.stoppedNear(elm)) g.auto(7, elm - 4);
+  const pulled = g.drive.stoppedNear(elm) ? Promise.resolve() : g.autoStop(elm);
   await g.think("Two people at Elm and Fourth. A woman on the bench. And a man under the streetlight in an old brown driver's uniform.");
-  await g.until(() => g.drive.speed < 0.3, 25000);
+  await pulled;
   g.release();
   await openUp(g, 60000);
   g.lockDoors(true);           // the doors stay open until they're done
@@ -101,8 +101,7 @@ export async function night5(g) {
   g.sky("storm");
   g.storm(true);
   g.mood("terror");
-  g.auto(6, md);
-  await g.until(() => g.drive.speed < 0.3, 25000);
+  await g.autoStop(md);
   g.props.mystery.named = true;
   g.mysteryName("ASHGROVE");
   g.route("ASHGROVE", false);
@@ -113,7 +112,7 @@ export async function night5(g) {
   await g.think("Mom.");
   g.sfx("static", 1.4);
   // between the drowned and the doors: the shadow, arms out, keeping them off the bus
-  g.shadeAt(mysteryCurb(g, 4.6, 4.7), "bar", route.at(md + 4.6, LANE, 1.6));
+  g.shadeAt(mysteryCurb(g, 0.7, 4.7), "bar", route.at(md + 0.7, LANE, 1.6));
   g.sfx("thunder");
   await g.say("rhee", "DRIVER.");
   await g.say("rhee", "You are ELEVEN MINUTES LATE. You will MAKE. UP. THE. TIME.");
@@ -187,7 +186,7 @@ async function endHome(g, crowd, deadAir) {
     // one step back and to the side, out of their way, arms down. It doesn't leave.
     const sh = g.shade.root;
     const from = sh.position.clone();
-    const to = mysteryCurb(g, 4.6 + 2.4, 6.2);
+    const to = mysteryCurb(g, 0.7 + 2.6, 6.3);
     g.sfx("skitter", 0.5);
     let t = 0;
     await g.frames((dt) => {
@@ -252,6 +251,7 @@ async function endHome(g, crowd, deadAir) {
   let thought = Promise.resolve();
   await g.frames((dt) => {
     g.bus.group.position.z += 9 * dt;
+    g.drive.state.speed = 9;
     stars.userData.update(dt, busZ());
     if (!said && busZ() > P.edge - 55) {
       said = true;
