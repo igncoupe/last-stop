@@ -112,14 +112,17 @@ function tone(t, dur, type, f0, f1) {
   o.stop(t + dur + 0.05);
   return o;
 }
+// where effects go: the effects bus, or (inside sfxAt) a quiet, muffled, placed chain
+let sfxDest = null;
+let sfxDestLevel = 1;          // ...and how loud its echo is (a quiet sound has a quiet echo)
 function out(node, peak, t, a, dcy, rev = 0, pan = 0) {
   const g = gainNode();
   env(g, t, a, peak, dcy);
   node.connect(g);
   let last = g;
   if (pan && ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = pan; g.connect(p); last = p; }
-  last.connect(sfxBus);
-  if (rev) send(g, rev);
+  last.connect(sfxDest || sfxBus);
+  if (rev) send(g, rev * (sfxDest ? sfxDestLevel * 0.6 : 1));
   return g;
 }
 
@@ -325,6 +328,80 @@ const SFX = {
   splash(t) { out(noise(t, 1.2, "lowpass", 1400), 0.7, t, 0.01, 1.1, 0.4); out(tone(t, 0.6, "sine", 200, 60), 0.4, t, 0.01, 0.5); },
   spark(t) { for (let i = 0; i < 6; i++) out(noise(t + i * 0.05 + Math.random() * 0.04, 0.05, "highpass", 4000), 0.5, t + i * 0.05, 0.001, 0.04); },
   rip(t) { out(noise(t, 0.5, "bandpass", 900, 1), 0.9, t, 0.005, 0.45); out(tone(t, 0.3, "sawtooth", 300, 80), 0.2, t, 0.002, 0.3); },
+  // ---- the other rooms on the fourth floor
+  // an old man coughing, wet and tired
+  cough(t, times = 2) {
+    for (let i = 0; i < times; i++) {
+      const tt = t + i * (0.42 + Math.random() * 0.2);
+      out(noise(tt, 0.3, "bandpass", 420 + Math.random() * 120, 1.4), 0.6, tt, 0.01, 0.26);
+      out(noise(tt, 0.22, "bandpass", 1500, 2), 0.25, tt, 0.006, 0.2);
+      out(tone(tt, 0.2, "sawtooth", 140, 90), 0.08, tt, 0.01, 0.18);
+    }
+  },
+  // someone turning over in a hospital bed: springs and a plastic mattress
+  creak(t) {
+    const f = ctx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = 900;
+    f.Q.value = 12;
+    const o = tone(t, 0.9, "sawtooth", 210, 160);
+    o.frequency.setValueAtTime(210, t);
+    for (let i = 1; i < 9; i++) o.frequency.setValueAtTime(150 + Math.random() * 120, t + i * 0.1);
+    o.connect(f);
+    out(f, 0.5, t, 0.05, 0.8);
+    out(noise(t + 0.3, 0.6, "lowpass", 900), 0.2, t + 0.3, 0.1, 0.45);
+  },
+  // a heart monitor in another room; sometimes it skips
+  beeps(t, count = 4, gap = 1.05) {
+    for (let i = 0; i < count; i++) {
+      if (i === count - 2 && Math.random() < 0.5) continue;
+      const tt = t + i * gap;
+      out(tone(tt, 0.12, "sine", 960), 0.3, tt, 0.004, 0.11);
+    }
+  },
+  // humming, almost a tune, from a room where nobody should be awake
+  hum(t) {
+    const notes = [57, 60, 62, 60, 57, 55, 57];
+    notes.forEach((m, i) => {
+      const tt = t + i * 0.55;
+      const f = ctx.createBiquadFilter();
+      f.type = "bandpass";
+      f.frequency.value = 700;
+      f.Q.value = 1.5;
+      const o = tone(tt, 0.6, "triangle", 440 * Math.pow(2, (m - 69) / 12));
+      o.connect(f);
+      out(f, 0.5, tt, 0.08, 0.5, 0.3);
+    });
+  },
+  // a sob, held in
+  sob(t) {
+    for (let i = 0; i < 3; i++) {
+      const tt = t + i * 0.38;
+      out(noise(tt, 0.3, "bandpass", 650 + i * 60, 3), 0.45, tt, 0.03, 0.26, 0.3);
+    }
+    out(noise(t + 1.4, 1.1, "bandpass", 480, 1.6), 0.3, t + 1.4, 0.4, 0.7, 0.3);
+  },
+  // a television left on, voices you can't make out
+  murmur(t, dur = 3.5) {
+    const f = noise(t, dur, "bandpass", 1100, 1.2);
+    const g = gainNode(0);
+    f.connect(g);
+    for (let i = 0; i < dur * 6; i++) g.gain.setValueAtTime(Math.random() < 0.7 ? 0.2 + Math.random() * 0.5 : 0.02, t + i / 6);
+    g.gain.setValueAtTime(0, t + dur);
+    out(g, 0.6, t, 0.2, dur - 0.2);
+  },
+  // a wheel that needs oil, rolling slowly past the end of the hall
+  squeak(t, times = 4) {
+    for (let i = 0; i < times; i++) {
+      const tt = t + i * 0.7;
+      const f = ctx.createBiquadFilter();
+      f.type = "bandpass";
+      f.frequency.value = 2400;
+      f.Q.value = 14;
+      tone(tt, 0.18, "sawtooth", 2300 + Math.random() * 300, 2000).connect(f);
+      out(f, 0.35, tt, 0.02, 0.15);
+    }
+  },
   // your own footstep on concrete
   step(t) {
     out(noise(t, 0.09, "lowpass", 700 + Math.random() * 200), 0.3, t, 0.004, 0.08, 0.1);
@@ -634,6 +711,21 @@ export const Sound = {
   setVoices(on) { voicesOn = on; },
   stopVoices() { live.forEach((e) => e.stop && e.stop()); },
   sfx(name, ...args) { if (ctx && SFX[name]) SFX[name](ctx.currentTime + 0.02, ...args); },
+  // an effect from somewhere else: quiet, muffled by a door (lowpass), off to one side
+  sfxAt(name, { gain = 0.3, pan = 0, muffle = 1400 } = {}, ...args) {
+    if (!ctx || !SFX[name]) return;
+    const g = gainNode(gain);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = muffle;
+    g.connect(lp);
+    let last = lp;
+    if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = Math.max(-1, Math.min(1, pan)); lp.connect(p); last = p; }
+    last.connect(sfxBus);
+    sfxDest = g;
+    sfxDestLevel = gain;
+    try { SFX[name](ctx.currentTime + 0.02, ...args); } finally { sfxDest = null; sfxDestLevel = 1; }
+  },
   // keep 3D voices and the listener in sync with the camera
   update(camera) {
     if (!ctx) return;

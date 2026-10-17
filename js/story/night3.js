@@ -289,20 +289,28 @@ export async function night3(g) {
 async function ward(g) {
   const H = g.places.hospital;
   await g.fade(1, 900);
-  g.storm(false);                      // no rain or lightning indoors
-  g.sky("hospital");
-  g.amb({ rain: 0.3, engine: 0, hum: 1 });
+  // up on 4 West. The rain stays outside, on the windows; no lightning in here
+  g.storm(false);
+  g.rain(true);
+  g.sky("ward");
+  g.amb({ rain: 0.25, engine: 0, hum: 1 });
   g.mood("grief");
-  g.walkAt(H.spawn, Math.PI, H.colliders);
+  H.setActive(true);
+  g.walkAt(H.spawn, H.spawnYaw, H.colliders);
   g.despawn("mara");
-  const mara = g.spawn("mara", "mara", { at: H.spawn.clone().setY(0).add(new THREE.Vector3(0.4, 0, 2.5)), yaw: 0 });
-  const lying = g.spawn("teodor4b", "oldman", { at: H.roomPos.clone().add(new THREE.Vector3(-0.9, 0.62, 0.95)) });
-  lying.root.rotation.set(-Math.PI / 2, 0, 0);
+  const mara = g.spawn("mara", "mara", { at: H.maraStart, yaw: H.spawnYaw + Math.PI });
+  const lying = g.spawn("teodor4b", "oldman");
+  H.layInBed(lying);
+  // and down in the street, on the bus: the old man has moved to the back seat on this side. He's looking up.
+  if (g.actor("teodor")) {
+    g.seat("teodor", "B0");
+    g.actor("teodor").lookAt(H.win.getWorldPosition(new THREE.Vector3()));
+  }
   await g.fade(0, 1000);
-  mara.walk([H.spawn.clone().setY(0).add(new THREE.Vector3(0, 0, 31)), H.roomPos.clone().add(new THREE.Vector3(2.2, 0, -1.6))], { speed: 1.2 });
+  mara.walk(H.maraPath, { speed: 1.2 });
   await g.say("mara", "This way. Fourth floor smells like bleach and old flowers. You stop noticing.");
   g.hint("Go to Room 4B");
-  g.navTo(H.roomPos.clone().add(new THREE.Vector3(2.4, 2.2, 0)));
+  g.navTo(H.navPoint);
   await g.until(() => g.camera.getWorldPosition(new THREE.Vector3()).distanceTo(H.roomPos) < 3.4);
   g.navTo(null);
   g.hint(null);
@@ -330,6 +338,8 @@ async function ward(g) {
   await g.fade(1, 1200);
   g.despawn("teodor4b");
   g.despawn("mara");
+  H.setActive(false);
+  if (g.actor("teodor")) { g.seat("teodor", "B3"); g.actor("teodor").lookAt(null); }
   g.sky("storm");
   g.storm(true);
   g.amb({ rain: 1, engine: 0.3, hum: 0 });

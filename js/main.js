@@ -57,6 +57,7 @@ const SKIES = {
   dawn: { fog: 0x8a95a3, density: 0.014, hemi: 1.6 },
   void: { fog: 0x05070b, density: 0.024, hemi: 0.35 },   // the bridge: dark, but you can see the road
   hospital: { fog: 0x0b0d0c, density: 0.02, hemi: 0.4 },
+  ward: { fog: 0x090c10, density: 0.024, hemi: 0.42 },   // 4 West: indoors, but the night outside the windows
 };
 let hemiBase = 0.35;
 function setSky(name) {
@@ -208,10 +209,10 @@ function frame(now) {
   city.update(focus, dt);
   props.depot.update(dt, clockMinutes());
   busInverse.copy(bus.group.matrixWorld).invert();
-  props.rain.update(dt, focus, insideBus);
+  props.rain.update(dt, focus, (x, y, z) => insideBus(x, y, z) || places.hospital.inside(x, y, z));
   props.flood.update(dt);
   props.mystery.update(dt);
-  places.hospital.update(dt);
+  places.hospital.update(dt, camera);
   places.bridge.update(dt);
   people.update(dt);
   director.update(dt);
