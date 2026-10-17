@@ -42,7 +42,7 @@ from make_driver_voice import DELIVERIES, delivery  # noqa: E402
 
 # how each character sounds when nothing in the line says otherwise (light: one tag at most)
 CHARACTER = {
-    "teodor": "<|emotion:sadness|>", "teodor94": "<|emotion:fear|>", "rhee94": "<|emotion:determination|>",
+    "teodor": "", "teodor94": "<|emotion:fear|>",     # (a sadness tag pulls Teodor's old voice up into someone else's) "rhee94": "<|emotion:determination|>",
     "lena": "<|emotion:affection|>", "daniel": "<|emotion:sadness|>", "momcall": "<|emotion:helplessness|>",
     "rosie": "<|emotion:sadness|>", "harold": "<|emotion:shame|>", "voices": "<|style:whispering|>",
 }
@@ -92,18 +92,57 @@ def tagged(line):
     return "".join(tags) + speakable(text)
 
 
+ONES = ("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen "
+        "seventeen eighteen nineteen").split()
+TENS = {2: "twenty", 3: "thirty", 4: "forty", 5: "fifty", 6: "sixty", 7: "seventy", 8: "eighty", 9: "ninety"}
+ORDS = {"one": "first", "two": "second", "three": "third", "five": "fifth", "eight": "eighth", "nine": "ninth", "twelve": "twelfth"}
+# names Whisper spells its own way
+SAME = {"june": "joon", "jun": "joon", "john": "joon", "ree": "rhee", "re": "rhee", "rhea": "rhee", "rey": "rhee", "ray": "rhee",
+        "vargas": "varga", "okay": "ok", "hun": "hon",
+        # ...and words that sound the same
+        "your": "you're", "to": "too", "two": "too", "their": "there", "they're": "there", "its": "it's"}
+
+
+def n2w(n):
+    return ONES[n] if n < 20 else TENS[n // 10] + ("" if n % 10 == 0 else " " + ONES[n % 10])
+
+
+def spell_number(m):
+    """'1994' -> 'nineteen ninety four', '14th' -> 'fourteenth', '12:20' -> 'twelve twenty' (as Whisper writes them)."""
+    num, suffix = m.group(1), (m.group(2) or "").lower()
+    n = int(num)
+    if len(num) == 4:
+        words_ = f"{n2w(n // 100)} {n2w(n % 100) if n % 100 >= 10 else 'oh ' + ONES[n % 100]}"
+    elif n < 100:
+        words_ = n2w(n)
+    else:
+        return m.group(0)
+    if suffix in ("st", "nd", "rd", "th"):
+        *head, last = words_.split()
+        last = ORDS.get(last, last[:-1] + "ieth" if last.endswith("y") else last + "th")
+        words_ = " ".join(head + [last])
+    return " " + words_ + " "
+
+
 def words(text):
-    t = text.lower().replace("st.", "saint").replace("4b", "four b").replace("jun", "joon").replace("june", "joon")
+    t = text.lower().replace("st.", "saint").replace("4b", "four b").replace("ash grove", "ashgrove")
+    t = re.sub(r"(\d+)(st|nd|rd|th)?\b", spell_number, t.replace(":", " "))
     out = []
     for w in WORDS.findall(t):
-        out.extend(NUM.get(w, w).split())
+        out.extend(SAME.get(w, NUM.get(w, w)).split())
     return out
 
 
 def word_score(script, heard):
     want = words(script)
-    got = [("joon" if w in ("june", "jun", "john", "joon") else w) for w in words(heard)]
-    want = [("joon" if w in ("june", "jun", "john") else w) for w in want]
+    got = words(heard)
+    # a line cut off mid-word ("Who is th") is right if it trails off right there: that's how the word starts,
+    # and not much more of it ("Who is the...", not "Who is this?")
+    cut = script.rstrip().endswith("...") or script.rstrip()[-1:].isalpha()
+    if cut and want and len(got) >= len(want):
+        w = got[len(want) - 1]
+        if w.startswith(want[-1]) and len(w) <= len(want[-1]) + 1:
+            want[-1] = w
     s = SequenceMatcher(None, want, got).ratio()
     extra = max(0, len(got) - len(want))
     return s, extra
@@ -224,6 +263,9 @@ def voices(args):
 
     refs = {}
     progress = load_progress()
+    # lines that have since left the script are forgotten
+    texts = {l["id"]: l["text"] for l in json.loads((ROOT / "voices" / "manifest.json").read_text(encoding="utf-8"))["lines"]}
+    progress = {k: v for k, v in progress.items() if k in texts}
     todo = [k for k, v in progress.items() if "sim" not in v or args.all]
     for n, lid in enumerate(todo, 1):
         rec = progress[lid]
@@ -235,12 +277,22 @@ def voices(args):
         sim = float(embed(w) @ remb)
         f0 = pitch(w)
         ratio = f0 / rf0 if rf0 and f0 else 1.0
-        loud = "<|style:shouting|>" in rec["text"]
+        loud = "<|style:shouting|>" in rec["text"] or bool(SHOUT.search(texts[lid]))     # (shouted in the script)
         whisper = "<|style:whispering|>" in rec["text"]
+        seconds = len(w) / 16000
         # the same person: a close speaker match, and not suddenly a much higher (or lower) voice.
-        # Shouting and whispering change a voice, so they get a little more room.
-        ok_voice = sim >= (0.42 if (loud or whisper) else 0.5) and (whisper or 0.6 <= ratio <= (2.0 if loud else 1.6))
-        rec.update({"sim": round(sim, 3), "pitch": round(ratio, 2), "ok_voice": ok_voice, "ok": bool(ok_voice and rec.get("ok_words"))})
+        # Shouting and whispering change a voice, so they get a little more room. A clip of a word or two is
+        # too short for the speaker match to mean much, so there it's the pitch that has to agree.
+        if seconds < 1.4:
+            ok_voice = whisper or 0.75 <= ratio <= (2.0 if loud else 1.35)
+        else:
+            ok_voice = sim >= (0.42 if (loud or whisper) else 0.5) and (whisper or 0.6 <= ratio <= (2.0 if loud else 1.6))
+        # (the words again too, with what Whisper heard, in case the check has learned something since)
+        if rec.get("heard") is not None:
+            score, extra = word_score(texts[lid], rec["heard"])
+            rec["words"], rec["ok_words"] = round(score, 3), score >= 0.85 and extra <= 1
+        rec.update({"sim": round(sim, 3), "pitch": round(ratio, 2), "seconds": round(seconds, 2), "ok_voice": ok_voice,
+                    "ok": bool(ok_voice and rec.get("ok_words"))})
         if not rec["ok"]:
             print(f"  redo {lid} {rec['who']}: voice {sim:.2f} pitch {ratio:.2f}x words {rec['words']:.2f}", flush=True)
         if n % 25 == 0:
