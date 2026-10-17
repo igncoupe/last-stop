@@ -873,6 +873,19 @@ export function buildHospital(scene) {
       p.root.position.set(BX, 0.78, BZ + 0.85);
       p.root.rotation.set(-Math.PI / 2 + 0.1, 0, 0);
     },
+    // years later, from the pillow (all in the hospital's own space): your eyes, the plastic chair beside the
+    // bed and which way it faces, the window
+    bedEye: V(BX + 0.05, 1.24, R0 + 0.62),      // the head of the bed raised, the way they leave it
+    chairSeat: V(BX - 1.15, 0, BZ + 0.9),
+    chairYaw: 1.8,
+    winMiddle: V(-0.3, 1.5, WZ),
+    // ...and somebody else is in 4B now: the name on the whiteboard wiped off, like the date
+    wipeBoardName() {
+      const c = TX.board4b.image.getContext("2d");
+      c.fillStyle = "#f7f7f2"; c.fillRect(42, 27, 82, 10);
+      c.fillStyle = "rgba(60,60,60,.3)"; c.fillRect(44, 30, 46, 6);
+      TX.board4b.needsUpdate = true;
+    },
     get active() { return active; },
     // the window from outside: who's standing in it (null, "stand", "hand", "finger"), and how lit it is
     setWindowFigure(pose, dim = false) { drawWindow(pose, dim); },

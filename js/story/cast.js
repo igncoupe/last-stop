@@ -1,5 +1,5 @@
 // Who's who: subtitle names and colors, voice effects in the game, and the
-// AI voice (Kokoro) used to generate each character's lines.
+// Kokoro voice their reference clip (tools/refs) was first made with.
 //   fx:    dry | inner | radio | phone | ghost | whisper
 //   voice: Kokoro voice id; speed and pitch shape it (pitch < 1 = deeper)
 export const CAST = {

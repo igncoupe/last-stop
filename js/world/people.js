@@ -11,6 +11,7 @@ export const LOOKS = {
   oldman:  { height: 1.66, shirt: 0x2b2a2e, pants: 0x1f1e22, skin: 0xcdb8a4, hair: 0xb8b8b8, cane: true, hunched: true },
   uniform: { height: 1.74, shirt: 0x5a4632, pants: 0x3a2e22, skin: 0xcdb8a4, hair: 0x9a9a9a, cap: 0x4a3a2a },
   mara:    { height: 1.68, shirt: 0x3d6fa8, pants: 0x3d6fa8, skin: 0xa77b5e, hair: 0x1a1210, lanyard: true },
+  maraold: { height: 1.66, shirt: 0x3d6fa8, pants: 0x3d6fa8, skin: 0xa07760, hair: 0x9a9792, lanyard: true },   // thirty-one years on
   jun:     { height: 1.66, shirt: 0x3a3f47, pants: 0x22252b, skin: 0xd9b28f, hair: 0x0e0e10, backpack: 0x6b2d2d, hood: true },
   junmom:  { height: 1.6, shirt: 0x5d6e5a, pants: 0x2d3330, skin: 0xd9b28f, hair: 0x15110f },
   daniel:  { height: 1.8, shirt: 0x23262c, pants: 0x1c1f24, skin: 0xb3b9bd, hair: 0x241c16, gift: true, wet: true },

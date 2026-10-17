@@ -14,7 +14,7 @@ export const NIGHTS = {
 };
 
 export const ENDINGS = {
-  ontime:  { number: 1, title: "On Schedule", blurb: "Route 9 is never late. Not anymore.", hint: "Maybe stop next time." },
+  ontime:  { number: 1, title: "On Schedule", blurb: "You were never late again. Not once, in thirty-one years.", hint: "They're still waiting. Stop for them." },
   notyet:  { number: 2, title: "Not Yet", blurb: "Ashgrove will be waiting again tomorrow night.", hint: "Be the driver who stops. Every time." },
   home:    { number: 3, title: "Home", blurb: "Fourteen fares, paid at last. But Channel 9 is still on the air.", hint: "Something on the radio is still waiting." },
   deadair: { number: 4, title: "Dead Air", blurb: "Fifteen fares. Everyone gets a ride home.", hint: "The true ending. Thank you for stopping." },
@@ -24,7 +24,7 @@ export const CREDITS = `
   <h2>LAST STOP</h2>
   <p><strong>A game by</strong>igncoupe</p>
   <p><strong>Built with</strong>Claude</p>
-  <p><strong>Voices</strong>Generated with Kokoro, an open-source AI voice model</p>
+  <p><strong>Voices</strong>Created with Boson AI's Higgs Audio</p>
   <p><strong>3D</strong>three.js</p>
   <p><strong>Music and sound</strong>Generated live in your browser</p>
   <p><strong>Inspired by</strong>Fears to Fathom</p>

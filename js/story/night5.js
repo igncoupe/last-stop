@@ -1,7 +1,8 @@
 // NIGHT 5 — "Last stop." Rosie. Teodor's confession. Ashgrove. The endings.
 // Kindness: give Rosie the present / tell her about her dad (+1)
 import * as THREE from "three";
-import { STOPS, route, LANE } from "../world/route.js";
+import { STOPS, route, LANE, CURB } from "../world/route.js";
+import { SELF_LAYER } from "../world/selfBody.js";
 import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, KIND_ENOUGH } from "./common.js";
 
 export async function night5(g) {
@@ -27,6 +28,9 @@ export async function night5(g) {
   await g.until(() => g.d > elm - 120 || g.drive.stoppedNear(elm));
   // tonight the bus knows where it's stopping
   const pulled = g.drive.stoppedNear(elm) ? Promise.resolve() : g.autoStop(elm);
+  // ...and you only say what you see once they come out of the fog, under the streetlight
+  await g.until(() => g.d > elm - 38 || g.drive.stoppedNear(elm));
+  g.look(() => teo.root.localToWorld(new THREE.Vector3(0, 1.5, 0)));
   await g.think("Two people at Elm and Fourth. A woman on the bench. And a man under the streetlight in an old brown driver's uniform.");
   await pulled;
   g.release();
@@ -110,6 +114,7 @@ export async function night5(g) {
   await g.think("Fourteen of them. Standing in a rain that isn't falling anywhere else. They're not knocking. They're just waiting. Like they always have.");
   await g.say("lena", "Hi, sweetheart.");
   await g.think("Mom.");
+  f.knowsMother = true;
   g.sfx("static", 1.4);
   // between the drowned and the doors: the shadow, arms out, keeping them off the bus
   g.shadeAt(mysteryCurb(g, 0.7, 4.7), "bar", route.at(md + 0.7, LANE, 1.6));
@@ -417,35 +422,125 @@ async function endNotYet(g) {
   return "notyet";
 }
 
+// you drive away. They don't come after you; they never did. You keep the schedule, every night, for the rest
+// of your life, and end up where Teodor did: in Room 4B, asking if Route 9 is running.
 async function endOnTime(g) {
+  const f = g.flags;
+  const md = g.props.mystery.d;
+  const up = new THREE.Vector3(0, 1, 0);
+  const aimAt = (eye, to) => new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(eye, to, up)));
+  g.mood("grief");
+  const leftFrom = g.d;
+  g.auto(11);                                     // the bus pulls away by itself now; it's on schedule
   await g.say("rhee", "Good. GOOD. Back on schedule.");
-  g.vanish("teodor");
-  g.storm(false);
-  g.mood("dread");
-  for (let i = 0; i < 14; i++) {
-    g.despawn(`g${i}`);
-    g.spawn(`m${i}`, i === 0 ? "lena" : i === 1 ? "daniel" : "drowned", { ghost: true, mirrorOnly: true });
-    g.seat(`m${i}`, ["L0", "R1", "L2", "R2", "L3", "R3", "L4", "R4", "L5", "R5", "B0", "B1", "B2", "B3"][i]);
+  g.late(-g.lateTonight);                         // and the dash says so
+  await g.until(() => g.d > leftFrom + 14);       // (clear of the stop)
+  // one look back, from the road where the doors were: there they are, still in the shelter. The shadow
+  // doesn't need to hold them anymore
+  await g.fade(1, 350);
+  g.shadeHide();
+  const eye = route.at(md + 0.2, 1.4, 1.5);
+  g.camera.layers.disable(SELF_LAYER);           // (nobody's body in the driver's seat from out here)
+  g.fixedCamera(g.bus.group.parent, eye, aimAt(eye, route.at(md - 0.3, CURB - 1.7, 1.25)));
+  g.fade(0, 700);
+  await g.wait(900);
+  await g.think("They don't run after the bus. They never did. They just stand there in the rain and watch it go.");
+  const mom = g.actor("g0");
+  if (mom) {
+    mom.reachOut(true);                           // she lifts her hand, the way she did at the door
+    mom.lookAt(g.bus.group.localToWorld(new THREE.Vector3(0, 1.6, -4)));
   }
-  await g.wait(4000);
-  g.hint("Check your mirror");
-  await g.until(() => g.lookingAtMirror(), 12000);
-  g.hint(null);
-  await g.think("Every seat is full. Fourteen people, soaked to the bone, staring straight ahead.");
-  await g.think("Mom is in the seat right behind me.");
-  await g.say("lena", "You didn't stop.");
-  g.bus.setWater(0.2);
-  await g.wait(2000);
-  g.bus.setWater(0.5);
-  await g.think("Water is creeping across the floor. I can't feel my feet.");
-  g.auto(14);
-  await g.arrive("Northgate", { hint: false });
-  g.mood("terror");
-  await g.think("Northgate. The clock on the dash settles on twelve twenty. Exactly on time.");
-  await g.think("My hands on the wheel are gray. Wrinkled. Like they've been underwater for a very long time.");
+  await g.say("lena", "Go on, sweetheart. Don't be late.");
+  await g.think("That's what she used to say at the door, every morning. Don't be late.");
+  await g.wait(800);
+  await g.fade(1, 1200);
+  g.camera.layers.enable(SELF_LAYER);
+  g.sitInBus();
+  g.storm(false);
+  g.amb({ rain: 0.15 });
+  await g.fade(0, 1000);
+
+  // Teodor saw it all from the seat behind you
+  if (g.actor("teodor")) {
+    g.lookAtActor("teodor");
+    await g.say("teodor", "It's alright. I didn't stop either.");
+    await g.say("teodor", "You'll tell yourself you'll stop tomorrow. I told myself that for thirty-two years.");
+    await g.say("teodor", "I'm out of tomorrows. You've still got a few.");
+    g.sfx("breath");
+    g.vanish("teodor");
+    await g.wait(1400);
+    await g.think("And then the seat was empty.");
+  }
+  await g.think("Up on the fourth floor of St. Agnes, a monitor just went quiet.");
+  if (f.maraHelped) await g.think("I hope Mara was holding his hand.");
+  await g.wait(600);
+  await g.fade(1, 1600);
+
+  // Northgate, to the minute
+  g.despawnAll();
+  g.shadeHide();
+  g.park();
+  g.drive.d = route.length - 32;
+  g.route(null);                                  // the sign says Northgate again, like nothing happened
+  g.amb({ rain: 0, engine: 0.3 });
+  await g.fade(0, 1400);
+  await g.think("Northgate. Twelve twenty. Exactly on time.");
+  g.sfx("static", 0.6);
   await g.say("rhee", "Evening, driver. See you tomorrow night.");
   await g.say("rhee", "And the night after that.");
-  await g.scare("face");
-  await g.fade(1, 600);
+  await g.think("And I was. Every night. I was never late again.");
+  await g.wait(800);
+  await g.fade(1, 2200);
+  await onTimeEpilogue(g);
   return "ontime";
+}
+
+// thirty-one years later: Room 4B, from the pillow
+async function onTimeEpilogue(g) {
+  const H = g.places.hospital;
+  const up = new THREE.Vector3(0, 1, 0);
+  const look = (eye, to) => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(eye, to, up));
+  g.caption("Thirty-one years later", "St. Agnes Hospital. 4 West. Room 4B.");
+  g.sky("ward");
+  g.rain(true);
+  g.amb({ rain: 0.25, engine: 0, hum: 1 });
+  H.setActive(true);
+  H.wipeBoardName();
+  // Mara still works nights. She sits with the ones nobody comes for
+  const mara = g.spawn("mara", "maraold");
+  mara.sit(H.group, H.chairSeat, H.chairYaw);
+  const maraFace = H.chairSeat.clone().add(new THREE.Vector3(0.12, 1.12, -0.03));
+  g.camera.layers.disable(SELF_LAYER);
+  const eye = H.bedEye.clone();
+  g.fixedCamera(H.group, eye, new THREE.Euler().setFromQuaternion(look(eye, maraFace)));
+  mara.lookAt(H.group.localToWorld(eye.clone()));
+  await g.wait(1200);
+  await g.fade(0, 3000);
+  await g.wait(1400);
+  g.caption(null);
+  await g.think("I drove Route 9 for thirty-one years. I was never late. Not once.");
+  await g.think("Every night I passed the stop with no name, right on time. And every night I told myself: tomorrow.");
+  await g.say("mara", "There you are. You were dreaming about the bus again.");
+  await g.think("Mara still works nights. Her hair's gone gray. She sits with the ones nobody comes to see.");
+  await g.say("you", "Is Route 9 running?");
+  await g.say("mara", "It's running, hon. Right on time.");
+  await g.say("you", "Does the new driver stop?");
+  await g.wait(900);
+  await g.say("mara", "I don't know. I hope so.");
+  // you turn your head on the pillow, to the rain on the window
+  const from = g.camera.quaternion.clone();
+  const to = look(eye, H.winMiddle);
+  let t = 0;
+  const turning = g.frames((dt) => {
+    t = Math.min(1, t + dt / 4.5);
+    g.camera.quaternion.slerpQuaternions(from, to, t * t * (3 - 2 * t));
+    return t >= 1;
+  });
+  await g.wait(1600);
+  await g.think("Thirty-one years. Tonight I find out if she ever gets home.");
+  await turning;
+  await g.wait(1500);
+  await g.say("lena", "Take your time, sweetheart. I'm still waiting.");
+  await g.wait(2600);
+  await g.fade(1, 3500);
 }

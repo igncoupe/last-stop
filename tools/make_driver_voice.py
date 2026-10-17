@@ -20,7 +20,6 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 import torch
-from qwen_tts import Qwen3TTSModel
 
 ROOT = Path(__file__).resolve().parent.parent
 REFS = ROOT / "tools" / "refs"
@@ -41,7 +40,7 @@ DELIVERIES = {
 }
 
 TERRIFIED = re.compile(
-    r"hit the glass|on the glass|it's back|hands|a face|pressed|hit someone|oh god|alone on the bus|nothing there|"
+    r"hit the glass|on the glass|it's back|hands(?! me)|a face|pressed|hit someone|oh god|alone on the bus|nothing there|"
     r"something wet|breathing|can't feel|staring|not blinking|standing in the road|keeping up|\bash\b|knocking|"
     r"under the floor|faces under|struck match|getting on|cold coming|the shadow|smoke|doesn't have|shape of a man|"
     r"head turned|light went out|pedal is going|trying to get in|back of the bus|i'm not opening|grey|gray hands|"
@@ -86,6 +85,7 @@ def shape(samples: np.ndarray, rate: int) -> np.ndarray:
 
 
 def design():
+    from qwen_tts import Qwen3TTSModel          # (only needed here, so other tools can import delivery())
     model = Qwen3TTSModel.from_pretrained("Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign", device_map="cpu", dtype=torch.float32)
     for name, (mood, text) in DELIVERIES.items():
         torch.manual_seed(1994)
@@ -105,6 +105,7 @@ def lines(args):
     todo = [l for i, l in enumerate(todo) if i % args.workers == args.worker]
     todo.sort(key=lambda l: -len(l["text"]))
     print(f"worker {args.worker}: {len(todo)} lines", flush=True)
+    from qwen_tts import Qwen3TTSModel
     model = Qwen3TTSModel.from_pretrained("Qwen/Qwen3-TTS-12Hz-1.7B-Base", device_map="cpu", dtype=torch.float32)
     prompts = {name: model.create_voice_clone_prompt(ref_audio=str(REFS / f"driver_{name}.wav"), ref_text=text)
                for name, (_, text) in DELIVERIES.items()}

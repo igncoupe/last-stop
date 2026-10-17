@@ -10,7 +10,7 @@ Be careful who you stop for. Be more careful who you don't.
 
 - 3D, first person, with a low-poly PS1 look
 - You really drive the bus. You choose who to stop for by pulling over and opening the doors.
-- Every character is voiced with open-source AI voices, with subtitles
+- Every character is voiced (voices created with Boson AI's Higgs Audio), with subtitles
 - 5 nights, about an hour, and 4 endings
 - A generated horror score, rain, radio static, and in-world jumpscares: the drowned, a shadow that stalks the route, and cars on the other side of the road that aren't right
 
@@ -62,25 +62,18 @@ Lines in `g.say`, `g.think` and `g.choose` must be plain `"double-quoted"` strin
 
 ## Making the voices
 
-The voices are generated with [Chatterbox](https://github.com/resemble-ai/chatterbox), a free open-source (MIT) AI voice model with emotional delivery. Each character's voice is copied from a short reference clip in `tools/refs/`, which was made with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx). After changing any lines:
+Voices created with Boson AI's Higgs Audio: every line is recorded with [Higgs TTS 3](https://huggingface.co/bosonai/higgs-tts-3-4b), under Boson AI's Creator Use Grant. Each character keeps their own voice, cloned from a short reference clip in `tools/refs/` (made earlier with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx)). The driver (you) was designed with [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) from a written description, a new voice and not a copy of anyone's, in three deliveries (weary, scared, terrified) kept in `tools/refs/driver_*.wav`; each of his lines uses the delivery that fits it.
+
+Every take is checked twice before it's kept: Whisper has to hear the words in the script, and a speaker-match check (SpeechBrain ECAPA, plus pitch) has to agree it's the same person as the reference, so a line can't come out in someone else's voice. Takes that fail are recorded again. After changing any lines:
 
 ```bash
 node tools/extract-lines.mjs
-pip install chatterbox-tts "setuptools<81"
-python tools/make_voices.py
+python tools/make_voices_higgs.py generate          # GPU Python with Higgs (see the script for setup)
+python tools/make_voices_higgs.py voices            # CPU Python with speechbrain: the voice check
+python tools/make_voices_higgs.py generate --redo   # records again whatever failed
 ```
 
-Only new or changed lines get generated. Chatterbox runs on the CPU (slowly); `--workers 3 --worker N` lets you run several at once. For a fast, flatter fallback there's `tools/make_voices_kokoro.py`.
-
-The driver (you) is voiced with [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) (Apache 2.0). His voice was designed from a written description, a new voice and not a copy of anyone's, in three deliveries (weary, scared, terrified) kept in `tools/refs/driver_*.wav`; each of his lines is cloned from the delivery that fits it:
-
-```bash
-pip install -U qwen-tts soundfile
-python tools/make_driver_voice.py design      # only to re-design the voice
-python tools/make_driver_voice.py lines
-```
-
-Chatterbox adds an inaudible watermark to its audio that marks it as AI-generated.
+Only new or changed lines get recorded. The older tools (`make_voices.py` for Chatterbox, `make_voices_kokoro.py`, `make_driver_voice.py`) still work as fallbacks.
 
 Want real actors instead? Record a line and save it over its file in `voices/` (the file name is in `voices/manifest.json`).
 
