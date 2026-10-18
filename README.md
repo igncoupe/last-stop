@@ -10,7 +10,7 @@ Be careful who you stop for. Be more careful who you don't.
 
 - 3D, first person, with a low-poly PS1 look
 - You really drive the bus. You choose who to stop for by pulling over and opening the doors.
-- Every character is voiced (voices created with Boson AI's Higgs Audio), with subtitles
+- Every character is voiced and acted (voices created with ElevenLabs), with subtitles
 - 5 nights, about an hour, and 4 endings
 - Fourteen people drowned on Route 9 in 1994. Some of them still ride it, and some flag you down where there's no stop.
 - The Route 9 file: 24 things to find for yourself (missing posters on the shelters, clippings in an old locker at the depot, the 1994 driver's log on your dash). Read every poster and, if you get them home, you'll know all their names.
@@ -64,18 +64,19 @@ Lines in `g.say`, `g.think` and `g.choose` must be plain `"double-quoted"` strin
 
 ## Making the voices
 
-Voices created with Boson AI's Higgs Audio: every line is recorded with [Higgs TTS 3](https://huggingface.co/bosonai/higgs-tts-3-4b), under Boson AI's Creator Use Grant. Each character keeps their own voice, cloned from a short reference clip in `tools/refs/` (made earlier with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx)). The driver (you) was designed with [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) from a written description, a new voice and not a copy of anyone's, in three deliveries (weary, scared, terrified) kept in `tools/refs/driver_*.wav`; each of his lines uses the delivery that fits it.
+Voices created with [ElevenLabs](https://elevenlabs.io). Every character has a new voice designed from a written description (ElevenLabs Voice Design; none of them is a copy of anyone real), and every line is spoken with Eleven v4. Each line also has a performance direction in `tools/el-direction.txt`, written scene by scene from inside the character at that moment (`[terrified] [whispers]`, `[crying] [proud]`...), so the feeling changes as the story does. Teodor plays at 1.5x speed. Ivy's three lines are recorded with Boson AI's Higgs Audio ([Higgs TTS 3](https://huggingface.co/bosonai/higgs-tts-3-4b)), because ElevenLabs doesn't make children's voices.
 
-Every take is checked twice before it's kept: Whisper has to hear the words in the script, and a speaker-match check (SpeechBrain ECAPA, plus pitch) has to agree it's the same person as the reference, so a line can't come out in someone else's voice. Takes that fail are recorded again. After changing any lines:
+Every take is checked before it's kept: Whisper has to hear the words in the script, and a speaker-match check (SpeechBrain ECAPA) has to agree it's the same character. Takes that fail are recorded again. The API key is read from `~/.elevenlabs_key`, a file you make yourself; it never goes in this repo. After changing any lines:
 
 ```bash
 node tools/extract-lines.mjs
-python tools/make_voices_higgs.py generate          # GPU Python with Higgs (see the script for setup)
-python tools/make_voices_higgs.py voices            # CPU Python with speechbrain: the voice check
-python tools/make_voices_higgs.py generate --redo   # records again whatever failed
+python tools/make_voices_elevenlabs.py credits      # characters left this month
+python tools/make_voices_elevenlabs.py generate     # records new or changed lines (stops at --budget)
+python tools/make_voices_elevenlabs.py voices       # the same-character check (CPU Python with speechbrain)
+python tools/make_voices_elevenlabs.py generate --redo
 ```
 
-Only new or changed lines get recorded. The older tools (`make_voices.py` for Chatterbox, `make_voices_kokoro.py`, `make_driver_voice.py`) still work as fallbacks.
+New lines need a direction in `tools/el-direction.txt` too (or they get a simple one). The cast is in `tools/elevenlabs-voices.json`; `design`, `audition`, `remix` and `create` make and pick voices. The Higgs tool (`make_voices_higgs.py`) and the older ones still work as fallbacks.
 
 Want real actors instead? Record a line and save it over its file in `voices/` (the file name is in `voices/manifest.json`).
 

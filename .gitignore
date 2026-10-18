@@ -1,3 +1,7 @@
 tools/voices-higgs.json
 tools/models/
 tools/refs/candidates/
+tools/voices-el.json
+tools/refs/el/previews/
+tools/refs/el/audition.html
+tools/__pycache__/

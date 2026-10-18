@@ -1,0 +1,200 @@
+{
+ "previews": {
+  "you": [
+   "dSc4TfqfgT0HCcBNgETM",
+   "63mXGcaphUQkTyxQvbqB",
+   "N5fdmd3q05T82oBcEReb"
+  ],
+  "rhee": [
+   "YZLBrscDVPWXHqP4ALjD",
+   "lBYllicbakLe7Fj49TT7",
+   "lZb3a9ATupMosgopFUG8"
+  ],
+  "dana": [
+   "RpOtLVwE3S9QPGpX7PVh",
+   "PyaFvOpOXzYLSvaZ6NgV",
+   "F0LNm9Thoxsn8TmQFstM"
+  ],
+  "radio94": [
+   "RXuVibRv41vUu6qE8OjZ",
+   "phW4ewygdAj8myA4lanq",
+   "ysAJpAeuBuaAnDN6rgUa"
+  ],
+  "teodor": [
+   "CgH4eMMVZlxi7wuSOTiH",
+   "SWvhaJSVIDie5F0MMCzy",
+   "qirnhzOXZpoE37AXIXIE"
+  ],
+  "teodor94": [
+   "vNFUXw903cN8huvUR6YJ",
+   "xSYh5yjHe7ronNVjvIkf",
+   "vgnlYMmdjVNZWiRCOk6s"
+  ],
+  "mara": [
+   "RGNHPVlBN1SYKYgSfu2u",
+   "XLjPUQZNawgOFgLqBvye",
+   "jM7WqVv1x8EzThMRb7wa"
+  ],
+  "junmom": [
+   "uSMevk43kc9N0A42mTXb",
+   "0yhEyDU6OBz4gUXgdZLk",
+   "2umvl3qzwZZGpv9CtVoL"
+  ],
+  "daniel": [
+   "tWD9MsF3E95VFmsPRW0W",
+   "7gi51O1hDdWbkFPszKLU",
+   "tUQgWyF85Cff6uEhiZsI"
+  ],
+  "lena": [
+   "U7cZ08gsztFXF7mdqINY",
+   "iRiIHtt651qokHP5t5Kx",
+   "2RuRNc0O2Zwx55uYVe9W"
+  ],
+  "rosie": [
+   "KOGq49XVLa8WoB5Vt6QC",
+   "8KllWucEaszLyDhEUVgz",
+   "K0cPdGAiZb1ypzmFeWBH"
+  ],
+  "voices": [
+   "2jdrvtds8quuVJRMOdIX",
+   "xJ5wowFITku9MarNHS7n",
+   "bUY6dkCyZpnZfgyFlJZ5"
+  ],
+  "eddie": [
+   "yCPEp6CpP3QjFECg70Pq",
+   "G628YSpANuEaIpKhWUW7",
+   "mxB2k0HOkK2fLYWVua1K"
+  ],
+  "dorothy": [
+   "R4BcviXMx7zs0zjIEVMH",
+   "Z2VCqvt7OoK7HUPc6qjD",
+   "cM2m6bQcvj5T9lbhyjUs"
+  ],
+  "frank": [
+   "GUjcC5WziPx6psfoSujm",
+   "RL1Fg7VBsbBY7IHRXgUc",
+   "GfQkJDOHn3fJ2AfhZ2Tx"
+  ],
+  "carmen": [
+   "McGIIAsx8V5SkzASran8",
+   "q0QY0KjbIZXyBPl1kKAH",
+   "YazFEIgJ40SWqFucC3UI"
+  ],
+  "marcus": [
+   "pQK0KBLICD6gceLusVqW",
+   "DVkv15jU48vd14qUXOOy",
+   "nqZTEu3WXpSlAbweQq4U"
+  ],
+  "jun": [
+   "qBel2wCmFcYJmgKCnQqt",
+   "d1wYAceYY0KxxMMbOGjc",
+   "1EPJ2PqGWAbe23i5cglt"
+  ]
+ },
+ "voices": {
+  "you": {
+   "voice_id": "dSc4TfqfgT0HCcBNgETM",
+   "candidate": "0"
+  },
+  "rhee": {
+   "voice_id": "YZLBrscDVPWXHqP4ALjD",
+   "candidate": "0"
+  },
+  "dana": {
+   "voice_id": "F0LNm9Thoxsn8TmQFstM",
+   "candidate": "2"
+  },
+  "radio94": {
+   "voice_id": "TJjlF00GCREcFg9IqyMr",
+   "candidate": "r1"
+  },
+  "teodor": {
+   "voice_id": "SWvhaJSVIDie5F0MMCzy",
+   "candidate": "1"
+  },
+  "teodor94": {
+   "voice_id": "xSYh5yjHe7ronNVjvIkf",
+   "candidate": "1"
+  },
+  "mara": {
+   "voice_id": "RGNHPVlBN1SYKYgSfu2u",
+   "candidate": "0"
+  },
+  "junmom": {
+   "voice_id": "EIogC8IoSQdYv0RWyQOO",
+   "candidate": "r2"
+  },
+  "daniel": {
+   "voice_id": "tWD9MsF3E95VFmsPRW0W",
+   "candidate": "0"
+  },
+  "lena": {
+   "voice_id": "2RuRNc0O2Zwx55uYVe9W",
+   "candidate": "2"
+  },
+  "rosie": {
+   "voice_id": "8KllWucEaszLyDhEUVgz",
+   "candidate": "1"
+  },
+  "voices": {
+   "voice_id": "bUY6dkCyZpnZfgyFlJZ5",
+   "candidate": "2"
+  },
+  "eddie": {
+   "voice_id": "hmMLB1aLNcNPC7BQuWcQ",
+   "candidate": "r0"
+  },
+  "dorothy": {
+   "voice_id": "cM2m6bQcvj5T9lbhyjUs",
+   "candidate": "2"
+  },
+  "frank": {
+   "voice_id": "GfQkJDOHn3fJ2AfhZ2Tx",
+   "candidate": "2"
+  },
+  "carmen": {
+   "voice_id": "h7DfaIe0iFgR43VPn6oX",
+   "candidate": "r1"
+  },
+  "marcus": {
+   "voice_id": "nqZTEu3WXpSlAbweQq4U",
+   "candidate": "2"
+  },
+  "jun": {
+   "voice_id": "GZRrPiqwGyR4wa5m5Wvn",
+   "candidate": "r2"
+  }
+ },
+ "remix": {
+  "teodor": [
+   "L2XNipW1dwOhA9WbCnxL",
+   "Qj0r913DgHm3os8tSWEO",
+   "cvPtaBkPkIxG6L2mjMKd"
+  ],
+  "jun": [
+   "tpF6ftbweVfUxkL7OlQ2",
+   "NqfuAMNTwY8QlldyLNDf",
+   "GZRrPiqwGyR4wa5m5Wvn"
+  ],
+  "junmom": [
+   "7eP6fPSlan4Ve3p2ZVIE",
+   "J2nCTgZeXH1SCSojcjF6",
+   "EIogC8IoSQdYv0RWyQOO"
+  ],
+  "carmen": [
+   "E80xSbGr6R9V2xqoJq6u",
+   "h7DfaIe0iFgR43VPn6oX",
+   "N1syCo3VekCnKgHbVeR4"
+  ],
+  "radio94": [
+   "63dUYmOLlpnetwVdUX0g",
+   "TJjlF00GCREcFg9IqyMr",
+   "za45WWTmO8shqJfrJEwu"
+  ],
+  "eddie": [
+   "hmMLB1aLNcNPC7BQuWcQ",
+   "yUbEtAwOm7RXFl9SS9Uy",
+   "QtMQjiRlqB6x87Y9fNh9"
+  ]
+ }
+}

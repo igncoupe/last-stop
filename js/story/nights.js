@@ -24,7 +24,8 @@ export const CREDITS = `
   <h2>LAST STOP</h2>
   <p><strong>A game by</strong>igncoupe</p>
   <p><strong>Built with</strong>Claude</p>
-  <p><strong>Voices</strong>Created with Boson AI's Higgs Audio</p>
+  <p><strong>Voices</strong>Created with ElevenLabs</p>
+  <p><strong>Ivy's voice</strong>Boson AI's Higgs Audio</p>
   <p><strong>3D</strong>three.js</p>
   <p><strong>Music and sound</strong>Generated live in your browser</p>
   <p><strong>Inspired by</strong>Fears to Fathom</p>

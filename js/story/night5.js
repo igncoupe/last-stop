@@ -24,7 +24,7 @@ export async function night5(g) {
   // ---------- someone in from the rain, at the depot doors
   const marcus = g.spawn("marcus", "marcus", { at: new THREE.Vector3(-4.9, 0, -12.6), yaw: Math.PI });
   await marcus.walk([doorOutside()], { speed: 1.5 });
-  await g.say("marcus", "Hey. Is this the 9? Does it still go out to Ashgrove?");
+  await g.say("marcus", "Hey, sir. Is this the 9? Does it still go out to Ashgrove?");
   const ride = await g.choose(["“Get on.”", "“Not in service. Sorry.”"]);
   if (ride === 0) {
     g.kind();
@@ -32,9 +32,9 @@ export async function night5(g) {
     f.metMarcus = true;
     await g.board("marcus", "L2", 1.5);
     await g.think("He paid with a token. They stopped making tokens before I was born.");
-    await g.say("marcus", "Sorry. I'm Marcus. I'm a little nervous. I'm going to ask her tonight. I've had the ring a month.");
+    await g.say("marcus", "Sorry, sir. I'm Marcus. I'm a little nervous. I'm going to ask her tonight. I've had the ring a month.");
   } else {
-    await g.say("marcus", "Right. Course not. Not anymore.");
+    await g.say("marcus", "Right. Course not, sir. Not anymore.");
     marcus.walk([new THREE.Vector3(-4.9, 0, -6)], { speed: 1.2 }).then(() => g.vanish("marcus"));
   }
   await closeDoorsAndGo(g);
@@ -335,7 +335,7 @@ async function oldNine(g) {
   await g.think("A bus, coming the other way. An old one. Brown and cream, like in the photos.");
   await g.until(() => passed, 15000);
   await g.think("Route 9. Ashgrove. The driver had a brown cap. He lifted one hand off the wheel, the way drivers do.");
-  if (f.marcusRode) await g.say("marcus", "Huh. Two 9s tonight.");
+  if (f.marcusRode) await g.say("marcus", "Huh. Two 9s tonight, sir.");
   await driving;
   ghost.group.visible = false;
   g.despawn("oldnine");
