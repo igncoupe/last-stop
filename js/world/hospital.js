@@ -6,6 +6,7 @@ import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { route, STOPS } from "./route.js";
 import { Sound } from "../audio.js";
+import { makeFogPane } from "./fog.js";
 
 const FLOOR_Y = 10.8;                      // the fourth floor
 const FACADE = 15;                         // the hospital's street face, meters right of the road's center
@@ -550,6 +551,11 @@ export function buildHospital(scene) {
   TX.rainGlass2.repeat.set(1.1, 0.8);
   plane(HALF * 2, TOP - SILL, glow(0xffffff, { map: TX.rainGlass, transparent: true, opacity: 0.55, depthWrite: false }), WX - 0.005, (SILL + TOP) / 2, WZ, -Math.PI / 2);
   plane(HALF * 2, TOP - SILL, glow(0xffffff, { map: TX.rainGlass2, transparent: true, opacity: 0.4, depthWrite: false }), WX - 0.01, (SILL + TOP) / 2, WZ, -Math.PI / 2);
+  // breath on the window, from the inside (hidden until something wants to write on it)
+  const fogPane = makeFogPane(HALF * 2, TOP - SILL, { px: 384, seed: 21 });
+  fogPane.mesh.position.set(WX - 0.03, (SILL + TOP) / 2, WZ);
+  fogPane.mesh.rotation.y = -Math.PI / 2;
+  inside.add(fogPane.mesh);
   // inside: the sill, the heater under it, blinds pulled most of the way up
   blk(0.3, 0.04, HALF * 2 + 0.3, M.white, -0.33, SILL - 0.01, WZ);
   blk(0.3, 0.55, HALF * 2 - 0.1, M.grille, -0.36, 0.3, WZ, { solid: true });
@@ -570,9 +576,14 @@ export function buildHospital(scene) {
   blk(0.92, 0.3, 1.95, M.dark, BX, 0.3, BZ, { solid: true });
   for (const [sx, sz] of [[-0.4, -0.85], [0.4, -0.85], [-0.4, 0.85], [0.4, 0.85]]) blk(0.06, 0.12, 0.06, M.black, BX + sx, 0.06, BZ + sz);
   blk(0.9, 0.18, 2.0, M.sheet, BX, 0.56, BZ);
-  blk(0.62, 0.12, 0.38, M.white, BX, 0.71, R0 + 0.3);                              // the pillow
-  blk(0.97, 0.3, 1.2, M.blanket, BX, 0.79, BZ + 0.4);                               // the blanket, over his legs
-  blk(0.98, 0.04, 0.16, M.white, BX, 0.95, BZ - 0.12);                              // the sheet folded over it
+  // the pillow, dented where his head is, and the head of the bed raised a little
+  blk(0.62, 0.1, 0.36, M.white, BX, 0.7, R0 + 0.3).rotation.x = -0.12;
+  // the blanket, draped over his legs: it rises over his shins and his feet and hangs down over the sides
+  // (made to fit the man in it, so nothing of him pokes through it), the sheet folded back over the top
+  const blanket = drape(BZ - 0.12, BZ + 1.0, M.blanket);
+  inside.add(blanket);
+  const turned = drape(BZ - 0.16, BZ - 0.02, M.white, 0.012);
+  inside.add(turned);
   blk(1.0, 0.55, 0.05, mat({ color: 0xc4bba4 }), BX, 0.88, R0 + 0.03);              // headboard
   blk(1.0, 0.4, 0.05, mat({ color: 0xc4bba4 }), BX, 0.72, BZ + 1.0);                // footboard
   blk(0.4, 0.07, 0.01, glow(0x2b4d3a), BX, 0.82, BZ + 1.03);                        // its control panel
@@ -655,31 +666,79 @@ export function buildHospital(scene) {
 
   // ================================================================ 4B's window from the street
   // (outside the street wall: you only ever see it from down there, and from inside it's behind you)
-  const winTex = tex.live(64, 48);
+  const winTex = tex.live(160, 108);
   const winOut = plane(2.2, 1.5, glow(0xffffff, { map: winTex.texture }), 0.04, 1.6, WZ, Math.PI / 2, g);
+  // Teodor, at the glass: a thin old man in a hospital gown, the room lit up behind him. Big enough, and lit
+  // enough, to make out from the street: the white hair, the face, the hand on the glass.
   function drawWindow(pose, dim) {
     const c = winTex.ctx;
-    const glowC = dim ? ["#6a4a26", "#3a2914"] : ["#ffd9a0", "#b98a4a"];
-    const grad = c.createLinearGradient(0, 0, 0, 48);
+    const W2 = 160, H2 = 108;
+    const glowC = dim ? ["#6a4a26", "#2e2012"] : ["#ffe2b0", "#c08f4e"];
+    const grad = c.createRadialGradient(W2 * 0.45, H2 * 0.3, 6, W2 * 0.45, H2 * 0.4, W2 * 0.75);
     grad.addColorStop(0, glowC[0]);
     grad.addColorStop(1, glowC[1]);
     c.fillStyle = grad;
-    c.fillRect(0, 0, 64, 48);
-    c.fillStyle = "rgba(220,220,210,.55)";
-    for (let y = 1; y < 9; y += 2) c.fillRect(0, y, 64, 1);           // the blinds, pulled up
-    c.fillStyle = "#3a3d40";
-    c.fillRect(0, 0, 64, 2); c.fillRect(0, 46, 64, 2); c.fillRect(0, 0, 2, 48); c.fillRect(62, 0, 2, 48); c.fillRect(31, 0, 2, 48);
+    c.fillRect(0, 0, W2, H2);
+    // the room behind him: the curtain, the bed's headboard, the monitor's green light
+    c.fillStyle = dim ? "rgba(40,50,60,.5)" : "rgba(120,150,170,.55)";
+    c.fillRect(110, 16, 34, 84);
+    c.fillStyle = dim ? "rgba(60,50,40,.6)" : "rgba(150,130,100,.6)";
+    c.fillRect(8, 64, 52, 26);
+    c.fillStyle = "#3fe07a";
+    c.fillRect(20, 34, 6, 4);
+    c.fillStyle = "rgba(230,230,220,.55)";
+    for (let y = 2; y < 16; y += 3) c.fillRect(0, y, W2, 2);           // the blinds, pulled up
     if (pose) {
-      // the thin figure: too thin, too still
-      c.fillStyle = "#0b0a09";
-      c.fillRect(22, 12, 6, 7);                                        // head
-      c.fillRect(21, 19, 8, 16);                                       // body
-      c.fillRect(22, 35, 2, 13); c.fillRect(26, 35, 2, 13);            // legs
-      c.fillRect(19, 20, 2, 13);                                       // left arm, hanging
-      if (pose === "hand") { c.fillRect(29, 18, 6, 2); c.fillRect(34, 12, 2, 8); c.fillRect(33, 10, 4, 4); }       // a hand on the glass
-      else if (pose === "finger") { c.fillRect(29, 18, 4, 2); c.fillRect(31, 10, 2, 9); c.fillRect(31, 7, 2, 4); } // one finger up
-      else c.fillRect(29, 20, 2, 13);                                 // just standing there
+      const x0 = 62;                                                  // he stands just left of the middle
+      const skin = dim ? "#8a8078" : "#d9cfc4";
+      const gown = dim ? "#4e5a62" : "#9fb4c4";
+      // his shadow on the glass, a soft dark halo, so he reads against the light
+      c.fillStyle = "rgba(20,14,8,.35)";
+      c.beginPath(); c.ellipse(x0 + 9, 60, 20, 46, 0, 0, Math.PI * 2); c.fill();
+      // the gown
+      c.fillStyle = gown;
+      c.fillRect(x0, 40, 19, 46);
+      c.fillRect(x0 - 2, 44, 23, 10);
+      c.fillStyle = "rgba(60,80,100,.5)";
+      for (let i = 0; i < 6; i++) c.fillRect(x0 + 2 + (i % 3) * 6, 48 + Math.floor(i / 3) * 12, 2, 2);
+      // thin legs, bare feet
+      c.fillStyle = skin;
+      c.fillRect(x0 + 4, 86, 4, 20); c.fillRect(x0 + 11, 86, 4, 20);
+      // the neck, the head, white hair round the sides, the face lit by the room
+      c.fillRect(x0 + 7, 34, 5, 7);
+      c.fillRect(x0 + 3, 19, 13, 16);
+      c.fillStyle = dim ? "#a8a29a" : "#f2efe8";
+      c.fillRect(x0 + 2, 19, 3, 9); c.fillRect(x0 + 14, 19, 3, 9); c.fillRect(x0 + 4, 17, 11, 3);
+      c.fillStyle = "#1a1210";
+      c.fillRect(x0 + 6, 25, 2, 2); c.fillRect(x0 + 11, 25, 2, 2);    // eyes, looking down at the street
+      c.fillStyle = "rgba(80,50,40,.6)";
+      c.fillRect(x0 + 7, 31, 5, 1);                                     // mouth
+      // arms
+      c.fillStyle = skin;
+      c.fillRect(x0 - 3, 44, 3, 26);                                    // the left one, hanging
+      if (pose === "hand") {
+        // the right hand up, flat on the glass: the palm and four fingers, pressed white
+        c.fillRect(x0 + 19, 42, 10, 3); c.fillRect(x0 + 27, 30, 3, 14);
+        c.fillStyle = "#f6f0e6";
+        c.fillRect(x0 + 25, 22, 9, 10);
+        for (let i = 0; i < 4; i++) c.fillRect(x0 + 25 + i * 2.4, 15 + (i === 1 || i === 2 ? -1 : 1), 1.8, 8);
+        c.fillRect(x0 + 23, 26, 2, 5);
+      } else if (pose === "finger") {
+        // one finger up: one more night
+        c.fillRect(x0 + 19, 42, 8, 3); c.fillRect(x0 + 25, 28, 3, 16);
+        c.fillStyle = "#f6f0e6";
+        c.fillRect(x0 + 24, 24, 6, 6);
+        c.fillRect(x0 + 26, 14, 2, 11);
+      } else {
+        c.fillRect(x0 + 19, 44, 3, 26);                                 // just standing there, arms at his sides
+      }
     }
+    // the frame, and rain on the glass
+    c.fillStyle = "#3a3d40";
+    c.fillRect(0, 0, W2, 3); c.fillRect(0, H2 - 3, W2, 3); c.fillRect(0, 0, 3, H2); c.fillRect(W2 - 3, 0, 3, H2); c.fillRect(W2 / 2 - 1, 0, 3, H2);
+    c.fillRect(0, 38, W2, 2);
+    c.fillStyle = "rgba(220,230,240,.25)";
+    for (let i = 0; i < 40; i++) c.fillRect(Math.floor(rnd() * W2), Math.floor(rnd() * H2), 1, 2 + Math.floor(rnd() * 5));
     winTex.texture.needsUpdate = true;
   }
   drawWindow(null, false);
@@ -695,6 +754,43 @@ export function buildHospital(scene) {
   add(g, lights[1], CX, 2.7, 28);
   add(g, lights[2], BX + 0.1, 2.3, R0 + 0.8);
   void eMon;
+
+  // a bedcover from z0 to z1, lying over a man on his back (legs a little apart, toes up), hanging over the
+  // sides of the mattress. lift raises it (the sheet folded over the top of the blanket)
+  function drape(z0, z1, material, lift = 0) {
+    const geo = new THREE.PlaneGeometry(1.42, z1 - z0, 22, 26);
+    geo.rotateX(-Math.PI / 2);
+    const pos = geo.attributes.position;
+    const TOP = 0.66;                 // the mattress
+    const footZ = BZ + 0.84;          // where his feet are
+    const ridge = (x, c, w) => Math.exp(-(((x - c) / w) ** 2));
+    for (let i = 0; i < pos.count; i++) {
+      let x = pos.getX(i);
+      const z = BZ + (z0 + z1) / 2 - BZ + pos.getZ(i);
+      const ax = Math.abs(x);
+      let y;
+      if (ax <= 0.47) {
+        // over his legs (two ridges, close together), the hips at the top, the toes at the end
+        const legs = Math.max(ridge(x, 0.085, 0.1), ridge(x, -0.085, 0.1));
+        const along = THREE.MathUtils.smoothstep(z, z0 - 0.05, z0 + 0.25);
+        const feet = Math.exp(-(((z - footZ) / 0.09) ** 2));
+        const hips = ridge(x, 0, 0.22) * (1 - THREE.MathUtils.smoothstep(z, z0 + 0.1, z0 + 0.45));
+        const fall = THREE.MathUtils.smoothstep(ax, 0.47, 0.18);     // it falls away toward the edge of the mattress
+        y = TOP + 0.02 + fall * (0.165 * legs * along + 0.11 * feet * legs + 0.13 * hips) + 0.02 * fall;
+        y += Math.sin(z * 31 + x * 9) * 0.006 + Math.sin(x * 23 - z * 7) * 0.004;   // creases
+        // past his feet it slopes down to the foot of the bed
+        if (z > footZ + 0.08) y = Math.min(y, TOP + 0.02 + (y - TOP) * (1 - THREE.MathUtils.smoothstep(z, footZ + 0.08, footZ + 0.2)));
+      } else {
+        // over the edge and down the side
+        const over = ax - 0.47;
+        x = Math.sign(x) * (0.48 + Math.min(over, 0.03));
+        y = TOP + 0.02 - Math.max(0, over - 0.02) * 1.15;
+      }
+      pos.setXYZ(i, BX + x, y + lift, z);
+    }
+    geo.computeVertexNormals();
+    return new THREE.Mesh(geo, material);
+  }
 
   // ================================================================ furniture builders (hoisted)
   function chair(x, z, ry) {
@@ -861,17 +957,23 @@ export function buildHospital(scene) {
     spawn: toWorld(CX, 1.7, 1.6),
     spawnYaw,
     win: winGlass,
+    fogPane,
     bedHead: toWorld(BX, 0.9, R0 + 0.35),
     roomPos: toWorld(-2.6, 0, RZ),
     navPoint: toWorld(CORR_OUT - 0.25, 2.25, doorZ(RZ)),
     // Mara walks you there: down the hall, in through the door, to the foot of the bed
     maraStart: toWorld(CX + 0.4, 0, 3.6),
     maraPath: [toWorld(CX, 0, doorZ(RZ)), toWorld(CORR_OUT + 0.9, 0, doorZ(RZ)), toWorld(BX - 1.25, 0, BZ + 1.35)],
-    // the old man in the bed: on his back, his head on the pillow
+    // the old man in the bed: on his back, his head on the pillow, the blanket over his legs and his hands
+    // resting on top of it
     layInBed(p) {
       g.add(p.root);
-      p.root.position.set(BX, 0.78, BZ + 0.85);
-      p.root.rotation.set(-Math.PI / 2 + 0.1, 0, 0);
+      const depth = 0.24 * (p.look.build || 1);
+      p.root.position.set(BX, 0.665 + depth / 2, BZ + 0.86);
+      p.root.rotation.set(-Math.PI / 2 + 0.04, 0, 0);
+      p.stand();
+      p.arms.forEach((a, i) => a.rotation.set(-0.26, 0, i ? -0.1 : 0.1));
+      p.hips.forEach((h) => { h.rotation.x = 0; });
     },
     // years later, from the pillow (all in the hospital's own space): your eyes, the plastic chair beside the
     // bed and which way it faces, the window
@@ -890,6 +992,8 @@ export function buildHospital(scene) {
     // the window from outside: who's standing in it (null, "stand", "hand", "finger"), and how lit it is
     setWindowFigure(pose, dim = false) { drawWindow(pose, dim); },
     windowOutside: toWorld(0.04, 1.6, WZ),
+    // where along the road it is (you look up at it from the middle of the street, opposite)
+    windowD: D0 + WZ,
     setActive(on) {
       active = on;
       inside.visible = on;

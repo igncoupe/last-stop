@@ -54,8 +54,22 @@ export function createSelfBody(scene, bus, player, camera) {
     const band = s < 0 ? put(seat, box(0.095, 0.025, 0.06, watch), 0, 0, 0) : null;   // a watch on the left wrist
     return { s, upper, fore, sleeve, hand, band, shoulder: new THREE.Vector3(0.7 + s * 0.21, 1.52, 4.64) };
   });
+  // the window-side hand, doing something else for a moment: "bird" (the middle finger, held up at the glass)
+  const bird = new THREE.Group();
+  put(bird, box(0.085, 0.075, 0.07, skin), 0, 0, 0);                              // the fist
+  put(bird, box(0.082, 0.028, 0.03, skin), 0, 0.03, 0.035);                       // curled fingers, knuckles out
+  put(bird, box(0.021, 0.088, 0.023, skin), 0.004, 0.078, 0.006);                 // ...and the one that isn't
+  put(bird, box(0.012, 0.012, 0.024, mat({ color: 0x8a6a58 })), 0.004, 0.118, 0.012);   // its nail
+  const thumb = put(bird, box(0.055, 0.022, 0.024, skin), -0.012, 0.004, 0.048);  // the thumb, tucked across
+  thumb.rotation.z = 0.25;
+  put(bird, box(0.1, 0.035, 0.1, cuff), 0, -0.06, 0);                             // the jacket cuff
+  bird.visible = false;
+  seat.add(bird);
   onLayer(seat);
   seat.visible = false;
+  const gesture = { name: null, k: 0, on: false };
+  const raised = new THREE.Vector3(1.08, 1.56, 4.95);           // up at the window, where they can see it
+  const eyeWorld = new THREE.Vector3();
 
   // ---------------------------------------------------------------- on foot (world space)
   const walk = new THREE.Group();
@@ -86,6 +100,8 @@ export function createSelfBody(scene, bus, player, camera) {
   const grips = [Math.PI + 0.55, -0.55];          // ten and two on the rim (the wheel is mounted flipped)
 
   return {
+    // a gesture with the window-side hand: gesture("bird", true) ... gesture("bird", false)
+    gesture(name, on) { gesture.name = name; gesture.on = on; },
     update(dt) {
       const st = player.state;
       const driving = st.mode === "seat" && st.seatParent === bus.group && st.seatEye && st.seatEye.distanceTo(bus.driverEye) < 0.05;
@@ -94,15 +110,34 @@ export function createSelfBody(scene, bus, player, camera) {
       if (driving) {
         // the hands follow the rim as the wheel turns
         const wheel = bus.steeringWheel;
+        gesture.k += ((gesture.on ? 1 : 0) - gesture.k) * Math.min(1, dt * (gesture.on ? 7 : 5));
         for (const a of arms) {
           const ang = grips[a.s < 0 ? 0 : 1];
           tmpA.set(Math.cos(ang) * 0.23, Math.sin(ang) * 0.23, 0.01);
           wheel.localToWorld(tmpA);
           seat.worldToLocal(tmpA);                            // the hand, in bus space
+          const up = a.s > 0 && gesture.k > 0.01;
+          if (up) {
+            // off the wheel and up to the window
+            const e = gesture.k * gesture.k * (3 - 2 * gesture.k);
+            tmpA.lerp(raised, e);
+            a.hand.visible = e < 0.6;
+            bird.visible = e >= 0.6;
+            if (bird.visible) {
+              bird.position.copy(tmpA).add(new THREE.Vector3(0, 0.06, 0));
+              eyeWorld.copy(bus.driverEye);
+              bird.up.set(0, 1, 0);
+              bird.lookAt(seat.localToWorld(eyeWorld.clone()));   // the palm to you, the back of the hand to them
+            }
+          } else if (a.s > 0) {
+            a.hand.visible = true;
+            bird.visible = false;
+          }
           // the elbow drops and goes out to the side
           elbow.copy(a.shoulder).lerp(tmpA, 0.5);
           elbow.x += a.s * 0.09;
-          elbow.y -= 0.13;
+          elbow.y -= up ? 0.26 : 0.13;
+          if (up) elbow.z -= 0.08;
           span(a.upper, a.shoulder, elbow);
           tmpB.copy(tmpA).lerp(elbow, 0.12);
           span(a.fore, elbow, tmpB);

@@ -3,6 +3,7 @@
 // lit by its own cold light, twitching, and is gone a moment later.
 import * as THREE from "three";
 import { mat } from "../core/ps1.js";
+import { handMesh } from "./hands.js";
 
 function face() {
   const g = new THREE.Group();
@@ -38,6 +39,7 @@ function face() {
   jaw.add(mouth);
   g.add(jaw);
   // wet hair hanging over the face
+  const hair = [];
   for (let i = 0; i < 16; i++) {
     const x = -0.12 + (i / 15) * 0.24;
     if (Math.abs(x) < 0.03 && i % 2) continue;
@@ -46,6 +48,8 @@ function face() {
     const front = Math.abs(x) < 0.09 ? 0.115 : 0.07;
     strand.position.set(x + (Math.random() - 0.5) * 0.02, 0.15 - len / 2, front);
     strand.rotation.z = (Math.random() - 0.5) * 0.25;
+    strand.userData.base = strand.rotation.z;
+    hair.push(strand);
     g.add(strand);
   }
   const cap = new THREE.Mesh(new THREE.SphereGeometry(0.135, 9, 6, 0, Math.PI * 2, 0, Math.PI / 2), wet);
@@ -60,26 +64,17 @@ function face() {
   const light = new THREE.PointLight(0x9fd8d0, 0.55, 1.2, 1.6);
   light.position.set(0, -0.3, 0.3);
   g.add(light);
-  g.userData = { jaw, eyes, light };
+  g.userData = { jaw, eyes, light, hair };
   return g;
 }
 
+// the same hand that's on every window: pressed white against the glass in front of you
 function hand(side) {
   const g = new THREE.Group();
-  const skin = mat({ color: 0xb7bfb9, emissive: 0x0b100e, flatShading: true });
-  const palm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.11, 0.02), skin);
-  g.add(palm);
-  const fingers = [[-0.04, 0.09, 0.09], [-0.013, 0.1, 0.105], [0.014, 0.1, 0.1], [0.04, 0.085, 0.085]];
-  for (const [x, y, len] of fingers) {
-    const f = new THREE.Mesh(new THREE.BoxGeometry(0.02, len, 0.018), skin);
-    f.position.set(x, y, 0);
-    g.add(f);
-  }
-  const thumb = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.07, 0.018), skin);
-  thumb.position.set(-side * 0.065, 0.0, 0);
-  thumb.rotation.z = side * 0.9;
-  g.add(thumb);
-  g.scale.setScalar(1.15);
+  const h = handMesh("press", 1.35, { lit: false });
+  h.material.color.set(0xd8dedc);
+  h.scale.x = side;                     // a left and a right
+  g.add(h);
   return g;
 }
 
@@ -138,6 +133,63 @@ export function createHorror(camera) {
           finish();
         }
       }
+    } else if (active.kind === "rise") {
+      // you've turned round: it comes up from behind the seat, right there, slowly, water running off it... then it lunges
+      const T1 = 1.9;
+      f.visible = true;
+      if (t < T1) {
+        const k = t / T1;
+        const e = k * k * (3 - 2 * k);
+        f.position.set(0.02 + Math.sin(t * 2.1) * 0.01, THREE.MathUtils.lerp(-0.62, -0.05, e), -0.72);
+        f.rotation.set(0.25 - e * 0.3, Math.sin(t * 1.4) * 0.06, Math.sin(t * 1.2) * 0.05);
+        f.userData.jaw.scale.y = 1 + k * 0.8;
+        faceLight.position.set(f.position.x, f.position.y - 0.32, f.position.z + 0.25);
+        faceLight.intensity = 0.12 + e * 0.3;
+      } else {
+        if (!active.lunged) { active.lunged = true; if (active.onLunge) active.onLunge(); }
+        const k = t - T1;
+        const dist = THREE.MathUtils.lerp(0.72, 0.26, ease(k / 0.08));
+        f.position.set(Math.sin(k * 61) * 0.014, -0.05 + Math.sin(k * 47) * 0.012, -dist);
+        f.rotation.set(-0.08 + (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.32);
+        f.userData.jaw.scale.y = 1.8 + Math.min(1, k / 0.2) * 1.4;
+        faceLight.position.set(f.position.x, f.position.y - 0.3, f.position.z + 0.3);
+        faceLight.intensity = 0.6 * (Math.random() < 0.15 ? 0.15 : 1);
+        if (k > 0.85) {
+          f.visible = false;
+          faceLight.intensity = 0;
+          finish();
+        }
+      }
+    } else if (active.kind === "drift") {
+      // up out of the murk toward the glass: slow, swaying, its hair floating up around it... then it's on you
+      const T1 = 2.7;
+      f.visible = true;
+      if (t < T1) {
+        const k = t / T1;
+        const e = k * k * (3 - 2 * k);
+        const dist = THREE.MathUtils.lerp(4.4, 1.2, e);
+        f.position.set(Math.sin(t * 1.3) * 0.2, -0.08 + Math.sin(t * 0.9) * 0.09, -dist);
+        f.rotation.set(Math.sin(t * 1.1) * 0.08, Math.sin(t * 0.7) * 0.28, Math.sin(t * 0.8) * 0.14);
+        f.userData.jaw.scale.y = 1 + k * 0.5;
+        f.userData.hair.forEach((h, i) => { h.rotation.z = h.userData.base + Math.sin(t * 1.8 + i) * 0.35; h.rotation.x = Math.sin(t * 1.3 + i * 0.7) * 0.4; });
+        faceLight.position.set(f.position.x, f.position.y - 0.3, f.position.z + 0.3);
+        faceLight.intensity = 0.15 + k * 0.35;
+      } else {
+        if (!active.lunged) { active.lunged = true; if (active.onLunge) active.onLunge(); }
+        const k = t - T1;
+        const dist = THREE.MathUtils.lerp(1.2, 0.26, ease(k / 0.1));
+        f.position.set(Math.sin(k * 61) * 0.014, -0.06 + Math.sin(k * 47) * 0.012, -dist);
+        f.rotation.set(-0.08 + (Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.25, (Math.random() - 0.5) * 0.32);
+        f.userData.jaw.scale.y = 1.5 + Math.min(1, k / 0.2) * 1.6;
+        faceLight.position.set(f.position.x, f.position.y - 0.3, f.position.z + 0.3);
+        faceLight.intensity = 0.6 * (Math.random() < 0.15 ? 0.15 : 1);
+        if (k > 0.95) {
+          f.visible = false;
+          faceLight.intensity = 0;
+          f.userData.hair.forEach((h) => { h.rotation.z = h.userData.base; h.rotation.x = 0; });
+          finish();
+        }
+      }
     } else if (active.kind === "hands") {
       // two hands slam onto the glass in front of you, then slide down
       hands.forEach((h, i) => {
@@ -146,7 +198,7 @@ export function createHorror(camera) {
         const slam = ease(t / 0.08);
         const slide = Math.max(0, t - 0.35) * 0.35;
         h.position.set(s * 0.17, 0.0 - slide, THREE.MathUtils.lerp(-1.0, -0.42, slam));
-        h.rotation.set(0, Math.PI, s * -0.18);
+        h.rotation.set(0, 0, s * -0.18);
       });
       if (t > 1.3) {
         hands.forEach((h) => { h.visible = false; });
@@ -161,10 +213,10 @@ export function createHorror(camera) {
   }
 
   return {
-    play(kind) {
+    play(kind, { onLunge = null } = {}) {
       return new Promise((done) => {
         f.visible = false;
-        active = { kind, t: 0, done };
+        active = { kind, t: 0, done, onLunge };
       });
     },
     update: frame,

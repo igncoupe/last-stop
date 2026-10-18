@@ -273,43 +273,179 @@ export function makeGift() {
   return g;
 }
 
-// Teodor Varga's old locker, at the end of a row of them in the depot: door hanging open, the night's
-// clipping taped inside it
+// Teodor Varga's old locker, at the end of a row of them in the depot: the others padlocked and dented, his door
+// hanging open. Inside: his uniform jacket on its hook, a thermos and a lunch tin on the shelf, his shoes, photos
+// and a kid's drawing of the bus taped inside the door, and tonight's clipping taped to the back wall.
+function lockerTexture({ name = null, seed: s0 = 1 } = {}) {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 192;
+  const x = c.getContext("2d");
+  let s = s0 * 977 + 13;
+  const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  // old army-green enamel, worn through to grey steel at the edges and round the handle
+  x.fillStyle = "#4f5a52";
+  x.fillRect(0, 0, 64, 192);
+  for (let i = 0; i < 600; i++) {
+    const v = 70 + Math.floor(r() * 30);
+    x.fillStyle = `rgba(${v},${v + 10},${v},${0.15 + r() * 0.2})`;
+    x.fillRect(Math.floor(r() * 64), Math.floor(r() * 192), 1 + Math.floor(r() * 2), 1);
+  }
+  x.fillStyle = "rgba(150,155,150,.35)";
+  for (let i = 0; i < 30; i++) x.fillRect(r() < 0.5 ? 0 : 61, Math.floor(r() * 192), 3, 2 + r() * 6);
+  // rust: blooms low down, and streaks running from the vents
+  for (let i = 0; i < 14; i++) {
+    const px = r() * 64, py = 120 + r() * 72, rr = 2 + r() * 8;
+    const g = x.createRadialGradient(px, py, 0, px, py, rr);
+    g.addColorStop(0, "rgba(120,62,28,.75)");
+    g.addColorStop(1, "rgba(120,62,28,0)");
+    x.fillStyle = g;
+    x.fillRect(px - rr, py - rr, rr * 2, rr * 2);
+  }
+  for (let i = 0; i < 6; i++) { x.fillStyle = "rgba(110,58,26,.45)"; x.fillRect(14 + r() * 36, 34, 1, 10 + r() * 30); }
+  // scratches, a dent
+  x.strokeStyle = "rgba(170,175,168,.4)";
+  for (let i = 0; i < 8; i++) { x.beginPath(); const px = r() * 64, py = r() * 192; x.moveTo(px, py); x.lineTo(px + (r() - 0.5) * 20, py + (r() - 0.5) * 8); x.stroke(); }
+  const dy = 80 + r() * 60;
+  const dg = x.createRadialGradient(30, dy, 1, 30, dy, 12);
+  dg.addColorStop(0, "rgba(20,24,20,.45)"); dg.addColorStop(0.6, "rgba(120,130,122,.25)"); dg.addColorStop(1, "rgba(0,0,0,0)");
+  x.fillStyle = dg;
+  x.fillRect(16, dy - 12, 28, 24);
+  // the louvers at the top and bottom
+  for (const y0 of [12, 164]) for (let i = 0; i < 6; i++) { x.fillStyle = "#1c211d"; x.fillRect(16, y0 + i * 4, 32, 2); x.fillStyle = "rgba(160,170,160,.35)"; x.fillRect(16, y0 + i * 4 + 2, 32, 1); }
+  // the name slot
+  x.fillStyle = "#2a2f2b";
+  x.fillRect(18, 44, 28, 9);
+  x.fillStyle = name ? "#d9d2bc" : "#8f8a78";
+  x.fillRect(19, 45, 26, 7);
+  if (name) { x.fillStyle = "#2a2418"; x.font = "bold 6px monospace"; x.textAlign = "center"; x.fillText(name, 32, 51); }
+  else if (r() < 0.6) { x.fillStyle = "rgba(40,36,28,.7)"; x.fillRect(22, 47, 10 + r() * 10, 2); }
+  // the latch, and a sticker half scraped off
+  x.fillStyle = "#9aa09a";
+  x.fillRect(50, 90, 6, 22);
+  x.fillStyle = "#3a3e3a";
+  x.fillRect(51, 96, 4, 8);
+  if (r() < 0.5) { x.fillStyle = "rgba(200,60,40,.6)"; x.fillRect(10, 120, 12, 8); x.fillStyle = "rgba(240,230,210,.6)"; x.fillRect(11, 121, 6, 2); }
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+// inside his door: photos, a route map, and the drawing Lena's kid did of the bus with him in a big hat
+function doorInsideTexture() {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 160;
+  const x = c.getContext("2d");
+  x.fillStyle = "#59615a";
+  x.fillRect(0, 0, 64, 160);
+  for (let i = 0; i < 300; i++) { const v = 60 + Math.random() * 30; x.fillStyle = `rgba(${v},${v + 8},${v},.3)`; x.fillRect(Math.random() * 64, Math.random() * 160, 1, 1); }
+  const tape = (px, py) => { x.fillStyle = "rgba(220,210,170,.75)"; x.fillRect(px, py, 9, 3); };
+  // the drawing: crayon, a yellow bus, a big man in a big hat at the wheel, a sun, his name
+  x.save(); x.translate(8, 12); x.rotate(-0.06);
+  x.fillStyle = "#f4f0e2"; x.fillRect(0, 0, 46, 36);
+  x.fillStyle = "#e8b52a"; x.fillRect(5, 14, 34, 13);
+  x.fillStyle = "#3a6ab0"; for (let i = 0; i < 4; i++) x.fillRect(8 + i * 8, 16, 5, 5);
+  x.fillStyle = "#222"; x.beginPath(); x.arc(12, 28, 3, 0, 7); x.arc(32, 28, 3, 0, 7); x.fill();
+  x.fillStyle = "#6a3e1e"; x.fillRect(8, 9, 9, 3); x.fillRect(10, 6, 5, 4);
+  x.fillStyle = "#f0a020"; x.beginPath(); x.arc(39, 7, 4, 0, 7); x.fill();
+  x.fillStyle = "#c03030"; x.font = "bold 5px sans-serif"; x.fillText("TEODOR", 4, 34);
+  x.restore();
+  tape(10, 9); tape(42, 10);
+  // a photo: him and the bus, years ago
+  x.save(); x.translate(10, 58); x.rotate(0.05);
+  x.fillStyle = "#e9e3d2"; x.fillRect(0, 0, 30, 32);
+  x.fillStyle = "#6c6a5c"; x.fillRect(2, 2, 26, 22);
+  x.fillStyle = "#d9cfae"; x.fillRect(4, 12, 22, 8);
+  x.fillStyle = "#3a2d24"; x.fillRect(6, 8, 3, 6);
+  x.restore();
+  tape(18, 56);
+  // a second one, older, a woman laughing
+  x.save(); x.translate(30, 96); x.rotate(-0.1);
+  x.fillStyle = "#e9e3d2"; x.fillRect(0, 0, 26, 30);
+  x.fillStyle = "#7a6650"; x.fillRect(2, 2, 22, 20);
+  x.fillStyle = "#c9a888"; x.fillRect(9, 6, 8, 8);
+  x.fillStyle = "#3a2a1e"; x.fillRect(8, 4, 10, 3);
+  x.restore();
+  tape(35, 94);
+  // a route map, folded, its corner curling
+  x.fillStyle = "#d8d0b4"; x.fillRect(6, 130, 24, 20);
+  x.strokeStyle = "#a02020"; x.beginPath(); x.moveTo(8, 146); x.lineTo(14, 136); x.lineTo(22, 140); x.lineTo(28, 132); x.stroke();
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 export function makeLockers() {
   const g = new THREE.Group();
-  const steel = mat({ color: 0x4c5560 });
-  const dark = mat({ color: 0x23272c });
+  const frame = mat({ color: 0x3e4740 });
+  const dark = mat({ color: 0x15171a });
+  const W = 0.55, H = 1.9, D = 0.6, STEP = 0.62;
   for (let i = 0; i < 5; i++) {
-    const z = i * 0.62;
-    const body = box(0.55, 1.9, 0.6, steel);
-    body.position.set(0, 0.95, z);
-    g.add(body);
-    for (let v = 0; v < 3; v++) { const s = box(0.005, 0.03, 0.3, dark); s.position.set(0.28, 1.62 + v * 0.06, z); g.add(s); }   // vents
+    const z = i * STEP;
+    const last = i === 4;
+    // the carcass: sides, top, a kick plate, the dark inside
+    put(g, box(D, H, 0.02, frame), 0, H / 2, z - W / 2 - 0.02);
+    put(g, box(D, H, 0.02, frame), 0, H / 2, z + W / 2 + 0.02);
+    put(g, box(D, 0.03, W + 0.06, frame), 0, H + 0.015, z);
+    put(g, box(0.03, 0.12, W + 0.06, dark), D / 2 - 0.01, 0.06, z);
+    if (!last) put(g, box(D - 0.04, H - 0.14, W, dark), -0.02, H / 2 + 0.06, z);
+    else {
+      // his is open: a back wall and a floor, grey steel, so you can see what's in it
+      put(g, box(0.02, H - 0.14, W, mat({ color: 0x3a403c })), -D / 2 + 0.02, H / 2 + 0.06, z);
+      put(g, box(D - 0.04, 0.02, W, mat({ color: 0x2a2e2c })), -0.02, 0.13, z);
+    }
+    if (!last) {
+      // a closed door, and a padlock on most of them
+      const door = put(g, new THREE.Mesh(new THREE.PlaneGeometry(W, H - 0.14), mat({ map: lockerTexture({ seed: i + 2 }) })), D / 2 + 0.005, H / 2 + 0.06, z);
+      door.rotation.y = Math.PI / 2;
+      if (i !== 3) {
+        put(g, box(0.03, 0.06, 0.05, mat({ color: 0x8a8c80 })), D / 2 + 0.03, 0.98, z + 0.2);
+        const lock = put(g, box(0.04, 0.06, 0.045, mat({ color: 0xb08a3c })), D / 2 + 0.05, 0.92, z + 0.2);
+        put(lock, new THREE.Mesh(new THREE.TorusGeometry(0.015, 0.004, 4, 8, Math.PI), mat({ color: 0x9a9c90 })), 0, 0.035, 0);
+      }
+    }
   }
-  // the last one is his: the door swung open, a name strip, the inside dark
-  const z = 4 * 0.62;
-  const inside = box(0.02, 1.7, 0.54, mat({ color: 0x15171a }));
-  inside.position.set(0.27, 0.97, z);
-  g.add(inside);
+  // the last one is his: the door swung open, his name still in the slot
+  const z = 4 * STEP;
   const doorPivot = new THREE.Group();
-  doorPivot.position.set(0.29, 0, z + 0.29);
+  doorPivot.position.set(D / 2, 0, z + W / 2);
   doorPivot.rotation.y = -1.9;                 // swung open, out into the room
-  const door = box(0.03, 1.8, 0.58, steel);
-  door.position.set(0, 0.95, -0.29);
-  doorPivot.add(door);
+  const outside = put(doorPivot, new THREE.Mesh(new THREE.PlaneGeometry(W, H - 0.14), mat({ map: lockerTexture({ seed: 9, name: "T. VARGA" }) })), 0.012, H / 2 + 0.06, -W / 2);
+  outside.rotation.y = Math.PI / 2;
+  const inside = put(doorPivot, new THREE.Mesh(new THREE.PlaneGeometry(W - 0.04, H - 0.3), mat({ map: doorInsideTexture() })), -0.012, H / 2 + 0.06, -W / 2);
+  inside.rotation.y = -Math.PI / 2;
+  put(doorPivot, box(0.02, H - 0.14, W, mat({ color: 0x404842 })), 0, H / 2 + 0.06, -W / 2);
+  put(doorPivot, box(0.05, 0.12, 0.03, mat({ color: 0x9aa09a })), 0.03, 1.0, -W + 0.05);   // the latch
   g.add(doorPivot);
-  const name = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.07), mat({ map: tex.sign("T. VARGA · 9", { bg: "#d8d2be", fg: "#2a2418", w: 64, h: 14, font: 9 }) }));
-  name.position.set(0.282, 1.86, z);
-  name.rotation.y = Math.PI / 2;
-  g.add(name);
-  // the clipping, taped inside the back of the locker
+  // inside: the shelf with a thermos and a lunch tin, a hook with his jacket on it, his shoes
+  put(g, box(D - 0.06, 0.02, W - 0.02, frame), -0.02, 1.58, z);
+  const thermos = put(g, new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.28, 10), mat({ color: 0x3a6a4a })), 0.05, 1.73, z - 0.15);
+  put(thermos, new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 0.06, 10), mat({ color: 0x9aa0a0 })), 0, 0.16, 0);
+  put(g, box(0.18, 0.09, 0.22, mat({ color: 0x8a2a20 })), -0.02, 1.635, z + 0.12);                              // the lunch tin
+  put(g, box(0.19, 0.012, 0.23, mat({ color: 0xb08a3c })), -0.02, 1.68, z + 0.12);
+  put(g, box(0.03, 0.03, 0.1, mat({ color: 0x9aa09a })), -0.15, 1.5, z - 0.15);                                // the hook
+  // his jacket on it: brown, Route 9, hanging off its shoulders
+  const jacket = new THREE.Group();
+  put(jacket, box(0.14, 0.62, 0.42, mat({ color: 0x5a4632 })), 0, -0.32, 0);
+  for (const s2 of [-1, 1]) put(jacket, box(0.1, 0.55, 0.09, mat({ color: 0x4e3c2a })), 0.01, -0.33, s2 * 0.24);
+  put(jacket, box(0.15, 0.08, 0.3, mat({ color: 0x4a3a2a })), 0, 0, 0);                                         // the collar
+  put(jacket, box(0.01, 0.05, 0.07, mat({ color: 0xb08a3c })), 0.075, -0.16, 0.1);                                // the Route 9 patch
+  jacket.position.set(-0.06, 1.48, z - 0.15);
+  jacket.rotation.y = 1.15;                    // hanging sideways off the hook, to one side
+  g.add(jacket);
+  for (const s2 of [-1, 1]) put(g, box(0.24, 0.07, 0.1, mat({ color: 0x1a1612 })), 0.05, 0.16, z + s2 * 0.08);   // his shoes
+  // the clipping, taped to the back wall, where the light from the room reaches it
   const clipCanvas = document.createElement("canvas");
   clipCanvas.width = 64;
   clipCanvas.height = 84;
   const clipTex = new THREE.CanvasTexture(clipCanvas);
   clipTex.magFilter = THREE.NearestFilter;
-  const clip = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.34), mat({ map: clipTex }));
-  clip.position.set(0.29, 1.3, z);
+  const clip = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.32), mat({ map: clipTex }));
+  clip.position.set(-D / 2 + 0.04, 1.22, z + 0.12);
   clip.rotation.y = Math.PI / 2;
   g.add(clip);
   // what you press E on: the open locker, door and all

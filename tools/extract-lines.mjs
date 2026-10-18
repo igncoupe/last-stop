@@ -1,6 +1,7 @@
 // Finds every spoken line in js/story/ and writes voices/manifest.json.
 // Usage: node tools/extract-lines.mjs
-// Then generate the audio with tools/make_voices.py.
+// Then generate the audio with tools/make_voices_elevenlabs.py.
+// (g.muse and g.readQuiet thoughts are only written on screen: they have no voice, so they aren't listed.)
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,40 +13,50 @@ const STR = /"((?:[^"\\]|\\.)*)"/g;
 const unq = (raw) => JSON.parse(`"${raw}"`);
 const strings = (block) => [...block.matchAll(STR)].map((m) => unq(m[1]));
 
-const lines = new Map();   // id -> { id, who, text, nights:Set }
+const lines = new Map();   // id -> { id, who, text, nights:Set, at }
 const problems = [];
+// where each line is in the story (file, then position in it), so a night's clips download in the order they're needed
+let fileAt = 0;
 // kind: "say" (out loud, to someone) or "think" (the driver's own thoughts)
-function add(who, text, night, kind = "say") {
+function add(who, text, night, at, kind = "say") {
   if (!CAST[who]) { problems.push(`unknown speaker "${who}": ${text}`); return; }
   const id = lineId(who, text);
-  if (!lines.has(id)) lines.set(id, { id, who, text, kind, nights: new Set() });
-  lines.get(id).nights.add(night);
+  if (!lines.has(id)) lines.set(id, { id, who, text, kind, nights: new Set(), at: Infinity });
+  const l = lines.get(id);
+  l.nights.add(night);
+  l.at = Math.min(l.at, fileAt + at);
 }
 
-const files = fs.readdirSync(storyDir).filter((f) => /^(night\d|common)\.js$/.test(f));
+const S = String.raw`"((?:[^"\\]|\\.)*)"`;
+const files = fs.readdirSync(storyDir).filter((f) => /^(night\d|common)\.js$/.test(f))
+  .sort((a, b) => (a === "common.js" ? -1 : b === "common.js" ? 1 : a.localeCompare(b)));
 for (const file of files) {
+  fileAt += 1e7;
   const src = fs.readFileSync(path.join(storyDir, file), "utf8");
   const night = file.startsWith("night") ? Number(file[5]) : 0;
-  for (const m of src.matchAll(/\bg\.say\(\s*"(\w+)"\s*,\s*"((?:[^"\\]|\\.)*)"/g)) add(m[1], unq(m[2]), night);
-  for (const m of src.matchAll(/\bg\.think\(\s*"((?:[^"\\]|\\.)*)"/g)) add("you", unq(m[1]), night, "think");
-  for (const m of src.matchAll(/\bclockIn\(\s*g\s*,\s*\[([\s\S]*?)\]\s*\)/g)) strings(m[1]).forEach((t) => add("you", t, night, "think"));
+  const each = (re, fn) => { for (const m of src.matchAll(re)) fn(m, m.index); };
+  each(new RegExp(String.raw`\bg\.say\(\s*"(\w+)"\s*,\s*` + S, "g"), (m, i) => add(m[1], unq(m[2]), night, i));
+  each(new RegExp(String.raw`\bg\.think\(\s*` + S, "g"), (m, i) => add("you", unq(m[1]), night, i, "think"));
+  each(/\bclockIn\(\s*g\s*,\s*\[([\s\S]*?)\]\s*\)/g, (m, i) => strings(m[1]).forEach((t) => add("you", t, night, i, "think")));
+  // clockIn(g, { quiet: [ only read ], said: [ thought out loud ] })
+  each(/\bclockIn\(\s*g\s*,\s*\{[\s\S]*?said:\s*\[([\s\S]*?)\]/g, (m, i) => strings(m[1]).forEach((t) => add("you", t, night, i, "think")));
   // g.read({ the document }, [ "what you think while reading it", ... ])
-  for (const m of src.matchAll(/\bg\.read\(\s*\{[\s\S]*?\}\s*,\s*\[([\s\S]*?)\]\s*\)/g)) strings(m[1]).forEach((t) => add("you", t, night, "think"));
-  for (const m of src.matchAll(/\bg\.choose\(\s*\[([\s\S]*?)\]\s*[,)]/g)) strings(m[1]).forEach((t) => { const s = spoken(t); if (s) add("you", s, night); });
-  for (const m of src.matchAll(/\bopts\.push\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)) { const s = spoken(unq(m[1])); if (s) add("you", s, night); }
+  each(/\bg\.read\(\s*\{[\s\S]*?\}\s*,\s*\[([\s\S]*?)\]\s*\)/g, (m, i) => strings(m[1]).forEach((t) => add("you", t, night, i, "think")));
+  each(/\bg\.choose\(\s*\[([\s\S]*?)\]\s*[,)]/g, (m, i) => strings(m[1]).forEach((t) => { const s = spoken(t); if (s) add("you", s, night, i); }));
+  each(new RegExp(String.raw`\bopts\.push\(\s*` + S + String.raw`\s*\)`, "g"), (m, i) => { const s = spoken(unq(m[1])); if (s) add("you", s, night, i); });
   // lines said with a ternary: g.say("who", cond ? "a" : "b") / g.think(cond ? "a" : "b")
-  for (const m of src.matchAll(/\bg\.say\(\s*"(\w+)"\s*,\s*[^"()]*\?\s*"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)) { add(m[1], unq(m[2]), night); add(m[1], unq(m[3]), night); }
-  for (const m of src.matchAll(/\bg\.think\(\s*[^"()]*\?\s*"((?:[^"\\]|\\.)*)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)) { add("you", unq(m[1]), night, "think"); add("you", unq(m[2]), night, "think"); }
+  each(new RegExp(String.raw`\bg\.say\(\s*"(\w+)"\s*,\s*[^"()]*\?\s*` + S + String.raw`\s*:\s*` + S, "g"), (m, i) => { add(m[1], unq(m[2]), night, i); add(m[1], unq(m[3]), night, i); });
+  each(new RegExp(String.raw`\bg\.think\(\s*[^"()]*\?\s*` + S + String.raw`\s*:\s*` + S, "g"), (m, i) => { add("you", unq(m[1]), night, i, "think"); add("you", unq(m[2]), night, i, "think"); });
 }
 
 const all = [...lines.values()];
 const nights = {};
-for (let n = 1; n <= 5; n++) nights[n] = all.filter((l) => l.nights.has(n) || l.nights.has(0)).map((l) => l.id);
+for (let n = 1; n <= 5; n++) nights[n] = all.filter((l) => l.nights.has(n) || l.nights.has(0)).sort((a, b) => a.at - b.at).map((l) => l.id);
 const out = {
-  note: "Generated by tools/extract-lines.mjs. Audio: tools/make_voices.py",
+  note: "Generated by tools/extract-lines.mjs. Audio: tools/make_voices_elevenlabs.py",
   count: all.length,
   nights,
-  lines: all.map((l) => ({ id: l.id, who: l.who, text: l.text, kind: l.kind, voice: CAST[l.who].voice, speed: CAST[l.who].speed, pitch: CAST[l.who].pitch })),
+  lines: all.sort((a, b) => a.at - b.at).map((l) => ({ id: l.id, who: l.who, text: l.text, kind: l.kind, voice: CAST[l.who].voice, speed: CAST[l.who].speed, pitch: CAST[l.who].pitch })),
 };
 fs.mkdirSync(path.join(root, "voices"), { recursive: true });
 fs.writeFileSync(path.join(root, "voices", "manifest.json"), JSON.stringify(out, null, 1));

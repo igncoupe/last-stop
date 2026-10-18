@@ -94,6 +94,9 @@ body.scare-flash #view { filter: contrast(1.7) brightness(1.35) saturate(.4); }
 .subtitle.on { opacity: 1; }
 .subtitle span.line { display: inline; padding: 3px 10px; background: rgba(0, 0, 0, .72); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .subtitle .who { font-weight: 700; margin-right: 6px; }
+/* a thought: in italics, a little dimmer, and the name says it isn't said out loud */
+.subtitle span.line.inner { font-style: italic; color: #d9dde4; }
+.subtitle span.line.inner .who { font-style: normal; font-weight: 600; opacity: .85; }
 
 /* anything that needs a key press, big in the middle, so it can't be missed */
 .cta {
@@ -327,9 +330,10 @@ body[data-subs="large"] .subtitle { font-size: clamp(20px, 2.15vw, 30px); }
 .p-title { font-weight: 700; font-size: 20px; text-transform: uppercase; margin-bottom: 12px; border-bottom: 2px solid #1d1b17; padding-bottom: 6px; }
 .p-scrawl { font-family: "Segoe Print", "Bradley Hand", cursive; color: #2c3a73; font-size: 22px; transform: rotate(-4deg); margin-top: 14px; }
 /* pencil, in a hurry */
-.p-scrawl.rushed { padding-bottom: 14px; color: #3b3b40; font-size: 23px; transform: rotate(-5deg) skewX(-8deg); white-space: nowrap; letter-spacing: -0.5px;
+.p-scrawl.rushed { padding-bottom: 14px; color: #3b3b40; font-size: 23px; line-height: 1.55; transform: rotate(-4deg) skewX(-8deg); white-space: normal; word-spacing: 6px; letter-spacing: -0.5px;
   text-shadow: 0.6px 0.4px 0 rgba(70,70,76,.45), -0.4px 0 0.6px rgba(40,40,44,.35); }
 .p-scrawl.rushed span { display: inline-block; }
+.p-scrawl.rushed span.word { white-space: nowrap; }
 .p-scrawl.rushed span.hard { color: #1d1d21; text-shadow: 0.8px 0.6px 0 rgba(30,30,34,.6); }
 .p-scrawl.rushed .tail { width: 46px; height: 2px; margin-left: 2px; vertical-align: middle; transform: translateY(10px) rotate(14deg);
   background: linear-gradient(90deg, rgba(50,50,56,.75), rgba(50,50,56,0)); }
@@ -372,3 +376,17 @@ body[data-subs="large"] .subtitle { font-size: clamp(20px, 2.15vw, 30px); }
 .credits-roll p { margin: 0 0 10px; color: var(--dim); }
 .credits-roll p strong { display: block; color: var(--text); font-size: 18px; margin-top: 30px; }
 @keyframes roll { to { transform: translateY(calc(-100% - 100vh)); } }
+
+/* under the river: murk, a vignette closing in, light rippling through the water */
+.underwater {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none; opacity: 0; transition: opacity 1.4s;
+  background: radial-gradient(ellipse at 50% 42%, rgba(30, 80, 70, .12) 0%, rgba(4, 22, 18, .55) 55%, rgba(0, 6, 5, .94) 100%);
+}
+.underwater.on { opacity: 1; }
+.underwater::after {
+  content: ""; position: absolute; inset: -20%;
+  background: repeating-radial-gradient(ellipse at 40% 30%, rgba(120, 200, 180, .05) 0 14px, transparent 14px 34px);
+  animation: caustics 6s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+@keyframes caustics { from { transform: translate(-3%, -2%) scale(1.05) rotate(-2deg); } to { transform: translate(3%, 2%) scale(1.12) rotate(2deg); } }

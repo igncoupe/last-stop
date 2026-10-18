@@ -16,6 +16,7 @@ const DOCK_FROM = 60;
 const DOOR_AHEAD = 3.9;
 const DOCK_BRAKE = 7.2;          // hard enough to go from full speed to a stop inside the yellow box
 const DOCK_HOLD = 2.2;           // seconds the bus stands still once it has pulled in
+export const SKIP_HOLD = 0.6;    // how long you hold W to drive past a stop it's pulling in to
 
 export function createDrive(bus) {
   const s = {
@@ -73,11 +74,14 @@ export function createDrive(bus) {
       if (s.control === "player" && k && !k.skipped && !k.done) {
         const left = k.at - s.d;
         if (!k.engaged && (left < DOCK_FROM || k.force) && left > -1 && !bus.doorsOpen) { k.engaged = true; k.cruise = s.limit; }
-        // a fresh press of W (not one held from before) means drive past this one, but only before it
-        // starts braking: once it's braking, it's stopping
+        // pressing W again (not one held from before) and holding it means drive past this one, but only before
+        // it starts braking: once it's braking, it's stopping. A tap doesn't count: you have to mean it.
         const braking = Math.sqrt(Math.max(0, left) * 2 * k.brake) < s.speed + 0.5;
         k.braking = k.engaged && braking;
-        if (k.engaged && !k.force && !braking && seated && (input.hit("KeyW") || input.hit("ArrowUp"))) { k.engaged = false; k.skipped = true; }
+        if (k.engaged && seated && (input.hit("KeyW") || input.hit("ArrowUp"))) k.fresh = true;
+        const holding = k.fresh && seated && (input.down("KeyW") || input.down("ArrowUp"));
+        k.held = holding ? (k.held || 0) + dt : 0;
+        if (k.engaged && !k.force && !braking && k.held > SKIP_HOLD) { k.engaged = false; k.skipped = true; }
       }
       const wantGas = seated && (input.down("KeyW") || input.down("ArrowUp"));
       s.holdT = Math.max(0, s.holdT - dt);

@@ -5,6 +5,7 @@ import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { radialTexture } from "./city.js";
 import { buildHospital } from "./hospital.js";
+import { waterMaterial } from "./water.js";
 
 const put = (parent, mesh, x, y, z) => {
   mesh.position.set(x, y, z);
@@ -32,16 +33,8 @@ function buildBridge(scene) {
     put(g, box(0.08, 0.08, 66, mat({ color: 0x4a4e55 })), x, 1.0, 235);
     put(g, box(0.06, 0.06, 66, mat({ color: 0x3b3f45 })), x, 0.55, 235);
   }
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(600, 600, 30, 30), new THREE.MeshPhongMaterial({ color: 0x7f8f98, map: tex.waterBase().clone(), shininess: 90, specular: 0x4a5c68 }));
-  water.material.map.needsUpdate = true;
-  water.material.map.repeat.set(60, 60);
-  const riverShine = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshBasicMaterial({ map: tex.waterShine().clone(), transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
-  riverShine.material.map.needsUpdate = true;
-  riverShine.material.map.repeat.set(45, 45);
-  riverShine.rotation.x = -Math.PI / 2;
-  riverShine.position.y = 0.05;
-  water.add(riverShine);
-  riverShine.rotation.x = 0;
+  // the river: wide, black, moving, the bridge's last lights broken up on it
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), waterMaterial({ deep: 0x050f14, scale: 0.55, chop: 1.1, horizon: 0x1a2430 }));
   water.rotation.x = -Math.PI / 2;
   put(g, water, 0, -6, 300);
   // painted lines so the road reads in the dark: edges and a dashed center
@@ -81,10 +74,8 @@ function buildBridge(scene) {
     edge: 268,          // where the deck ends
     origin: X,
     water,
-    update(dt) {
-      water.material.map.offset.y += dt * 0.01;
-      riverShine.material.map.offset.x -= dt * 0.012;
-      riverShine.material.map.offset.y += dt * 0.02;
+    lights: bridgeLights,
+    update() {
       for (const l of bridgeLights) l.intensity = g.visible ? l.userData.base : 0;
     },
   };

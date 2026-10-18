@@ -12,7 +12,7 @@ export async function night4(g) {
   g.amb({ rain: 0.2 });
   await g.wait(800);
   await clockIn(g);
-  await g.think("The back row is empty tonight. Just a dark stain on the seat that never dries.");
+  await g.muse("The back row is empty tonight. Just a dark stain on the seat that never dries.");
 
   // ---------- Channel 4
   g.hint("Turn the radio to channel 4");
@@ -61,7 +61,7 @@ export async function night4(g) {
     });
     if (!stayed) g.actor("carmen")?.walk([curbAt(carmenAt)], { speed: 1 });
   } else {
-    await g.think("She ran a few steps after the bus. Then she stopped, and stood in the road, looking up and down it.");
+    await g.muse("She ran a few steps after the bus. Then she stopped, and stood in the road, looking up and down it.");
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
   if (!f.carmenRode) g.despawn("carmen");
@@ -73,7 +73,7 @@ export async function night4(g) {
     if (c === 0 && f.ivyRode) await g.say("carmen", "She did? She loves that bell. Mr. Varga lets her ring it at every stop. I'm Carmen. She's Ivy. She's all I've got.");
     else if (c === 0) await g.say("carmen", "Thank you. I'm Carmen. She's Ivy. She's all I've got.");
     else await g.say("carmen", "Okay. Okay. She'll turn up. She always turns up.");
-    await g.think("She sat with her purse on her knees, and looked out of the window at every corner.");
+    await g.muse("She sat with her purse on her knees, and looked out of the window at every corner.");
   })() : Promise.resolve();
 
   // ---------- Elm & 4th: Mara, and the sun visor
@@ -103,6 +103,7 @@ export async function night4(g) {
   await g.until(() => g.d > STOPS["Elm & 4th"] + 120, 40000);
   g.sfx("sputter");
   g.interior("flicker");
+  const dying = g.think("The engine's coughing. It's dying under me. The bus is rolling to a stop by itself, in the middle of the block.");
   await g.wait(650);
   g.sfx("sputter");
   g.amb({ engine: 0 });
@@ -111,21 +112,21 @@ export async function night4(g) {
   g.interior("on");
   await g.until(() => g.drive.speed < 0.15, 15000);
   g.park();
-  await g.think("The engine coughed twice and died. The bus rolled to a stop on its own, in the middle of the block.");
+  await dying;
   if (f.carmenRode) await g.say("carmen", "It does this. Right here. It did this that night too.");
   await g.wait(1500);
-  await g.think("A streetlight glare, right in my eyes.");
+  await g.muse("A streetlight glare, right in my eyes.");
   g.hint("Pull down the sun visor");
   await g.interact(g.bus.interactables[2], "Pull down the visor");
   g.visor(true);
   g.bus.setClipping(false);
   g.sfx("click");
-  await g.think("Something fell out of the visor into my lap. A newspaper clipping, folded small. Someone kept it a long time.");
+  await g.muse("Something fell out of the visor into my lap. A newspaper clipping, folded small. Someone kept it a long time.");
   const read = await g.choose(["[Read it]", "[Put it back]"]);
   if (read === 0) {
     f.rheeTruth = true;
     g.mood("dread");
-    await g.read({
+    g.paper({
       kind: "clipping", kicker: "The Harbor Ledger · March 1994", title: "Inquiry: dispatcher ordered bus onto bridge",
       lines: [
         "Route 9 driver Teodor Varga radioed dispatch at 12:19 a.m., asking permission to wait out the storm at Northgate.",
@@ -134,15 +135,15 @@ export async function night4(g) {
       ],
       photo: "THE 14 VICTIMS",
       scrawl: "stop stop stop stop stop stop",
-    }, [
-      "Inquiry. Dispatcher ordered bus onto bridge.",
-      "Route 9 driver Teodor Varga radioed dispatch at twelve nineteen, asking permission to wait out the storm at Northgate.",
-      "Dispatcher Harold Rhee refused. Recordings show Rhee told Varga, eleven minutes behind schedule, to make up the time by taking the Ashgrove bridge.",
-      "Asked if he regretted the order, Rhee said: the schedule always comes first. That's the job.",
-      "There's a photo of the victims. Fourteen faces. A woman in a cardigan, holding a little kid on her hip.",
-      "The kid is me.",
-      "Under the article, in shaky pencil, one word, over and over, until the paper tore. Stop. Stop. Stop. Stop.",
-    ]);
+    });
+    await g.wait(500);
+    await g.muse("Inquiry. Dispatcher ordered bus onto bridge.");
+    await g.muse("Teodor asked to wait out the storm. Rhee told him to make up the time. Take the bridge.");
+    await g.think("There's a photo of the victims. Fourteen faces. A woman in a cardigan, holding a little kid on her hip.");
+    await g.think("The kid is me.");
+    await g.think("Under the article, in shaky pencil, one word, over and over, until the paper tore. Stop. Stop. Stop. Stop.");
+    g.paper(null);
+    await g.wait(300);
     await g.say("rhee", "Put that away, driver. Teodor kept that for thirty years. Look where it got him.");
   }
   g.visor(false);
@@ -171,7 +172,7 @@ export async function night4(g) {
     });
     if (!stayed && g.actor("jun")) g.actor("jun").walk([curb("Market St", 3)], { speed: 1 });
   } else if (stopped) {
-    await g.think("The posters are gone. Washed off, or torn down. There's a soaked backpack on the bench nobody's claimed.");
+    await g.muse("The posters are gone. Washed off, or torn down. There's a soaked backpack on the bench nobody's claimed.");
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
@@ -180,9 +181,10 @@ export async function night4(g) {
   await g.until(() => g.d > md - 90);
   g.despawn("jun");
   g.despawn("mara");
-  // they're waiting in a line along the curb, one behind the other
+  // they're waiting under the shelter, close together, out of the rain that's only falling there
   const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"], ["d11", "drowned", f.carmenRode ? "L3" : "R1"], ["d12", "drowned", "R2"]];
-  walkers.forEach(([key, look], i) => g.spawn(key, look, { ghost: true, at: mysteryCurb(g, -0.6 - i * 1.05, 6.3), yaw: route.heading(md) }));
+  const under = [[-1.2, 6.9], [0.3, 7.5], [-0.3, 6.7], [1.3, 7.1], [-1.9, 7.6], [0.9, 6.6]];
+  walkers.forEach(([key, look], i) => g.spawn(key, look, { ghost: true, at: mysteryCurb(g, under[i][0], under[i][1]), yaw: route.heading(md) + Math.PI / 2 + (Math.random() - 0.5) * 0.5 }));
   await g.autoStop(md);
   g.lockDoors(true);
   g.setDoors(true);
@@ -193,10 +195,11 @@ export async function night4(g) {
   const already = f.carmenRode ? ["R3", "L4", "R4", "L5", "R5", "L6", "B0"] : ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "B0"];
   const theirLooks = ["eddie", "dorothy", "frank", "drowned", "marcus", "drowned", "drowned", f.carmenRode ? "drowned" : "carmen"];
   already.forEach((seat, i) => { g.spawn(`d${i + 1}`, theirLooks[i], { ghost: true }); g.seat(`d${i + 1}`, seat); });
+  // one at a time, out from under the shelter and up the steps, each one waiting for the one ahead
   const boarding = [];
   for (const [key, , seat] of walkers) {
-    boarding.push(g.board(key, seat, 1.5));
-    await g.wait(1300);
+    boarding.push(g.board(key, seat, 1.3));
+    await g.wait(2100);
   }
   await Promise.all(boarding);
   g.setDoors(false);
@@ -210,6 +213,7 @@ export async function night4(g) {
   await g.think("Water. Around my shoes. Rising.");
   g.sfx("breath");
   await g.think("Someone sat down right behind me. I can feel cold coming off her, like an open freezer.");
+  g.actor("lena")?.watch(g.camera);              // she's looking right at you
   await g.say("lena", "You grew up.");
   await g.wait(1500);
   await g.think("Mom.");
@@ -308,20 +312,17 @@ async function bridge(g) {
       return bus.position.y < -5;
     });
     g.sfx("splash");
-    await g.scare("face");
-    g.interior("off");
-    g.bus.setWater(1);
-    g.amb({ water: 1, engine: 0 });
-    g.sfx("heartbeat", 4, 40);
-    await g.wait(3000);
+    await sink(g);
     f.obeyedN4 = true;
   }
   // wake up outside St. Agnes
   await g.fade(1, 900);
+  g.underwater(false);
   B.group.visible = false;
   g.sky("night");
   g.despawnAll();
   g.bus.setWater(0);
+  g.bus.setSmudge(0);
   g.interior("on");
   g.amb({ water: 0, engine: 0.3 });
   g.drive.detach(false);
@@ -329,29 +330,36 @@ async function bridge(g) {
   g.park();                      // parked until this scene is over
   await g.fade(0, 1200);
   g.mood("uneasy");
+  let gift = null;
   if (f.obeyedN4) {
     await g.think("I'm parked outside St. Agnes. The bus is bone dry. My clothes are soaked through. I can taste the river.");
+    await g.think("And the seats are empty. All fourteen of them. Like nobody was ever there.");
     await g.say("rhee", "That's how it's done. You'll do it properly next time.");
   } else {
     await g.think("I'm parked outside St. Agnes. The bus is dry. The engine ticks as it cools.");
-    const gift = makeGift();
+    await g.think("The seats are empty. All of them. They stopped, and then they were just gone.");
+    gift = makeGift();
     gift.position.set(0.3, 1.43, 5.45);
     gift.rotation.y = 0.3;
     g.bus.group.add(gift);
-    g.look(gift.getWorldPosition(new THREE.Vector3()));
-    await g.wait(900);
-    await g.read({ kind: "note", kicker: "the gift tag", lines: ["For Rosie.", "Love, Dad. x"], scrawl: "she waits at Elm and 4th. she doesn't know why." }, [
-      "There's a little box on the dashboard, wrapped in soggy paper with balloons on it. For Rosie. Love, Dad.",
-      "Underneath, newer, in shaky handwriting: she waits at Elm and Fourth. She doesn't know why.",
-    ]);
-    const keep = await g.choose(["[Keep it safe. Find her]", "[Leave it. Not my problem]"]);
-    if (keep === 0) { f.keptPresent = true; g.kind(); gift.removeFromParent(); }
-    f.hasPresent = true;
   }
   await g.peekWindow("finger", "Up on the fourth floor, the window of four B is lit. Dimmer now. The thin figure is holding up one finger.", { dim: true });
   await g.think("One more night.");
   g.release();
   await closeDoorsAndGo(g);
+  // a little way on: the present on the dash
+  if (gift) {
+    await g.wait(2500);
+    g.look(gift.getWorldPosition(new THREE.Vector3()));
+    g.paper({ kind: "note", kicker: "the gift tag", lines: ["For Rosie.", "Love, Dad. x"], scrawl: "she waits at Elm and 4th. she doesn't know why." });
+    await g.wait(500);
+    await g.muse("There's a little box on the dashboard, wrapped in soggy paper with balloons on it. For Rosie. Love, Dad.");
+    await g.think("Underneath, newer, in shaky handwriting: she waits at Elm and Fourth. She doesn't know why.");
+    g.paper(null);
+    const keep = await g.choose(["[Keep it safe. Find her]", "[Leave it. Not my problem]"]);
+    if (keep === 0) { f.keptPresent = true; g.kind(); gift.removeFromParent(); }
+    f.hasPresent = true;
+  }
 
   // ---------- the long way to Northgate: Dana breaks through, and something rides in the back
   await g.wait(1500);
@@ -369,7 +377,7 @@ async function bridge(g) {
     await g.wait(2000);
     await g.think("Someone's standing at the back of the bus. I can see them in the mirror.");
     await g.shadeCreep();
-    await g.think("Nobody. Nothing. But the air back here smells like a struck match.");
+    await g.muse("Nobody. Nothing. But the air back here smells like a struck match.");
     await g.say("rhee", "Eyes front, driver. You've got a schedule to keep.");
   }
   g.mood("uneasy");
@@ -390,7 +398,7 @@ async function bridge(g) {
   await g.say("rhee", "Tomorrow's the last run, driver. The stop is coming to you.");
   g.route("NEXT: ???", true);
   g.sfx("whisper");
-  await g.think("The stop with no name is right after Elm and Fourth now. Tomorrow, it'll be waiting.");
+  await g.muse("The stop with no name is right after Elm and Fourth now. Tomorrow, it'll be waiting.");
   await endShift(g);
 }
 
@@ -417,7 +425,7 @@ async function payphones(g) {
   await g.think("A payphone's ringing. Out here, in the empty lots. Nobody's lived out here in years.");
   if (at[1]) {
     await g.until(() => g.d > at[1] - 80, 30000);
-    await g.think("Another one. Ringing as I go by. Like it's handing me on to the next.");
+    await g.muse("Another one. Ringing as I go by. Like it's handing me on to the next.");
   }
   if (at[2]) {
     await g.until(() => g.d > at[2] - 80, 30000);
@@ -428,4 +436,48 @@ async function payphones(g) {
   await bells;
   await g.think("And then they all stopped. At the same time.");
   g.mood("uneasy");
+}
+
+// Over the edge, into the river. The glass cracks, the water comes in through everything, up over the seats, up
+// over your head. The lights die. In the dark behind you, all of them are looking at you. And then something comes
+// up out of the black, toward the windshield, toward you.
+async function sink(g) {
+  const bus = g.bus;
+  g.shake(2.6);
+  g.sfx("crack");
+  g.sfx("slam");
+  bus.setSmudge(2);
+  g.interior("flicker");
+  g.amb({ water: 1, engine: 0 });
+  g.sfx("gush", 5);
+  g.mood("terror");
+  let lv = 0.05;
+  let under = false;
+  const hull = bus.group;
+  const rising = g.frames((dt) => {
+    lv = Math.min(5.8, lv + dt * (lv < 2 ? 1.1 : 0.8));
+    bus.setWater(lv);
+    // ...and the bus goes down, nose first, under the river
+    hull.position.y = Math.max(-12, hull.position.y - dt * 1.7);
+    hull.rotation.x += (0.32 - hull.rotation.x) * Math.min(1, dt * 0.8);
+    if (!under && lv > 2.8) { under = true; g.underwater(true); g.sfx("bubbles", 3); }
+    return lv >= 5.8;
+  });
+  await g.think("It's coming in. Through the doors, through the floor. It's so cold. It's so cold.");
+  await rising;
+  g.interior("off");
+  g.sfx("heartbeat", 8, 58);
+  await g.wait(1400);
+  // behind you, in the last of the light, every one of them has turned to look at you
+  for (const k of ["lena", "daniel", "ivy", "d0", "d11", "d12", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8"]) g.actor(k)?.watch(g.camera);
+  g.look(g.backRow());
+  await g.think("They're all looking at me. Every one of them. They're not scared. They've done this before.");
+  await g.wait(1200);
+  // and out there, in the headlights, in the murk: something coming up toward the glass
+  g.look(() => g.bus.group.localToWorld(new THREE.Vector3(0.7, 1.7, 9)));
+  await g.wait(1600);
+  await g.scare("drift");
+  g.bus.setHeadlights(false);
+  await g.wait(2600);
+  g.bus.setHeadlights(true);
 }

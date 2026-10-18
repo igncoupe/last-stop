@@ -42,8 +42,8 @@ from make_driver_voice import delivery  # noqa: E402
 
 # who each speaker is. New voices, described from scratch: none of them is anyone real.
 VOICES = {
-    "you": "A Black man in his mid-fifties from the Bronx, New York, a night-shift city bus driver. Deep, gravelly baritone, "
-           "a little hoarse. New York accent. Speaks low and close, tired and wry, trying to stay calm.",
+    "you": "A man in his mid-thirties, a night-shift city bus driver who lost his mother when he was four. A clear, warm, "
+           "natural light baritone with crisp, close diction, gentle and earnest, a little tired. American, no accent.",
     "rhee": "A man in his sixties, a night bus dispatcher heard over a two-way radio. A cold, clipped, controlled baritone with "
             "an unsettling calm. Precise and commanding. When he's pushed, it cracks into rage. American.",
     "dana": "A woman in her forties, a night dispatcher on a two-way radio. A warm, alert, practical alto with a slight Midwestern "
@@ -66,8 +66,8 @@ VOICES = {
             "and far away. American.",
     "rosie": "A woman in her late thirties. A soft, hesitant, slightly husky voice, shy and apologetic, close to tears. American.",
     "voices": "A breathy, hushed, eerie whisper, sad and very quiet, like many people whispering at once in the dark.",
-    "eddie": "A young Latino man from a working-class city neighborhood. A friendly, youthful light baritone. Talks quickly "
-             "and cheerfully, a little tired after a double shift in a diner kitchen.",
+    "eddie": "A seventeen-year-old Mexican-American kid from East Los Angeles, a diner dishwasher. A friendly, youthful "
+             "light baritone with a clear Mexican-American accent. Talks quickly and cheerfully, a little tired after a double shift.",
     "dorothy": "An elderly woman in her mid-seventies, a retired schoolteacher. A low, warm, gentle old woman's voice with the soft "
                "rasp of age. Clear, careful diction, kind and a little amused. American.",
     "frank": "A big man in his early fifties, a mail carrier. A deep, husky baritone with a working-class American accent. "
@@ -85,6 +85,8 @@ SAME_AS = {"momcall": "junmom", "rhee94": "rhee", "harold": "rhee"}
 PREVIEW_TEXT = {
     "voices": "You came back. He stopped. He stopped this time. We waited so long for someone to stop. "
               "We are still waiting at the stop with no name, in the rain.",
+    "you": "I asked for it. I didn't tell them why. There's an old man in the back row. I didn't see him get on. "
+           "My mother's name was Lena Marsh. I was four. Nobody ever told me how. They just said she wasn't coming home.",
     "teodor94": "Dispatch, this is Route 9. The river's coming over the road at Canal. I want to hold at Northgate till it "
                 "passes. Harold, I've got kids on this bus.",
 }
@@ -268,10 +270,11 @@ def remix(args):
     who, change = args.who_list[0], " ".join(args.who_list[1:])
     state = load(VOICES_FILE, {"previews": {}, "voices": {}})
     state.setdefault("remix", {})
-    if who not in state["voices"]:
-        sys.exit(f"{who} has no voice yet: create it first")
+    base = args.base or who                        # (--from jun: start from Jun's voice, not this character's own)
+    if base not in state["voices"]:
+        sys.exit(f"{base} has no voice yet: create it first")
     try:
-        res = call("POST", f"/v1/text-to-voice/{state['voices'][who]['voice_id']}/remix", {
+        res = call("POST", f"/v1/text-to-voice/{state['voices'][base]['voice_id']}/remix", {
             "voice_description": change, "text": preview_text(who), "seed": 1994,
         }, query="output_format=mp3_44100_128")
     except SystemExit as e:
@@ -472,6 +475,7 @@ def main():
     ap.add_argument("--sample", action="store_true", help="generate: just two lines from every voice")
     ap.add_argument("--model", default="eleven_v4")
     ap.add_argument("--budget", type=int, default=60000, help="never send more than this many characters in all")
+    ap.add_argument("--from", dest="base", default="", help="remix: start from this character's voice")
     args = ap.parse_args()
     {"credits": credits, "design": design, "audition": audition, "create": create, "remix": remix, "generate": generate,
      "voices": voices}[args.step](args)

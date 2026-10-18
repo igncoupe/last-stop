@@ -4,12 +4,12 @@
 
 const PEOPLE = {
   jun:     { skin: "#d9b28f", hair: "#0e0e10", shirt: "#26292e", hood: true, straps: "#d8b21e" },
-  lena:    { skin: "#c49a7a", hair: "#4a3626", shirt: "#7a5a6a" },
+  lena:    { skin: "#c49a7a", hair: "#4a3626", shirt: "#8a7a9a", long: true },
   daniel:  { skin: "#c6a184", hair: "#241c16", shirt: "#23262c" },
-  ivy:     { skin: "#e0b996", hair: "#3a2a1a", shirt: "#e0b42a", hood: true, child: true },
+  ivy:     { skin: "#e0b996", hair: "#3a2a1a", shirt: "#e0b42a", hood: true, child: true, long: true },
   kid:     { skin: "#d8b08e", hair: "#2a1d14", shirt: "#8fb0d0", child: true },
   varga:   { skin: "#cdb8a4", hair: "#5a4532", shirt: "#5a4632", cap: "#4a3a2a", mustache: true },
-  a:       { skin: "#a77b5e", hair: "#1a1210", shirt: "#3d6fa8" },
+  a:       { skin: "#5b3a26", hair: "#120c0a", shirt: "#3d6fa8", long: true },
   b:       { skin: "#d6b096", hair: "#7a7a7a", shirt: "#6b6f72" },
   c:       { skin: "#8a5e44", hair: "#141010", shirt: "#5d6e5a" },
   d:       { skin: "#e1c2a6", hair: "#b08848", shirt: "#3b2b2b" },
@@ -17,15 +17,15 @@ const PEOPLE = {
   f:       { skin: "#d2a988", hair: "#9a9a9a", shirt: "#4a4038" },
   // the rest of the fourteen
   eddie:   { skin: "#b8865f", hair: "#15100c", shirt: "#e4e1d8" },
-  dorothy: { skin: "#d8bfab", hair: "#d4d0cc", shirt: "#6b4f6a" },
+  dorothy: { skin: "#d8bfab", hair: "#d4d0cc", shirt: "#6b4f6a", bun: true },
   frank:   { skin: "#d3ad8c", hair: "#5a4a3c", shirt: "#3f5370", mustache: true },
-  carmen:  { skin: "#c49470", hair: "#120d0a", shirt: "#8a4a5a" },
+  carmen:  { skin: "#c49470", hair: "#120d0a", shirt: "#8a4a5a", long: true },
   marcus:  { skin: "#6e4a33", hair: "#0e0b09", shirt: "#2f4a3a" },
-  grace:   { skin: "#e0c0a2", hair: "#a8743a", shirt: "#d06a70" },
+  grace:   { skin: "#e0c0a2", hair: "#a8743a", shirt: "#d06a70", long: true },
   sam:     { skin: "#8a5e44", hair: "#141010", shirt: "#5d6e5a" },
-  rosa:    { skin: "#c99a78", hair: "#3a2a22", shirt: "#6a3d4e" },
+  rosa:    { skin: "#c99a78", hair: "#3a2a22", shirt: "#6a3d4e", bun: true },
   thomas:  { skin: "#dcb48e", hair: "#0d0b0a", shirt: "#3a4a6a" },
-  abby:    { skin: "#e3c3a3", hair: "#140f0c", shirt: "#a83a32" },
+  abby:    { skin: "#e3c3a3", hair: "#140f0c", shirt: "#a83a32", long: true },
   henry:   { skin: "#d2a988", hair: "#9a9a9a", shirt: "#4a4038", mustache: true },
 };
 
@@ -37,6 +37,8 @@ function person(x, cx, baseY, u, p) {
   const hw = 7 * u * k;                  // head
   const hh = 8 * u * k;
   const headY = baseY - sh - 1.5 * u * k - hh;
+  // long hair falls behind the shoulders, past them
+  if (p.long && !p.hood) { x.fillStyle = p.hair; x.fillRect(cx - hw / 2 - 1.2 * u * k, headY + 1 * u * k, hw + 2.4 * u * k, hh + 3.5 * u * k); }
   x.fillStyle = p.shirt;
   x.fillRect(cx - sw / 2, baseY - sh, sw, sh + 1);
   if (p.straps) { x.fillStyle = p.straps; x.fillRect(cx - sw / 2 + 2 * u, baseY - sh, 1.5 * u, sh); x.fillRect(cx + sw / 2 - 3.5 * u, baseY - sh, 1.5 * u, sh); }
@@ -47,7 +49,8 @@ function person(x, cx, baseY, u, p) {
   x.fillRect(cx - hw / 2, headY, hw, hh);
   x.fillStyle = p.hair;
   x.fillRect(cx - hw / 2, headY, hw, 2 * u * k);                                     // hair on top
-  if (!p.hood) { x.fillRect(cx - hw / 2, headY, 1 * u * k, 4 * u * k); x.fillRect(cx + hw / 2 - 1 * u * k, headY, 1 * u * k, 4 * u * k); }
+  if (!p.hood) { x.fillRect(cx - hw / 2, headY, 1 * u * k, (p.long ? 7 : 4) * u * k); x.fillRect(cx + hw / 2 - 1 * u * k, headY, 1 * u * k, (p.long ? 7 : 4) * u * k); }
+  if (p.bun) { x.fillRect(cx - 2 * u * k, headY - 2.2 * u * k, 4 * u * k, 2.6 * u * k); }
   if (p.cap) { x.fillStyle = p.cap; x.fillRect(cx - hw / 2 - 0.5 * u, headY - 1.4 * u, hw + u, 2.4 * u); x.fillStyle = "#1a140e"; x.fillRect(cx - hw / 2, headY + 0.8 * u, hw + 1.6 * u, 0.9 * u); }
   x.fillStyle = "#151515";
   x.fillRect(cx - 2.2 * u * k, headY + 3.6 * u * k, 1.3 * u * k, 1.2 * u * k);       // eyes

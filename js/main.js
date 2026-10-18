@@ -20,6 +20,7 @@ import { createTraffic } from "./world/traffic.js";
 import { createMenuArt } from "./core/menuArt.js";
 import { createSelfBody } from "./world/selfBody.js";
 import { createFile } from "./game/file.js";
+import { updateWater } from "./world/water.js";
 import { NIGHTS, ENDINGS, CREDITS } from "./story/nights.js";
 import { KIND_ENOUGH } from "./story/common.js";
 
@@ -60,6 +61,7 @@ const SKIES = {
   void: { fog: 0x05070b, density: 0.016, hemi: 0.38 },   // the bridge: dark, but you can see the road
   hospital: { fog: 0x0b0d0c, density: 0.02, hemi: 0.4 },
   ward: { fog: 0x090c10, density: 0.024, hemi: 0.42 },   // 4 West: indoors, but the night outside the windows
+  underwater: { fog: 0x03100e, density: 0.2, hemi: 0.12 },  // the river: green-black, you can't see past the glass
 };
 let hemiBase = 0.35;
 function setSky(name) {
@@ -97,6 +99,7 @@ const traffic = createTraffic(scene, (name, ...args) => Sound.sfx(name, ...args)
 const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, lightning, input, horror, shade, traffic };
 const director = createDirector(world);
 const self = createSelfBody(scene, bus, player, camera);
+world.self = self;
 const g = director.g;
 // the Route 9 file: posters, clippings and Teodor's log, for you to find
 const file = createFile({ player, props, bus, drive, director, store });
@@ -114,6 +117,28 @@ player.addInteract({
   label: () => (player.mode === "seat" && g.doorControl && drive.speed <= 0.5 ? (bus.doorsOpen ? "Close doors" : "Open doors") : null),
   use: toggleDoors,
 });
+
+/* ---------- the lights on the water ---------- */
+// the streetlights that are on near you, your headlights, the bridge's last lamps
+const LAMP_COLOR = new THREE.Color(0xffc27a);
+const lampOnWater = new Map();
+const headOnWater = { pos: new THREE.Vector3(), color: new THREE.Color(0xfff2d8), power: 1.7 };
+const bridgeOnWater = places.bridge.lights.map((l) => ({ pos: l.position, color: l.color, power: 1.2 }));
+const waterLights = [];
+function lightsOnWater() {
+  waterLights.length = 0;
+  if (places.bridge.group.visible) waterLights.push(...bridgeOnWater);
+  else {
+    for (const lamp of city.lamps) {
+      if (Math.abs(lamp.d - drive.d) > 110 || !city.isLit(lamp)) continue;
+      let w = lampOnWater.get(lamp);
+      if (!w) { w = { pos: lamp.pos, color: LAMP_COLOR, power: 1.4 }; lampOnWater.set(lamp, w); }
+      waterLights.push(w);
+    }
+  }
+  if (bus.headlightsOn) { headOnWater.pos.copy(bus.group.localToWorld(new THREE.Vector3(0, 1.1, 6.8))); waterLights.push(headOnWater); }
+  return waterLights;
+}
 
 /* ---------- loop ---------- */
 let playing = false;
@@ -193,14 +218,20 @@ function frame(now) {
   last = now;
   if (paused) return;
   if (playing && input.hit("KeyF")) toggleDoors();
+  // the horn. One time in twenty, it's not the horn you were expecting.
+  if (playing && player.mode === "seat" && !player.state.locked && input.hit("KeyH")) {
+    if (Math.random() < 0.05) Sound.sfx("clownhorn"); else Sound.sfx("bushorn");
+    g.honked = performance.now();
+  }
   player.state.vibration = drive.speed / 14;
   file.update(dt, input);
   player.update(dt, input);
   self.update(dt);
   // look at the rear-view mirror and your eyes focus on it: the view narrows so you can see who's back there
-  const wantFov = player.mode === "seat" && g.lookingAtMirror() ? 34 : settings.fov;
+  // (and a scene can narrow it: looking up at a window across the street)
+  const wantFov = world.fovOverride || (player.mode === "seat" && g.lookingAtMirror() ? 34 : settings.fov);
   if (Math.abs(camera.fov - wantFov) > 0.05) {
-    camera.fov += (wantFov - camera.fov) * Math.min(1, dt * 4);
+    camera.fov += (wantFov - camera.fov) * Math.min(1, dt * (world.fovOverride ? 1.6 : 4));
     camera.updateProjectionMatrix();
   }
   horror.update(dt);
@@ -218,7 +249,7 @@ function frame(now) {
   props.depot.update(dt, clockMinutes());
   busInverse.copy(bus.group.matrixWorld).invert();
   props.rain.update(dt, focus, (x, y, z) => insideBus(x, y, z) || places.hospital.inside(x, y, z));
-  props.flood.update(dt, drive.d, props.rain.on);
+  updateWater(dt, { camera, lights: lightsOnWater(), rain: props.rain.on });
   props.mystery.update(dt);
   places.hospital.update(dt, camera);
   places.bridge.update(dt);
@@ -474,7 +505,7 @@ const SETTING_TABS = [
 ];
 const KEYS = [
   ["W A S D", "Walk"], ["Mouse", "Look around"], ["E", "Use, pick up, talk"], ["W · S", "Gas and brake while driving (Space brakes too)"],
-  ["F", "Open or close the doors"], ["1 2 3", "Pick an answer"], ["Esc", "Pause"],
+  ["F", "Open or close the doors"], ["H", "Horn"], ["1 2 3", "Pick an answer"], ["Esc", "Pause"],
 ];
 // what each setting changes, right away
 const APPLY = {
@@ -601,7 +632,7 @@ resetWorld(1);
 warmUp();
 nextFrame(frame);
 if (TEST) {
-  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input, horror, shade, places, traffic };
+  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input, horror, shade, places, traffic, world, self };
   // ?bot=kind|cold|deadair|random: the automatic playtester plays the game
   if (params.get("bot")) {
     import("../tools/playtest.js").then((m) => {

@@ -3,7 +3,7 @@
 //           jacket for Daniel (+1), open the doors at ??? (+1)
 import * as THREE from "three";
 import { STOPS, route } from "../world/route.js";
-import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
+import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness, teodorGone } from "./common.js";
 
 export async function night2(g) {
   const f = g.flags;
@@ -11,19 +11,19 @@ export async function night2(g) {
   const terminalDoor = () => g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20));
   g.mood("uneasy");
   await g.wait(800);
-  await g.think("I barely slept. Every time I closed my eyes I heard dripping.");
+  await g.muse("I barely slept. Every time I closed my eyes I heard dripping.");
   await g.think("Mom took the last bus home every night. That's most of what I remember about her. Her keys in the door, at one in the morning.");
   await g.think("And then one night, the keys didn't come.");
-  await clockIn(g, [
-    "NOTICE: DEPOT CAMERAS SHOW NO PASSENGERS BOARDING ROUTE 9 AT THE DEPOT.",
-    "I checked the tape before my shift. It shows me getting on alone.",
-  ]);
+  await clockIn(g, {
+    quiet: ["NOTICE: DEPOT CAMERAS SHOW NO PASSENGERS BOARDING ROUTE 9 AT THE DEPOT."],
+    said: ["I checked the tape before my shift. It shows me getting on alone."],
+  });
   g.spawn("teodor", "oldman");
   g.seat("teodor", "B3");
   g.route("NEXT: ???  (BEFORE NORTHGATE)", true);
   await g.wait(800);
-  await g.think("He's back. Same seat. Same wet shoes.");
-  await g.think("And the stop with no name moved. It's before Northgate now.");
+  await g.muse("He's back. Same seat. Same wet shoes.");
+  await g.muse("And the stop with no name moved. It's before Northgate now.");
   await g.say("rhee", "Evening, driver. Northgate by twelve twenty. And your display is still broken, so don't look at it.");
   g.route(null);
   const ask = await g.choose(["“That stop on the display. What is it?”", "[Don't look at him. Just drive]"]);
@@ -101,12 +101,12 @@ export async function night2(g) {
       }
     });
     if (!stayed) {
-      await g.think("Mara was at the stop. I didn't pick her up. Again.");
+      await g.muse("Mara was at the stop. I didn't pick her up. Again.");
       f.maraLeft = true;
       g.despawn("mara");
     }
   } else {
-    await g.think("Mara was at the stop. I didn't pick her up. Again.");
+    await g.muse("Mara was at the stop. I didn't pick her up. Again.");
     f.maraLeft = true;
     g.despawn("mara");
   }
@@ -155,11 +155,11 @@ export async function night2(g) {
         }
       });
       if (!stayed) {
-        await g.think("Jun was waiting with exact change. I left him there.");
+        await g.muse("Jun was waiting with exact change. I left him there.");
         g.despawn("jun");
       }
     } else {
-      await g.think("Jun was waiting with exact change. I left him there.");
+      await g.muse("Jun was waiting with exact change. I left him there.");
       g.despawn("jun");
     }
   } else if (stopped) {
@@ -206,27 +206,31 @@ export async function night2(g) {
   // an old woman with a knitting bag, waiting at the hospital stop
   g.spawn("dorothy", "dorothy", { at: curb("St. Agnes", 2.4), yaw: route.heading(STOPS["St. Agnes"]) + Math.PI / 2 });
   stopped = await g.arrive("St. Agnes");
-  if (f.maraAboard && stopped && (await openUp(g))) {
-    if (f.maraHelped) {
-      await g.say("mara", "Hey. Weird question. If you ever see a stop that isn't supposed to be there...");
-      await g.say("mara", "My mom used to say the drowned don't want to scare you. They just want a ride home.");
-      await g.say("mara", "Forget it. I'm tired. See you tomorrow.");
+  if (stopped && (await openUp(g, 15000))) {
+    // the moment the doors open she's on her way: to the side of the doors first, out of Mara's way
+    const dot = g.actor("dorothy");
+    const toSide = dot.walk([g.bus.group.localToWorld(new THREE.Vector3(-2.7, 0, 6.3))], { speed: 0.9 });
+    if (f.maraAboard) {
+      const off = g.alight("mara", curb("St. Agnes", 4, 9));
+      if (f.maraHelped) {
+        await g.say("mara", "Hey. Weird question. If you ever see a stop that isn't supposed to be there...");
+        await g.say("mara", "My mom used to say the drowned don't want to scare you. They just want a ride home.");
+        await g.say("mara", "Forget it. I'm tired. See you tomorrow.");
+      }
+      await off;
+      f.maraAboard = false;
     }
-    await g.alight("mara", curb("St. Agnes", 4, 9));
-    f.maraAboard = false;
-  } else if (f.maraAboard) {
-    await g.say("mara", "Seriously? That was my stop.");
-  }
-  if (stopped && (g.bus.doorsOpen || (await openUp(g, 15000)))) {
     const stayed = await g.atStop(async (g) => {
-      await g.actor("dorothy").walk([doorOutside()], { speed: 0.8 });
+      await toSide;
+      await g.actor("dorothy").walk([doorOutside()], { speed: 0.9 });
       await g.say("dorothy", "Oh, good. I was afraid I'd missed it. My sister's up on the third floor. Her hip. She'll outlive us all.");
-      await g.board("dorothy", "L2", 0.8);
+      await g.board("dorothy", "R1", 0.9);
       f.dorothyRode = true;
     });
     if (!stayed) g.actor("dorothy")?.walk([curb("St. Agnes", 2.4)], { speed: 0.8 });
   } else {
-    await g.think("There was an old woman with a knitting bag at St. Agnes. She waved, like she knew the bus.");
+    if (f.maraAboard) await g.say("mara", "Seriously? That was my stop.");
+    await g.muse("There was an old woman with a knitting bag at St. Agnes. She waved, like she knew the bus.");
   }
   if (!f.dorothyRode) g.despawn("dorothy");
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
@@ -283,7 +287,7 @@ export async function night2(g) {
       await g.board("daniel", "L0", 1.0);
       await g.say("daniel", "I'm Daniel. My daughter's Rosie. She turns six tonight. I promised her I'd be home before she fell asleep.");
       await g.say("daniel", "I think I'm very late.");
-      await g.think("He's shivering so hard his teeth click.");
+      await g.muse("He's shivering so hard his teeth click.");
       const c = await g.choose(["[Give him your jacket]", "[Leave him be]"]);
       if (c === 0) {
         f.gaveJacket = true;
@@ -302,7 +306,10 @@ export async function night2(g) {
       g.sfx("breath");
       await g.wait(2200);
       await g.think("Something wet is touching the back of my neck.");
-      await g.scare("eyes");
+      // you turn round. Slowly. In the dark, right behind your seat
+      g.look(() => g.bus.group.localToWorld(new THREE.Vector3(0.75, 1.5, 3.6)));
+      await g.wait(1100);
+      await g.scare("rise");
       g.vanish("daniel");
       g.prop(f.gaveJacket ? "jacketFolded" : "puddle", { seat: "L0" });
       g.interior("on");
@@ -315,6 +322,7 @@ export async function night2(g) {
       g.vanish("daniel");
       g.interior("on");
       g.amb({ engine: 0.3 });
+      await g.think("He's gone. Nobody on the step. Just a wet print where he was standing, already drying.");
       await dorothyGone(g);
     }
   } else {
@@ -333,6 +341,7 @@ export async function night2(g) {
     g.bus.setHands(null);
     g.interior("on");
     g.vanish("daniel");
+    await g.muse("And then there was nobody at the doors. Nobody anywhere.");
     await dorothyGone(g);
   }
   g.release();
@@ -378,7 +387,8 @@ export async function night2(g) {
     g.late(1);
     g.mood("grief");
     await g.wait(1500);
-    await g.think("Nobody's getting on.");
+    await g.muse("Nobody's getting on.");
+    g.actor("drowned0")?.watch(g.camera);        // the woman at the front: she's looking right at you
     await g.say("lena", "Not yet. Not tonight.");
     await g.say("lena", "I'm Lena. You're the first one who's opened the doors in a very long time.");
     await g.wait(1200);
@@ -390,11 +400,12 @@ export async function night2(g) {
     await g.doors(false);
   } else {
     await g.say("rhee", "Good. Good driver.");
-    await g.think("A little girl at the front of the shelter waved at the bus. The way kids used to wave at buses.");
+    await g.muse("A little girl at the front of the shelter waved at the bus. The way kids used to wave at buses.");
   }
   crowd.forEach((_, i) => g.vanish(`drowned${i}`));
   g.rain(false);
   if (!g.drive.moving) await closeDoorsAndGo(g);
+  await g.think("I looked back. The shelter's gone. There's just the dark, where it was.");
   g.mood("uneasy");
 
   // ---------- Northgate
@@ -406,24 +417,22 @@ export async function night2(g) {
     await g.alight("jun", terminalDoor());
     f.junAboard = false;
   }
-  g.vanish("teodor");
-  g.sfx("coindrop");
-  await g.wait(1300);
-  await g.think("The back row is empty again. Something hit the floor back there and rolled. Another wet seat.");
+  await teodorGone(g, "The back row is empty again. Something hit the floor back there and rolled. Another wet seat.");
   await rheeLateness(g);
   await g.say("rhee", "Storm's coming in off the river tomorrow. A big one. Like the old days.");
   await g.say("rhee", "You'll want to make up the time.");
   g.route("NEXT: ???", true);
   g.sfx("static", 1);
-  await g.think("The display flickered. The stop with no name moved again. It's after St. Agnes now. It's getting closer.");
+  await g.muse("The display flickered. The stop with no name moved again. It's after St. Agnes now. It's getting closer.");
   await endShift(g);
 }
 
 // Mrs. Kessler went when the lights did: just her knitting on the seat
 async function dorothyGone(g) {
   if (!g.flags.dorothyRode || !g.actor("dorothy")) return;
+  const seat = g.seatOf("dorothy") || "R1";
   g.vanish("dorothy");
-  g.prop("knitting", { seat: "L2" });
+  g.prop("knitting", { seat });
   await g.think("Mrs. Kessler's seat is empty. Just her knitting, half a scarf, soaked through.");
 }
 
@@ -447,11 +456,12 @@ async function wavingKids(g, seen) {
     return g.d > 720;
   });
   await g.until(() => g.d > 548);
-  await g.think("There's a kid at the end of that driveway, in a raincoat. Waving at the bus.");
+  await g.muse("There's a kid at the end of that driveway, in a raincoat. Waving at the bus.");
   await g.until(() => g.d > 640);
   await g.think("Another one. And another. One at every house. Little raincoats, all of them waving.");
   if (g.flags.maraAboard) await g.say("mara", "Whose kids are those? It's almost midnight.");
   seen();
   await watching;
   kids.forEach((_, i) => g.vanish(`kid${i}`));
+  await g.muse("In the mirror, the driveways are empty. Every one of them.");
 }

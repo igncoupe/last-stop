@@ -2,7 +2,7 @@
 // sound effects, and the voice player with per-character effects.
 // Music and effects are synthesized live; voices are MP3s in /voices.
 let ctx = null;
-let master, musicBus, ambBus, sfxBus, voiceBus, reverb, noiseBuf;
+let master, musicBus, ambBus, sfxBus, voiceBus, reverb, noiseBuf, muffle;
 let volume = 0.8;
 // the player's own mix (settings): voices, music, and effects with ambience
 const levels = { voices: 1, music: 1, sfx: 1 };
@@ -35,7 +35,13 @@ function init() {
   limiter.ratio.value = 8;
   master = ctx.createGain();
   master.gain.value = muted ? 0 : volume;
-  master.connect(limiter);
+  // everything goes through this on its way out: underwater, it closes right down
+  muffle = ctx.createBiquadFilter();
+  muffle.type = "lowpass";
+  muffle.frequency.value = 22000;
+  muffle.Q.value = 0.9;
+  master.connect(muffle);
+  muffle.connect(limiter);
   limiter.connect(ctx.destination);
   userVoice = bus(levels.voices);
   userMusic = bus(levels.music);
@@ -250,6 +256,82 @@ const SFX = {
     if (ctx.createStereoPanner) { const p = ctx.createStereoPanner(); p.pan.value = -0.5; g.connect(p); last = p; }
     last.connect(sfxBus);
     send(g, 0.25);
+  },
+  // the bus's own horn: a deep two-tone air horn, right in front of you
+  bushorn(t, dur = 0.55) {
+    const g = gainNode(0);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5, t + 0.03);
+    g.gain.setValueAtTime(0.5, t + dur);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.18);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 1900;
+    for (const [f, type] of [[196, "sawtooth"], [247, "sawtooth"], [98, "square"]]) {
+      const o = tone(t, dur + 0.2, type, f * 0.97);
+      o.frequency.linearRampToValueAtTime(f, t + 0.06);          // the air takes a moment to get there
+      o.connect(lp);
+    }
+    lp.connect(g);
+    g.connect(sfxBus);
+    send(g, 0.35);
+  },
+  // ...and one time in twenty, it isn't. HONK HONK: a squeeze-bulb clown horn.
+  clownhorn(t) {
+    const drive = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) { const x = i / 128 - 1; curve[i] = Math.tanh(x * 3.2); }
+    drive.curve = curve;
+    const g = gainNode(0.75);
+    drive.connect(g);
+    g.connect(sfxBus);
+    send(g, 0.2);
+    for (const [start, len] of [[0, 0.2], [0.3, 0.32]]) {
+      const tt = t + start;
+      const env2 = gainNode(0);
+      env2.gain.setValueAtTime(0.0001, tt);
+      env2.gain.exponentialRampToValueAtTime(1, tt + 0.015);
+      env2.gain.setValueAtTime(1, tt + len * 0.75);
+      env2.gain.exponentialRampToValueAtTime(0.0001, tt + len);
+      for (const [type, detune] of [["sawtooth", 0], ["square", 8]]) {
+        const o = ctx.createOscillator();
+        o.type = type;
+        o.detune.value = detune;
+        // the bulb squeezed: the reed jumps up, then sags as the air runs out
+        o.frequency.setValueAtTime(330, tt);
+        o.frequency.linearRampToValueAtTime(390, tt + 0.04);
+        o.frequency.linearRampToValueAtTime(345, tt + len);
+        for (const [f, q, lvl] of [[1050, 4, 1], [2500, 6, 0.6], [520, 3, 0.5]]) {
+          const bp = ctx.createBiquadFilter();
+          bp.type = "bandpass";
+          bp.frequency.value = f;
+          bp.Q.value = q;
+          const lv = gainNode(lvl);
+          o.connect(bp);
+          bp.connect(lv);
+          lv.connect(env2);
+        }
+        o.start(tt);
+        o.stop(tt + len + 0.05);
+      }
+      env2.connect(drive);
+      out(noise(tt, len, "bandpass", 1800, 1.5), 0.08, tt, 0.01, len);     // the hiss of the bulb
+    }
+  },
+  // water coming in: a roar through the cracked glass and the door seals, for dur seconds
+  gush(t, dur = 3) {
+    out(noise(t, dur, "lowpass", 900), 0.9, t, 0.15, dur - 0.15, 0.4);
+    out(noise(t, dur, "bandpass", 2200, 0.7), 0.35, t, 0.1, dur - 0.1, 0.3);
+    out(tone(t, dur, "sine", 48, 38), 0.5, t, 0.3, dur - 0.3, 0.2);
+  },
+  // air going up past you, underwater
+  bubbles(t, dur = 2.5) {
+    const n = Math.round(dur * 14);
+    for (let i = 0; i < n; i++) {
+      const tt = t + Math.random() * dur;
+      const f = 240 + Math.random() * 520;
+      out(tone(tt, 0.09, "sine", f, f * 1.9), 0.18 + Math.random() * 0.2, tt, 0.004, 0.08, 0.3);
+    }
   },
   // tires screaming on wet asphalt
   screech(t) {
@@ -663,16 +745,42 @@ function engine(level, rev) {
 /* ---------------- voices ---------------- */
 const clips = new Map();
 let clipVersions = {};                 // id -> hash of the file, so a re-recorded line isn't played from an old cached copy
-function loadClip(id) {
+// Downloads: a night's clips are fetched a few at a time, in story order, so the first lines are in long
+// before the last ones. A download that fails or stalls is forgotten (and tried again the next time the line
+// is wanted), never kept as a silent clip: a slow connection must never leave a line without its voice.
+const queue = [];
+let fetching = 0;
+const AT_ONCE = 4;
+function fetchClip(id) {
+  // (a download that hangs gives its place up after 30 s)
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
+  return fetch(`voices/${id}.mp3${clipVersions[id] ? `?v=${clipVersions[id]}` : ""}`, { signal: ctrl.signal })
+    .then((r) => (r.ok ? r.arrayBuffer() : null))
+    .then((buf) => (buf && ctx ? ctx.decodeAudioData(buf) : null))
+    .catch(() => null)
+    .then((buf) => { clearTimeout(timer); if (!buf) clips.delete(id); return buf; });
+}
+function pump() {
+  while (fetching < AT_ONCE && queue.length) {
+    const { id, done } = queue.shift();
+    fetching++;
+    fetchClip(id).then(done).finally(() => { fetching--; pump(); });
+  }
+}
+function loadClip(id, { now = false } = {}) {
   if (!clips.has(id)) {
-    // a stalled download must never hold up the story: give up after 8 s and show the subtitle alone
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 8000);
-    clips.set(id, fetch(`voices/${id}.mp3${clipVersions[id] ? `?v=${clipVersions[id]}` : ""}`, { signal: ctrl.signal })
-      .then((r) => (r.ok ? r.arrayBuffer() : null))
-      .then((buf) => (buf && ctx ? ctx.decodeAudioData(buf) : null))
-      .catch(() => null)
-      .finally(() => clearTimeout(timer)));
+    let done;
+    const p = new Promise((r) => { done = r; });
+    clips.set(id, p);
+    // a line that's wanted right now jumps the queue
+    if (now) queue.unshift({ id, done });
+    else queue.push({ id, done });
+    pump();
+  } else if (now) {
+    // already waiting in the queue: move it to the front
+    const i = queue.findIndex((q) => q.id === id);
+    if (i > 0) queue.unshift(queue.splice(i, 1)[0]);
   }
   return clips.get(id);
 }
@@ -716,8 +824,9 @@ async function voice(id, { fx = "dry", at = null } = {}) {
   if (ctx.state === "suspended") { try { await Promise.race([ctx.resume(), new Promise((r) => setTimeout(r, 300))]); } catch { /* no permission yet */ } }
   if (ctx.state !== "running") return false;   // no sound allowed: subtitles carry the line
   // a clip that won't download or won't decode gets 6 seconds, then the subtitle carries the line alone
+  // (it keeps downloading, so it's there the next time)
   let late = false;
-  const buf = await Promise.race([loadClip(id), new Promise((r) => setTimeout(() => { late = true; r(null); }, 6000))]);
+  const buf = await Promise.race([loadClip(id, { now: true }), new Promise((r) => setTimeout(() => { late = true; r(null); }, 6000))]);
   if (!buf || late) return false;
   const { input, tail } = fxChain(fx);
   let outNode = tail;
@@ -783,6 +892,14 @@ export const Sound = {
   // fast automated tests can't wait for real-time voice clips
   setVoices(on) { voicesOn = on; },
   stopVoices() { live.forEach((e) => e.stop && e.stop()); },
+  // underwater: the whole world goes thick and far away (or comes back)
+  underwater(on, seconds = 0.8) {
+    if (!ctx) return;
+    const f = muffle.frequency;
+    f.cancelScheduledValues(ctx.currentTime);
+    f.setValueAtTime(f.value, ctx.currentTime);
+    f.exponentialRampToValueAtTime(on ? 380 : 22000, ctx.currentTime + seconds);
+  },
   sfx(name, ...args) { if (ctx && SFX[name]) SFX[name](ctx.currentTime + 0.02, ...args); },
   // an effect from somewhere else: quiet, muffled by a door (lowpass), off to one side
   sfxAt(name, { gain = 0.3, pan = 0, muffle = 1400 } = {}, ...args) {

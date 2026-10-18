@@ -47,16 +47,18 @@ export const ui = {
 
   showHud(on) { el.hud.hidden = !on; },
 
-  subtitle(name, color, text) {
-    if (!this.subsOn || !text) { el.subtitle.classList.remove("on"); return; }
+  // inner: a thought, not said out loud (it says so, and it's in italics)
+  subtitle(name, color, text, { inner = false } = {}) {
+    // a written-only thought is the one line that must show even with subtitles off: there's no voice
+    if ((!this.subsOn && !inner) || !text) { el.subtitle.classList.remove("on"); return; }
     el.subtitle.replaceChildren();
     const line = document.createElement("span");
-    line.className = "line";
+    line.className = inner ? "line inner" : "line";
     if (name) {
       const who = document.createElement("span");
       who.className = "who";
       who.style.color = color || "#fff";
-      who.textContent = name + ":";
+      who.textContent = inner ? `${name} (in your head):` : name + ":";
       line.append(who);
     }
     line.append(document.createTextNode(text));
@@ -64,6 +66,17 @@ export const ui = {
     el.subtitle.classList.add("on");
   },
   clearSubtitle() { el.subtitle.classList.remove("on"); },
+  // underwater: green-black, darker at the edges, light rippling across it
+  underwater(on) {
+    let u = document.getElementById("underwater");
+    if (!u) {
+      u = document.createElement("div");
+      u.id = "underwater";
+      u.className = "underwater";
+      document.body.append(u);
+    }
+    u.classList.toggle("on", !!on);
+  },
   // big words in the middle of the screen (over black, in the endings); null takes them away
   caption(kicker, text) {
     const c = document.getElementById("caption");
@@ -213,20 +226,24 @@ export const ui = {
       s.className = doc.neat ? "p-scrawl" : "p-scrawl rushed";
       if (doc.neat) s.textContent = doc.scrawl;
       else {
-        // written in a hurry: each letter its own size and angle, the line sliding downhill, worse at the end
+        // written in a hurry: each letter its own size and angle, the line sliding downhill, worse at the end.
+        // Word by word, so a long note wraps onto the next line instead of running off the paper.
         const chars = [...doc.scrawl];
+        let word = null;
         chars.forEach((ch, i) => {
+          if (ch === " ") { s.append(document.createTextNode(" ")); word = null; return; }
+          if (!word) { word = document.createElement("span"); word.className = "word"; s.append(word); }
           const k = i / Math.max(1, chars.length - 1);
           const c = document.createElement("span");
-          c.textContent = ch === " " ? "  " : ch;        // (a plain space would collapse to nothing)
+          c.textContent = ch;
           const r = (Math.random() - 0.5) * (14 + k * 22);
-          const y = (Math.random() - 0.5) * (3 + k * 6) + k * 9;
+          const y = (Math.random() - 0.5) * (3 + k * 6) + k * 5;
           const sc = 0.82 + Math.random() * (0.35 + k * 0.3);
           c.style.transform = `translateY(${y.toFixed(1)}px) rotate(${r.toFixed(1)}deg) scale(${sc.toFixed(2)})`;
           c.style.marginRight = `${(Math.random() * 3 - 1).toFixed(1)}px`;
           c.style.opacity = (0.65 + Math.random() * 0.35).toFixed(2);
           if (Math.random() < 0.18) c.classList.add("hard");                // pressed so hard it's darker
-          s.append(c);
+          word.append(c);
         });
         const tail = document.createElement("span");
         tail.className = "tail";                                            // the pencil skidding off the page

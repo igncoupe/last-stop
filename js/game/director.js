@@ -119,21 +119,31 @@ export function createDirector(w) {
 
   let speech = Promise.resolve();
   let cutLine = null;                  // ends the line that's playing now (g.interrupt)
-  async function speak(who, text, { keep = false, after = 260 } = {}) {
+  // inner: a thought (the subtitle says so). silent: a thought that's only written, never voiced
+  async function speak(who, text, { keep = false, after = 260, inner = false, silent = false } = {}) {
     s.waiting = `line (${who})`;
     if (outOfEarshot(who)) { s.unheard.push(`${who}: ${text}`); return; }
     const c = CAST[who];
-    ui.subtitle(nameOf(who), c.color, text);
+    ui.subtitle(nameOf(who), c.color, text, { inner });
     const cut = new Promise((r) => { cutLine = () => r("cut"); });
     let over = false;
     until(() => over || outOfEarshot(who)).then(() => { if (!over) { s.unheard.push(`${who} (cut off): ${text}`); g.interrupt(); } });
     try {
-      return await speakOut(who, text, c, cut, keep, after);
+      return await speakOut(who, text, c, cut, keep, after, silent);
     } finally {
       over = true;
     }
   }
-  async function speakOut(who, text, c, cut, keep, after) {
+  async function speakOut(who, text, c, cut, keep, after, silent) {
+    if (silent) {
+      // written, not said: up for as long as it takes to read
+      const read = await Promise.race([g.wait(Math.max(1700, 1000 + text.length * 50)), cut]);
+      cutLine = null;
+      if (read === "cut") return;
+      if (!keep) ui.clearSubtitle();
+      if (after) await g.wait(after);
+      return;
+    }
     // a line can never hold up the story: whatever happens to its audio, it ends in a bounded time
     const cap = new Promise((r) => setTimeout(() => r("cap"), 9000 + text.length * 110));
     let played = await Promise.race([Sound.voice(lineId(who, text), { fx: c.fx, at: positionFor(who) }), cap, cut]);
@@ -193,7 +203,10 @@ export function createDirector(w) {
       speech = turn.catch(() => {});
       return turn;
     },
-    think(text, opts) { return g.say("you", text, opts); },
+    // what you think: in your head, and voiced (keep these for the moments that matter)
+    think(text, opts = {}) { return g.say("you", text, { ...opts, inner: true }); },
+    // a thought that's only written on screen, never said: what you notice, not what you feel
+    muse(text, opts = {}) { return g.say("you", text, { ...opts, inner: true, silent: true }); },
     caption(kicker, text) { ui.caption(kicker, text); },
     // whoever is talking stops, mid-word
     interrupt() {
@@ -211,6 +224,14 @@ export function createDirector(w) {
       ui.paper(null);
       await g.wait(300);
     },
+    // ...the same, with the thoughts only written (you read the page; nobody needs to hear you do it)
+    async readQuiet(doc, lines) {
+      ui.paper(doc);
+      await g.wait(500);
+      for (const line of lines) await g.muse(line);
+      ui.paper(null);
+      await g.wait(300);
+    },
     // dialogue options; the one you pick is said out loud (unless it's an [action])
     async choose(options, { silent = false } = {}) {
       ui.clearSubtitle();
@@ -219,6 +240,8 @@ export function createDirector(w) {
       if (line && !silent) await g.say("you", line);
       return i;
     },
+    // take the options off the screen, unanswered (the moment passed: you drove off)
+    cancelChoices() { ui.cancelChoices(); },
     // show the objective; "look at X" hints also glide the view there
     hint(text) {
       ui.hint(text);
@@ -352,7 +375,7 @@ export function createDirector(w) {
     // ---------- people ----------
     spawn(key, look, { ghost = false, at = null, yaw = 0, mirrorOnly = false } = {}) {
       if (actors.has(key)) actors.get(key).remove();
-      const p = new Person(scene, look, { ghost });
+      const p = new Person(scene, look, { ghost, variant: key });
       if (at) p.placeAt(at, yaw);
       if (mirrorOnly) p.setMirrorOnly(true);
       actors.set(key, p);
@@ -366,6 +389,11 @@ export function createDirector(w) {
       freeSeatOf(key);
     },
     despawnAll() { [...actors.keys()].forEach((k) => g.despawn(k)); },
+    // which seat someone's in (null: not sitting on the bus)
+    seatOf(key) {
+      for (const [seat, k] of seated) if (k === key) return seat;
+      return null;
+    },
     // sit someone straight down in a bus seat
     seat(key, seatName) {
       const p = actors.get(key);
@@ -508,6 +536,10 @@ export function createDirector(w) {
     lamps(on) { w.city.setLampsOn(on); },
     // no other cars on the road for a while
     holdTraffic(seconds) { w.traffic.hold(seconds); },
+    // the car that comes up on your tail (traffic.js): no other cars while it's around
+    tailgater() { w.traffic.hold(45); return w.traffic.tailgater(); },
+    // your own hand, doing something other than holding the wheel ("bird")
+    gesture(name, on) { if (w.self) w.self.gesture(name, on); },
     // the streetlights, one at a time: { d, side, ... } (out: dark, whatever else is going on)
     get streetlights() { return w.city.lamps; },
     lampOut(lamp, out) { w.city.setLampOut(lamp, out); },
@@ -532,6 +564,24 @@ export function createDirector(w) {
         return;
       }
       const before = bus.interiorMode;
+      if (kind === "drift" || kind === "rise") {
+        // drift: something comes up out of the dark water toward you, slowly, hair floating... then it's on you
+        // rise: you turn round, and it comes up from behind the seat, dripping... then it's on you
+        Sound.sfx("rise", kind === "drift" ? 2.8 : 2);
+        if (kind === "drift") Sound.sfx("bubbles", 2.6);
+        else { Sound.sfx("drip"); setTimeout(() => Sound.sfx("drip"), 500); setTimeout(() => Sound.sfx("drip"), 1100); }
+        await w.horror.play(kind, {
+          onLunge: () => {
+            Sound.sfx("sting");
+            Sound.sfx("scream", 1.9);
+            Sound.sfx("bubbles", 1.2);
+            player.shake(2.6);
+            document.body.classList.add("scare-flash");
+            setTimeout(() => document.body.classList.remove("scare-flash"), 110);
+          },
+        });
+        return;
+      }
       if (kind === "eyes") {
         bus.setInterior("off");
         Sound.sfx("breath");
@@ -551,6 +601,14 @@ export function createDirector(w) {
     },
     // kept for older scripts: same as a face scare
     faceScare() { return g.scare("face"); },
+    // under the water: the view goes green-black and thick, sound closes down, bubbles go up past you
+    underwater(on) {
+      ui.underwater(on);
+      Sound.underwater(on);
+      bubbles.visible = on;
+      silt.visible = on;
+      if (on) w.setSky("underwater");
+    },
     fade(to, ms = 1200, white = false) { return ui.fade(to, ms, white); },
     card(opts) { return ui.card(opts); },
     // wait for the player to press E on something. The promise has cancel().
@@ -597,9 +655,50 @@ export function createDirector(w) {
     [/back row|Turn around/i, () => g.backRow()],
     [/at the door/i, () => bus.group.localToWorld(new THREE.Vector3(-1.2, 1.6, 4.6))],
     [/at the shelter/i, headOf("drowned1")],
-    [/out the window/i, () => places.hospital.win.getWorldPosition(new THREE.Vector3())],
+    [/out the window|at the window/i, () => places.hospital.win.getWorldPosition(new THREE.Vector3())],
     [/back to the bed/i, () => places.hospital.bedHead],
   ];
+
+  // bubbles going up past your face, and silt hanging in the water (only underwater)
+  function drifting(n, size, color, opacity, spread) {
+    const pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * spread[0];
+      pos[i * 3 + 1] = (Math.random() - 0.5) * spread[1];
+      pos[i * 3 + 2] = -0.4 - Math.random() * spread[2];
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const c = document.createElement("canvas");
+    c.width = c.height = 16;
+    const x = c.getContext("2d");
+    x.strokeStyle = "rgba(220,240,236,.9)";
+    x.lineWidth = 1.6;
+    x.beginPath(); x.arc(8, 8, 5.5, 0, Math.PI * 2); x.stroke();
+    x.fillStyle = "rgba(255,255,255,.8)";
+    x.fillRect(5, 5, 2, 2);
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size, map: new THREE.CanvasTexture(c), color, transparent: true, opacity, depthWrite: false, fog: false }));
+    pts.visible = false;
+    pts.frustumCulled = false;
+    pts.userData.spread = spread;
+    camera.add(pts);
+    return pts;
+  }
+  const bubbles = drifting(90, 0.035, 0xcfe8e2, 0.85, [2.4, 2.4, 3.2]);
+  const silt = drifting(220, 0.012, 0x6f8a78, 0.6, [4, 3, 6]);
+  function driftUpdate(pts, dt, rise) {
+    if (!pts.visible) return;
+    const a = pts.geometry.attributes.position;
+    const [sx, sy] = pts.userData.spread;
+    for (let i = 0; i < a.count; i++) {
+      let y = a.getY(i) + dt * rise * (0.5 + ((i * 7919) % 100) / 100);
+      if (y > sy / 2) y = -sy / 2;
+      a.setY(i, y);
+      a.setX(i, a.getX(i) + Math.sin(y * 4 + i) * dt * 0.05 * (rise > 0.2 ? 1 : 0.3));
+      if (Math.abs(a.getX(i)) > sx / 2) a.setX(i, -Math.sign(a.getX(i)) * sx / 2);
+    }
+    a.needsUpdate = true;
+  }
 
   // is the player looking at a world point (within `deg` degrees)?
   g.gazing = (point, deg = 14) => {
@@ -713,94 +812,25 @@ export function createDirector(w) {
   };
   // a flash of lightning over an empty road
   g.flash = () => { w.lightning(); setTimeout(() => Sound.sfx("thunder"), 300 + Math.random() * 600); };
-  // the windshield fogs up from the inside, right in front of you, and a finger writes in it, one letter at
-  // a time. Resolves once the word is written; the fog clears by itself a while later.
-  const LETTERS = {
-    S: [[[0.86, 0.14], [0.5, 0.03], [0.15, 0.16], [0.2, 0.42], [0.8, 0.58], [0.86, 0.84], [0.5, 0.98], [0.12, 0.86]]],
-    T: [[[0.04, 0.06], [0.96, 0.06]], [[0.5, 0.06], [0.5, 0.98]]],
-    O: [Array.from({ length: 17 }, (_, i) => [0.5 + Math.sin((i / 16) * Math.PI * 2) * 0.42, 0.52 - Math.cos((i / 16) * Math.PI * 2) * 0.46])],
-    P: [[[0.16, 0.98], [0.16, 0.05], [0.62, 0.05], [0.86, 0.18], [0.86, 0.38], [0.62, 0.5], [0.16, 0.5]]],
-  };
-  g.fogWrite = async (word, { letterMs = 700 } = {}) => {
+  // The glass fogs over from the inside: on the bus, every window and the whole windshield; in Room 4B, the
+  // window. Then a finger writes in it, one stroke at a time. Resolves once the words are written; the fog clears
+  // by itself a while later.
+  g.fogWrite = async (text, { letterMs = 650, glass = "bus", hold = 6500 } = {}) => {
     s.waiting = "writing on the glass";
-    const c = document.createElement("canvas");
-    c.width = 256;
-    c.height = 192;
-    const x = c.getContext("2d");
-    // breath on cold glass: grey, thin at the top, thicker at the bottom, no hard edges
-    const grad = x.createLinearGradient(0, 0, 0, 192);
-    grad.addColorStop(0, "rgba(150,160,168,.35)");
-    grad.addColorStop(1, "rgba(165,173,180,.7)");
-    x.fillStyle = grad;
-    x.fillRect(0, 0, 256, 192);
-    for (let i = 0; i < 420; i++) { x.fillStyle = `rgba(200,208,214,${0.08 + Math.random() * 0.22})`; x.fillRect(Math.random() * 256, Math.random() * 192, 1 + Math.random() * 2, 1 + Math.random() * 2); }
-    x.globalCompositeOperation = "destination-in";
-    const edge = x.createRadialGradient(128, 104, 30, 128, 104, 150);
-    edge.addColorStop(0, "rgba(0,0,0,1)");
-    edge.addColorStop(0.7, "rgba(0,0,0,.85)");
-    edge.addColorStop(1, "rgba(0,0,0,0)");
-    x.fillStyle = edge;
-    x.fillRect(0, 0, 256, 192);
-    x.globalCompositeOperation = "source-over";
-    const t = new THREE.CanvasTexture(c);
-    const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.86), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false }));
-    glass.position.set(0.62, 2.02, 5.962);
-    glass.rotation.y = Math.PI;                       // facing you
-    bus.group.add(glass);
-    storyProps.push(glass);
+    const H = places.hospital;
+    const panes = glass === "4B" ? [H.fogPane] : bus.fogPanes.all;
+    const pane = glass === "4B" ? H.fogPane : bus.fogPanes.windshield;
+    panes.forEach((p) => p.clean());
     let k = 0;
-    await until((dt) => { k = Math.min(1, k + dt / 2.6); glass.material.opacity = k * 0.75; return k >= 1; });
-    // the letters are wiped clear of the fog
-    x.globalCompositeOperation = "destination-out";
-    x.strokeStyle = "#000";
-    x.lineWidth = 10;
-    x.lineCap = "round";
-    x.lineJoin = "round";
-    const W = 48, Hh = 92, gap = 11;
-    const left = (256 - (word.length * W + (word.length - 1) * gap)) / 2;
-    const bottoms = [];
-    for (let i = 0; i < word.length; i++) {
-      const strokes = (LETTERS[word[i]] || []).map((st) => st.map(([u, v]) => [left + i * (W + gap) + u * W, 42 + v * Hh]));
-      const len = strokes.reduce((a, st) => a + st.slice(1).reduce((b, p, j) => b + Math.hypot(p[0] - st[j][0], p[1] - st[j][1]), 0), 0);
-      Sound.sfx("squeak", 1);
-      let drawn = 0;
-      await until((dt) => {
-        drawn = Math.min(len, drawn + (len * dt * 1000) / letterMs);
-        x.beginPath();
-        let left2 = drawn;
-        for (const st of strokes) {
-          x.moveTo(st[0][0], st[0][1]);
-          for (let j = 1; j < st.length && left2 > 0; j++) {
-            const seg = Math.hypot(st[j][0] - st[j - 1][0], st[j][1] - st[j - 1][1]);
-            const f = Math.min(1, left2 / seg);
-            x.lineTo(st[j - 1][0] + (st[j][0] - st[j - 1][0]) * f, st[j - 1][1] + (st[j][1] - st[j - 1][1]) * f);
-            left2 -= seg;
-          }
-        }
-        x.stroke();
-        t.needsUpdate = true;
-        return drawn >= len;
-      });
-      bottoms.push(left + i * (W + gap) + W * 0.5);
-      await g.wait(180);
-    }
-    // the wet runs down from the letters
-    x.lineWidth = 3;
-    let d = 0;
-    await until((dt) => {
-      d = Math.min(1, d + dt / 1.6);
-      x.beginPath();
-      bottoms.forEach((bx, i) => { x.moveTo(bx + (i % 2 ? 9 : -7), 130); x.lineTo(bx + (i % 2 ? 9 : -7), 130 + d * 50); });
-      x.stroke();
-      t.needsUpdate = true;
-      return d >= 1;
-    });
-    // ...and some time later, it fades off the glass
+    await until((dt) => { k = Math.min(1, k + dt / 3); panes.forEach((p) => p.set(k * k * (3 - 2 * k))); return k >= 1; });
+    // (on the bus: right in front of the driver, who sits left of the middle)
+    const where = glass === "4B" ? {} : { at: 0.27, span: 0.46 };
+    const writing = pane.writer(text, { letterMs, onLetter: () => Sound.sfx("squeak", 1), ...where });
+    await until((dt) => writing.step(dt));
     (async () => {
-      await g.wait(6000);
+      await g.wait(hold);
       let f = 1;
-      await until((dt) => { f = Math.max(0, f - dt / 4); glass.material.opacity = f * 0.75; return f <= 0; });
-      glass.removeFromParent();
+      await until((dt) => { f = Math.max(0, f - dt / 5); panes.forEach((p) => p.set(Math.min(p.amount, f))); return f <= 0; });
     })();
   };
   // the camera leaves your seat: out the door, up at Room 4B's window on the fourth floor of St. Agnes, and
@@ -812,7 +842,8 @@ export function createDirector(w) {
     const win = H.windowOutside;
     const cam = camera.getWorldPosition(new THREE.Vector3());
     const q0 = camera.getWorldQuaternion(new THREE.Quaternion());
-    const out = bus.group.localToWorld(new THREE.Vector3(-3.6, 1.45, 2.2));     // on the sidewalk by the doors
+    // out of the bus and round the front of it, across the street from the window
+    const out = route.at(H.windowD, -4.6, 1.6);        // (from across the street the bus is out of the way)
     const look = new THREE.Matrix4().lookAt(out, win, new THREE.Vector3(0, 1, 0));
     const q1 = new THREE.Quaternion().setFromRotationMatrix(look);
     player.fixed(scene, cam, new THREE.Euler());
@@ -829,10 +860,13 @@ export function createDirector(w) {
     };
     const going = tween(cam, out, q0, q1, 2.2);
     await g.wait(700);
+    // ...and your eyes find him: the view closes in on the window, so you can see who's standing in it
+    w.fovOverride = 10;
     const said = g.think(line);
     await going;
     await said;
-    await g.wait(700);
+    await g.wait(900);
+    w.fovOverride = null;
     const back = bus.group.localToWorld(bus.driverEye.clone());
     await tween(out, back, q1, q0, 1.6);
     g.sitInBus();
@@ -990,6 +1024,8 @@ export function createDirector(w) {
     storyProps.forEach((it) => it.removeFromParent());
     storyProps.length = 0;
     bus.setHands(null);
+    bus.setFog(0);
+    places.hospital.fogPane.set(0);
     held = null;
     s.unheard = [];
     g.despawnAll();
@@ -1004,6 +1040,9 @@ export function createDirector(w) {
     ui.paper(null);
     ui.caption(null);
     w.shade.hide();
+    if (w.self) w.self.gesture(null, false);
+    w.fovOverride = null;
+    g.underwater(false);
   }
 
   return {
@@ -1024,6 +1063,8 @@ export function createDirector(w) {
     },
     update(dt) {
       g.tickDread(dt);
+      driftUpdate(bubbles, dt, 0.9);
+      driftUpdate(silt, dt, 0.06);
       for (const p of storyProps) if (p.userData.update) p.userData.update((performance.now() - p.userData.t0) / 1000);
       // guidance: an arrow over the target, and a distance readout while driving
       bob += dt;
@@ -1037,7 +1078,7 @@ export function createDirector(w) {
         marker.userData.beam.visible = true;
         const dock = drive.state.dock;
         if (drive.docking) {
-          text = dock.braking ? `Stopping: ${nav.stop.name}` : `Pulling in: ${nav.stop.name}  ·  press W to drive past`;
+          text = dock.braking ? `Stopping: ${nav.stop.name}` : `Pulling in: ${nav.stop.name}  ·  hold W to drive past`;
         } else if (dock && dock.skipped) {
           text = left > -7 ? `Driving past ${nav.stop.name}` : "";
         } else if (drive.inZone(nav.stop.d)) {

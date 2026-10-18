@@ -166,10 +166,15 @@ export const tex = {
     x.fillStyle = bg; x.fillRect(0, 0, w, h);
     if (border) { x.strokeStyle = fg; x.lineWidth = border; x.strokeRect(border, border, w - border * 2, h - border * 2); }
     x.fillStyle = fg;
-    x.font = `bold ${font}px monospace`;
     x.textAlign = "center";
     x.textBaseline = "middle";
     const lines = String(text).split("\n");
+    // the whole sign always fits: a line too long for the panel gets a smaller letter
+    x.font = `bold ${font}px monospace`;
+    const widest = Math.max(...lines.map((ln) => x.measureText(ln).width));
+    const room = w - Math.max(6, border * 2 + 6);
+    if (widest > room) font = Math.max(6, Math.floor((font * room) / widest));
+    x.font = `bold ${font}px monospace`;
     lines.forEach((ln, i) => x.fillText(ln, w / 2, h / 2 + (i - (lines.length - 1) / 2) * font * 1.1));
     return toTexture(c, false);
   },

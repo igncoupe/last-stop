@@ -305,6 +305,8 @@ export function buildCity(scene) {
       poolMat.visible = on;
       for (const lamp of lamps) if (lamp.own && !lamp.flicky) paint(lamp);
     },
+    // is this streetlight on right now?
+    isLit(lamp) { return lampsOn.value && !lamp.out && (lamp.on || !lamp.flicky); },
     // one streetlight on its own: out = dark, whatever the rest are doing
     setLampOut(lamp, out) {
       if (!lamp.own) {

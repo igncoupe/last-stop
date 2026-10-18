@@ -27,7 +27,7 @@ export async function flagStop(g, key, d, thought = null) {
   const p = g.actor(key);
   if (p) p.wave(true);
   const arriving = g.arrive("Flag stop", { at: d });
-  if (thought) await g.think(thought);
+  if (thought) await g.muse(thought);
   const stopped = await arriving;
   if (p) p.wave(false);
   if (!stopped) return false;
@@ -46,11 +46,13 @@ export async function flagStop(g, key, d, thought = null) {
   return opened;
 }
 
+// what you press E on to get on: the doorway itself, from the bus side out to an arm's length past it.
+// Seen from inside too (double-sided), so standing right up against the bus works as well as from a step back.
 let doorTrigger = null;
 function busDoor(g) {
   if (!doorTrigger) {
-    doorTrigger = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.4, 2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
-    doorTrigger.position.set(-1.7, 1.2, 4.6);
+    doorTrigger = new THREE.Mesh(new THREE.BoxGeometry(1.3, 2.6, 2.1), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+    doorTrigger.position.set(-1.55, 1.3, 4.65);
     g.bus.group.add(doorTrigger);
   }
   return doorTrigger;
@@ -66,7 +68,8 @@ export const BOARD = {
   5: { kicker: "Metro Transit · Depot 3", title: "Route 9", lines: ["Final night of Route 9 night service.", "Last bus. Last stop.", "Thank you for your years of service.", "  "], scrawl: "bring them home" },
 };
 
-// walk from the dispatch office, punch the clock, get on the bus
+// walk from the dispatch office, punch the clock, get on the bus.
+// notice: what you think reading the board, as { quiet: [only read], said: [thought out loud] } (or a list, all said)
 export async function clockIn(g, notice = null) {
   const board = BOARD[g.state.night] || BOARD[1];
   g.props.depot.boardObj.setNotice(board);
@@ -80,7 +83,16 @@ export async function clockIn(g, notice = null) {
     g.hint("Read the notice board");
     await g.interact(g.props.depot.board, "Read notice");
     g.hint(null);
-    await g.read({ kind: "notice", ...board }, notice);
+    const doc = { kind: "notice", ...board };
+    if (Array.isArray(notice)) await g.read(doc, notice);
+    else {
+      g.paper(doc);
+      await g.wait(500);
+      for (const line of notice.quiet || []) await g.muse(line);
+      for (const line of notice.said || []) await g.think(line);
+      g.paper(null);
+      await g.wait(300);
+    }
   }
   g.hint("Get on the bus");
   await g.interact(busDoor(g), "Get on");
@@ -116,4 +128,20 @@ export async function rheeLateness(g) {
   if (late <= 0) await g.say("rhee", "On time, driver. That's what I like to see.");
   else if (late <= 3) await g.say("rhee", "A few minutes late tonight. Don't make it a habit.");
   else await g.say("rhee", "You were late tonight, driver. Very late. People notice.");
+}
+
+// Every night at Northgate the old man goes the same way. You look away from him; his seat empties; something
+// small and metal hits the floor back there and rolls; you turn round, and there's only a wet seat.
+export async function teodorGone(g, thought) {
+  if (!g.actor("teodor")) return;
+  await g.until(() => !g.lookingBack() && !g.lookingAtMirror(), 9000);
+  const seat = g.seatOf("teodor") || "B3";
+  g.vanish("teodor");
+  g.prop("puddle", { seat });
+  g.sfx("coindrop");                   // something small and metal, hitting the floor at the back, rolling
+  await g.wait(1400);
+  g.hint("Look at the back row");
+  await g.until(() => g.lookingBack(), 15000);
+  g.hint(null);
+  await g.think(thought);
 }

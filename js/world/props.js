@@ -6,6 +6,7 @@ import { tex } from "../core/textures.js";
 import { ribbon, radialTexture } from "./city.js";
 import { makeTimeClock, makeNoticeBoard, makeLockers } from "./depotProps.js";
 import { route, STOPS, CURB, LANE } from "./route.js";
+import { waterMaterial } from "./water.js";
 
 const glass = () => new THREE.MeshLambertMaterial({ color: 0x8aa0b0, transparent: true, opacity: 0.18, depthWrite: false });
 
@@ -156,70 +157,25 @@ export function buildProps(scene) {
     light(on) { rqOn = on; rqLight.intensity = on && this.d !== null ? 40 : 0; rqPool.opacity = on ? 0.5 : 0; rqHead.material.color.set(on ? 0xffd9a0 : 0x1a1a1a); },
   };
 
-  // ---- the canal on the left of Canal Row
-  const waterMat = new THREE.MeshPhongMaterial({ color: 0x9fb0b8, map: tex.waterBase(), shininess: 110, specular: 0x5a6e7a });
-  scene.add(ribbon(1560, 2045, -60, -CURB - 1.5, -0.9, waterMat, [7, 7]));
-  // the shine on top, drifting the other way
-  const shine = tex.waterShine();
-  const shineMat = decal(new THREE.MeshBasicMaterial({ map: shine, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }), 2);
-  scene.add(ribbon(1560, 2045, -60, -CURB - 1.5, -0.88, shineMat, [5, 5]));
+  // ---- the canal on the left of Canal Row: black water, the streetlights laid across it
+  const canalMat = waterMaterial({ deep: 0x061218, scale: 0.9, chop: 0.8 });
+  scene.add(ribbon(1560, 2045, -60, -CURB - 1.5, -0.9, canalMat, [7, 7], 2));
   const rails = new THREE.Group();
   for (let d = 1565; d < 2040; d += 3) rails.add(place(box(0.08, 1, 0.08, mat({ color: 0x3b3f45 })), d, -CURB + 0.2, 0.6));
   scene.add(rails);
   scene.add(ribbon(1565, 2040, -CURB + 0.15, -CURB + 0.25, 1.1, mat({ color: 0x3b3f45 }), [1, 1], 2));
 
-  // ---- flood over the road at Canal Row
-  const floodMat = decal(new THREE.MeshPhongMaterial({ color: 0xa8b8c0, map: tex.waterBase(), shininess: 130, specular: 0x667a88, transparent: true, opacity: 0.9 }), 3);
-  const flood = ribbon(1690, 1915, -CURB - 0.5, CURB + 0.5, 0.2, floodMat, [5, 5]);
+  // ---- flood over the road at Canal Row: brown river water over the asphalt, the road just showing through
+  // at the edges where it's shallow
+  const floodMat = decal(waterMaterial({ deep: 0x14140e, horizon: 0x2a2218, scale: 1.3, chop: 1.1, murk: 0.45, opacity: 0.95 }), 3);
+  const flood = ribbon(1690, 1915, -CURB - 0.5, CURB + 0.5, 0.2, floodMat, [5, 5], 2);
   flood.visible = false;
   scene.add(flood);
-  const floodShine = ribbon(1690, 1915, -CURB - 0.5, CURB + 0.5, 0.22, decal(new THREE.MeshBasicMaterial({ map: shine, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }), 4), [4, 4]);
-  floodShine.visible = false;
-  scene.add(floodShine);
-  // rain rings opening on the water around the bus
-  const ringMat = new THREE.MeshBasicMaterial({ map: tex.ring(), transparent: true, depthWrite: false, opacity: 0 });
-  const rings = [];
-  for (let i = 0; i < 36; i++) {
-    const r = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), ringMat.clone());
-    r.rotation.x = -Math.PI / 2;
-    r.visible = false;
-    r.userData.t = Math.random();
-    scene.add(r);
-    rings.push(r);
-  }
-  const waterAt = (d, side) => (flood.visible && d > 1692 && d < 1913 && Math.abs(side) < CURB) ? flood.position.y + 0.23
-    : (d > 1562 && d < 2043 && side < -CURB - 1.6 && side > -40) ? -0.87 : null;
   let level = 0.2;
   props.flood = {
     mesh: flood,
-    set(on, lv = 0.2) { level = lv; flood.visible = on; floodShine.visible = on; flood.position.y = lv - 0.2; floodShine.position.y = lv - 0.2; },
-    update(dt, busD = 0, raining = false) {
-      waterMat.map.offset.x += dt * 0.012;
-      waterMat.map.offset.y += dt * 0.006;
-      floodMat.map.offset.x += dt * 0.025;
-      shine.offset.x -= dt * 0.03;
-      shine.offset.y += dt * 0.017;
-      for (const r of rings) {
-        r.userData.t += dt / 0.7;
-        if (r.userData.t >= 1) {
-          r.userData.t = 0;
-          r.visible = false;
-          if (!raining) continue;
-          // somewhere on the water near the bus
-          const d = busD - 15 + Math.random() * 50;
-          const side = Math.random() < 0.5 ? -CURB + Math.random() * CURB * 2 : -CURB - 2 - Math.random() * 18;
-          const y = waterAt(d, side);
-          if (y === null) continue;
-          r.position.copy(route.at(d, side, y));
-          r.visible = true;
-        }
-        if (r.visible) {
-          const k = r.userData.t;
-          r.scale.setScalar(0.08 + k * 0.6);
-          r.material.opacity = (1 - k) * 0.55;
-        }
-      }
-    },
+    set(on, lv = 0.2) { level = lv; flood.visible = on; flood.position.y = lv - 0.2; },
+    update() {},
     covers: (d) => flood.visible && d > 1690 && d < 1915,
   };
   void level;

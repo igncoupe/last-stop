@@ -2,7 +2,7 @@
 // Kindness: comfort Jun (+1), visit Room 4B (+1), let Ivy ride (+1)
 import * as THREE from "three";
 import { STOPS, route } from "../world/route.js";
-import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
+import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness, teodorGone } from "./common.js";
 
 export async function night3(g) {
   const f = g.flags;
@@ -12,17 +12,21 @@ export async function night3(g) {
   g.storm(true);
   g.mood("uneasy");
   await g.wait(1000);
-  await g.think("The rain is so loud on the depot roof it sounds like applause.");
+  await g.muse("The rain is so loud on the depot roof it sounds like applause.");
   await clockIn(g);
   g.spawn("teodor", "oldman");
   g.seat("teodor", "B3");
   if (f.gaveJacket) g.prop("jacketHung", { bus: [0.7, 1.46, 4.38] });
   if (f.gaveJacket) await g.think("My jacket is hanging behind the driver's seat. I left it soaked on Canal Row. It's dry now. It smells like the river.");
-  await g.think("He's back there again. He looks worse tonight. Grayer. Like a photo left in the sun.");
+  await g.muse("He's back there again. He looks worse tonight. Grayer. Like a photo left in the sun.");
   if (g.state.late === 0) await g.say("rhee", "Two perfect nights, driver. Don't spoil it in the rain.");
   else await g.say("rhee", "You're behind this week, driver. In weather like this, drivers make mistakes. Don't.");
   if (g.state.warn > 0) await g.say("rhee", "And I haven't forgotten about the free ride.");
   await closeDoorsAndGo(g);
+
+  // ---------- someone on your tail, leaning on the horn. You let them know what you think of that.
+  await g.until(() => g.d > 70, 30000);
+  if (g.d < STOPS["Elm & 4th"] - 300) await honker(g);
 
   // ---------- Elm & 4th
   if (f.maraHelped) g.spawn("mara", "mara", { at: curb("Elm & 4th", 1), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
@@ -43,14 +47,14 @@ export async function night3(g) {
       if (c === 1) await g.say("mara", "Right. The schedule.");
     });
     if (!stayed) {
-      await g.think("Mara was waiting in the rain. I didn't stop.");
+      await g.muse("Mara was waiting in the rain. I didn't stop.");
       g.despawn("mara");
     }
   } else if (f.maraHelped) {
-    await g.think("Mara was waiting in the rain. I didn't stop.");
+    await g.muse("Mara was waiting in the rain. I didn't stop.");
     g.despawn("mara");
   } else if (stopped) {
-    await g.think("Nobody's here. Someone left a nurse's lanyard hanging on the shelter. It's swinging in the wind.");
+    await g.muse("Nobody's here. Someone left a nurse's lanyard hanging on the shelter. It's swinging in the wind.");
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
@@ -93,10 +97,11 @@ export async function night3(g) {
         }
       } else {
         f.junFound = true;
-        await g.read({ kind: "poster", kicker: "FOUND SAFE · THANK YOU", title: "Missing", photo: "JUN PARK", lines: ["JUN PARK, 15", "Last seen Market Street, around midnight."] }, [
+        await g.readQuiet({ kind: "poster", kicker: "FOUND SAFE · THANK YOU", title: "Missing", photo: "JUN PARK", lines: ["JUN PARK, 15", "Last seen Market Street, around midnight."] }, [
           "The missing poster has a strip pasted across it. FOUND SAFE.",
         ]);
         await g.board("junmom", "R1");
+        g.actor("junmom")?.watch(g.camera);
         await g.say("junmom", "You. You're the driver who called.");
         await g.say("junmom", "The police found him on the road to Northgate. Halfway there, in the dark. He was walking to me.");
         await g.say("junmom", "He's home. He's asleep in his bed right now. Because you called.");
@@ -107,7 +112,7 @@ export async function night3(g) {
       g.despawn("junmom");
     }
   } else if (stopped) {
-    await g.think("The poster's pulped by the rain. Someone has put up two more.");
+    await g.muse("The poster's pulped by the rain. Someone has put up two more.");
     const ghostJun = g.spawn("ghostjun", "jun", { ghost: true, mirrorOnly: true });
     g.seat("ghostjun", "B1");
     g.hint("Check your mirror");
@@ -124,9 +129,11 @@ export async function night3(g) {
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
-  // ---------- the radio plays 1994 (while you drive; St. Agnes waits for it)
+  // ---------- the radio plays 1994, while you drive to St. Agnes (slowly: the storm's at its worst here, and
+  // the bus won't go faster than this till it's over)
+  g.drive.setLimit(9);
   const broadcast = (async () => {
-    await g.wait(5000);
+    await g.wait(900);
     g.radio("CH 9 ????");
     g.sfx("static", 1.6);
     await g.wait(1600);
@@ -148,10 +155,13 @@ export async function night3(g) {
     if (f.knowsLena) await g.think("The woman in the shelter. Lena. She looked at me like she knew me. Because she did.");
     await g.think("Nobody ever told me how. They just said there was an accident. They just said she wasn't coming home.");
     g.mood("dread");
-    g.hint("Check your mirror");
-    await g.until(() => g.lookingAtMirror(), 9000);
-    g.hint(null);
-    await g.think("Varga. Teodor Varga. He's looking at the radio. Then at me. He nods. Very slightly.");
+    // (only while there's road left: St. Agnes never waits on this)
+    if (g.d < STOPS["St. Agnes"] - 110) {
+      g.hint("Check your mirror");
+      await g.until(() => g.lookingAtMirror() || g.d > STOPS["St. Agnes"] - 60, 7000);
+      g.hint(null);
+      await g.muse("Varga. Teodor Varga. He's looking at the radio. Then at me. He nods. Very slightly.");
+    }
   })();
 
   // ---------- St. Agnes, and Room 4B
@@ -160,6 +170,7 @@ export async function night3(g) {
     g.sfx("bell");
   }
   stopped = await g.arrive("St. Agnes");
+  g.drive.setLimit(14);
   await broadcast;
   if (f.maraAboard && stopped && (await openUp(g))) {
     await g.say("mara", "Fourth floor. Room four B. Please.");
@@ -221,7 +232,7 @@ export async function night3(g) {
   if (f.frankRode && g.actor("frank")) {
     await g.say("frank", "Well. This is me.");
     await g.alight("frank", mysteryCurb(g, 2.3, 6.9), { vanish: false });
-    await g.think("He walked into the shelter and stood with them, in the rain. Like he'd been there the whole time.");
+    await g.muse("He walked into the shelter and stood with them, in the rain. Like he'd been there the whole time.");
   }
   g.sfx("knock", 4);
   await g.wait(1500);
@@ -230,6 +241,7 @@ export async function night3(g) {
   await g.think("Knocking. Not on the doors. Under the floor. Under my feet. Like people trapped in something, beating on the walls.");
   await g.say("rhee", "CLOSE THE DOORS. Driver, CLOSE THEM.");
   await g.say("teodor", "She's in there, you know. Your mother. In the cardigan. She sat right behind me every night.");
+  g.actor("drowned1")?.watch(g.camera);
   g.hint("Look at the shelter");
   await g.until(() => g.lookingAtActor("drowned1", 25), 12000);
   g.hint(null);
@@ -276,6 +288,7 @@ export async function night3(g) {
   crowd.forEach((_, i) => g.vanish(`drowned${i}`));
   g.vanish("frank");
   g.release();
+  await g.think("And the shelter's empty. All of them, gone. Like the rain took them back.");
   g.hint("Drive  ·  W gas");
   await g.departed();
   g.hint(null);
@@ -288,7 +301,7 @@ export async function night3(g) {
     g.amb({ water: 0.9 });
     await g.until(() => g.d > 1700);
     g.drive.setLimit(5);
-    await g.think("Canal Row is a river now. The water's up to the second step.");
+    await g.muse("Canal Row is a river now. The water's up to the second step.");
     await g.wait(3000);
     await g.think("In the lightning, there are faces under the water. Looking up.");
     await g.until(() => g.d > 1915);
@@ -299,7 +312,7 @@ export async function night3(g) {
 
   // ---------- in the lightning: something in the road, closer every flash
   await g.wait(3500);
-  await g.think("Every time the lightning goes, the whole road lights up for a second.");
+  await g.muse("Every time the lightning goes, the whole road lights up for a second.");
   for (const ahead of [85, 55, 32]) {
     await g.wait(1400 + Math.random() * 900);
     await g.shadeFlash(ahead);
@@ -317,7 +330,7 @@ export async function night3(g) {
   if (f.junAboard) await g.say("jun", "It's on the glass! It's ON the glass!");
   await g.think("It's back. The thing from the first night. Spread across the glass like it's trying to get in.");
   g.shadeHide();
-  await g.think("Then the lights went, and it was gone. Only the handprints stayed. The rain won't wash them off.");
+  await g.muse("Then the lights went, and it was gone. Only the handprints stayed. The rain won't wash them off.");
   g.release();
   await g.say("rhee", "Keep driving, driver. You don't stop for weather.");
   g.dread(false);
@@ -327,23 +340,23 @@ export async function night3(g) {
   await g.arrive("Northgate");
   await openUp(g, 25000);
   if (f.junAboard) {
-    await g.say("jun", f.junComforted ? "Thanks for believing me." : "Night. Be careful, okay?");
+    await g.say("jun", f.junComforted ? "See you tomorrow." : "Night. Be careful, okay?");
     g.spawn("junmom", "junmom", { at: terminalDoor() });
     await g.alight("jun", terminalDoor());
   }
   if (f.junFound) {
+    g.actor("junmom")?.watch(g.camera);
     await g.say("junmom", "This is me. Jun wants to meet you, you know. The driver who called. He thinks you're some kind of hero.");
     await g.alight("junmom", terminalDoor());
   }
-  g.vanish("teodor");
-  g.sfx("coindrop");
+  await teodorGone(g, "He's gone again. Just the coin rolling, and a wet seat. He looked so tired tonight.");
   await rheeLateness(g);
-  await g.think("There's a sheet of paper under my windshield wiper.");
-  await g.read({ kind: "notice", kicker: "Metro Transit · Radio", title: "Notice", lines: ["Route 9 radio moves to CHANNEL 4 starting tomorrow.", "Channel 9 has been OUT OF SERVICE since 1994.", "If you hear anything on channel 9, do not answer it.", "- Dana, Night Dispatch"] }, [
+  await g.muse("There's a sheet of paper under my windshield wiper.");
+  await g.readQuiet({ kind: "notice", kicker: "Metro Transit · Radio", title: "Notice", lines: ["Route 9 radio moves to CHANNEL 4 starting tomorrow.", "Channel 9 has been OUT OF SERVICE since 1994.", "If you hear anything on channel 9, do not answer it.", "- Dana, Night Dispatch"] }, [
     "Notice. Route 9 radio moves to channel 4 starting tomorrow. Channel 9 has been out of service since nineteen ninety-four. Dana, night dispatch.",
   ]);
   await g.say("rhee", "Ignore that.");
-  await g.think("The stop with no name moved again. It's right after Market Street now.");
+  await g.muse("The stop with no name moved again. It's right after Market Street now.");
   g.storm(false);
   await endShift(g);
 }
@@ -362,7 +375,7 @@ async function ward(g) {
   g.walkAt(H.spawn, H.spawnYaw, H.colliders);
   g.despawn("mara");
   const mara = g.spawn("mara", "mara", { at: H.maraStart, yaw: H.spawnYaw + Math.PI });
-  const lying = g.spawn("teodor4b", "oldman");
+  const lying = g.spawn("teodor4b", "patient");
   H.layInBed(lying);
   // and down in the street, on the bus: the old man has moved to the back seat on this side. He's looking up.
   if (g.actor("teodor")) {
@@ -388,8 +401,21 @@ async function ward(g) {
   await g.until(() => g.gazing(H.bedHead, 22), 20000);
   g.hint(null);
   await g.wait(900);
-  await g.scare("hands");
+  // the cold comes off the glass behind you. It fogs over, edge to middle, and a finger writes in it
+  g.mood("dread");
+  const writing = g.fogWrite("MAKE UP THE TIME", { glass: "4B", letterMs: 420 });
+  await g.wait(1600);
+  g.sfx("squeak", 2);
+  await g.think("Something's squeaking. Behind me. On the window.");
+  g.hint("Look at the window");
+  await g.until(() => g.gazing(H.win.getWorldPosition(new THREE.Vector3()), 20), 12000);
+  g.hint(null);
+  await writing;
+  g.sfx("breath");
   g.mood("terror");
+  await g.think("Make up the time. Written in the fog, from the inside. Nobody's touched that glass.");
+  if (g.actor("mara")) await g.say("mara", "That's not. I didn't. Oh my god.");
+  g.look(H.bedHead);
   await g.say("teodor", "You came back. Lena's child. You came back for her.");
   await g.say("teodor", "Don't let him make you late.");
   await g.say("teodor", "The man on the radio. Don't listen to him. He told me to make up the time, and I listened.");
@@ -408,4 +434,44 @@ async function ward(g) {
   g.amb({ rain: 1, engine: 0.3, hum: 0 });
   g.sitInBus();
   await g.fade(0, 1000);
+}
+
+// A car comes up behind with its high beams on and sits on your bumper, leaning on the horn. It pulls out and
+// comes up alongside, still honking. You flip them off. Then the light comes on inside it.
+async function honker(g) {
+  const car = g.tailgater();                 // (it drives itself: up behind you, then beside your window)
+  const done = () => car.gone || g.d > STOPS["Elm & 4th"] - 110;
+  await g.until(() => car.phase === "tail" || done(), 9000);
+  if (done()) return car.leave();
+  g.look(() => g.mirrorPoint());
+  await g.muse("Headlights in the mirror. High beams, right on my bumper.");
+  await g.until(() => car.honks >= 2 || done(), 6000);
+  await g.say("you", "Yeah, yeah. I see you.");
+  car.pass();
+  await g.until(() => car.phase === "beside" || done(), 9000);
+  if (done()) return car.leave();
+  g.look(() => car.window());
+  await g.wait(700);
+  await g.say("you", "Okay! You want to go around? Go around!");
+  // you take one hand off the wheel and show them exactly what you think of that
+  g.gesture("bird", true);
+  await g.wait(600);
+  await g.say("you", "Yeah. Have a great night.");
+  // the horn stops. The light comes on inside the car.
+  car.quiet();
+  await g.wait(900);
+  car.domeOn();
+  g.sfx("whisper");
+  await g.wait(1300);
+  await g.scare("face");
+  car.leave(true);
+  g.gesture("bird", false);
+  g.mood("dread");
+  // (said on the way to Elm: the stop never waits on these)
+  (async () => {
+    await g.think("There was nobody driving. When the light came on there was nobody behind the wheel. Just a face, coming at the glass.");
+    await g.think("And the car's gone. Not ahead. Not behind. Just gone.");
+    await g.say("rhee", "Both hands on the wheel, driver. You never know who's watching.");
+    g.mood("uneasy");
+  })();
 }

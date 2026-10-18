@@ -10,7 +10,7 @@ Be careful who you stop for. Be more careful who you don't.
 
 - 3D, first person, with a low-poly PS1 look
 - You really drive the bus. You choose who to stop for by pulling over and opening the doors.
-- Every character is voiced and acted (voices created with ElevenLabs), with subtitles
+- Every character is voiced and acted (voices created with ElevenLabs), with subtitles. Your own thoughts show up marked "(in your head)": the ones that hurt are spoken, the rest you just read
 - 5 nights, about an hour, and 4 endings
 - Fourteen people drowned on Route 9 in 1994. Some of them still ride it, and some flag you down where there's no stop.
 - The Route 9 file: 24 things to find for yourself (missing posters on the shelters, clippings in an old locker at the depot, the 1994 driver's log on your dash). Read every poster and, if you get them home, you'll know all their names.
@@ -25,6 +25,7 @@ Be careful who you stop for. Be more careful who you don't.
 | Mouse | Look around (click the game to grab the mouse) |
 | `W` / `S` | Gas / brake (walk when on foot) |
 | `F` | Open / close the bus doors |
+| `H` | Horn (most of the time) |
 | `E` | Interact |
 | `1`–`3` | Pick a dialogue option |
 | `Esc` | Pause |
@@ -60,11 +61,11 @@ if (stopped && (await openUp(g))) {
 }
 ```
 
-Lines in `g.say`, `g.think` and `g.choose` must be plain `"double-quoted"` strings so the voice tools can find them.
+Lines in `g.say`, `g.think` and `g.choose` must be plain `"double-quoted"` strings so the voice tools can find them. `g.muse("...")` (and `g.readQuiet`) is a thought that's only written on screen, never voiced: use it for what the driver notices, and `g.think` for what he feels.
 
 ## Making the voices
 
-Voices created with [ElevenLabs](https://elevenlabs.io). Every character has a new voice designed from a written description (ElevenLabs Voice Design; none of them is a copy of anyone real), and every line is spoken with Eleven v4. Each line also has a performance direction in `tools/el-direction.txt`, written scene by scene from inside the character at that moment (`[terrified] [whispers]`, `[crying] [proud]`...), so the feeling changes as the story does. Teodor plays at 1.5x speed. Ivy's three lines are recorded with Boson AI's Higgs Audio ([Higgs TTS 3](https://huggingface.co/bosonai/higgs-tts-3-4b)), because ElevenLabs doesn't make children's voices.
+Voices created with [ElevenLabs](https://elevenlabs.io). Every character has a new voice designed from a written description (ElevenLabs Voice Design; none of them is a copy of anyone real), and every line is spoken with Eleven v4. Each line also has a performance direction in `tools/el-direction.txt`, written scene by scene from inside the character at that moment (`[terrified] [whispers]`, `[crying] [proud]`...), so the feeling changes as the story does. Teodor plays at 1.5x speed. The driver's voice is a remix of Jun's (older, deeper, his own man: `remix you "..." --from jun`). Ivy's three lines are recorded with Boson AI's Higgs Audio ([Higgs TTS 3](https://huggingface.co/bosonai/higgs-tts-3-4b)), because ElevenLabs doesn't make children's voices.
 
 Every take is checked before it's kept: Whisper has to hear the words in the script, and a speaker-match check (SpeechBrain ECAPA) has to agree it's the same character. Takes that fail are recorded again. The API key is read from `~/.elevenlabs_key`, a file you make yourself; it never goes in this repo. After changing any lines:
 

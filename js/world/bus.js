@@ -3,6 +3,9 @@
 import * as THREE from "three";
 import { mat, glow, box } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
+import { makeFogPane } from "./fog.js";
+import { handMesh, drawPrint } from "./hands.js";
+import { waterMaterial } from "./water.js";
 
 export const MIRROR_ONLY = 1;   // layer for things you can only see in the mirror
 
@@ -115,28 +118,10 @@ export function buildBus(scene) {
     // the bus x of a mark -> canvas u (the plane is turned to face the driver)
     const U = (bx) => ((1.25 - bx) / 2.5) * W2;
     const V = (by) => ((2.85 - by) / 1.5) * H2;
-    // a print of a long, thin hand: smudged palm, four finger streaks, all dragged down the glass
-    const hand = (cx, cy, rot, smear) => {
-      x.save();
-      x.translate(cx, cy);
-      x.rotate(rot);
-      x.filter = "blur(1.5px)";
-      x.fillStyle = "rgba(160,158,150,0.34)";
-      x.beginPath(); x.ellipse(0, 0, 8, 10, 0, 0, Math.PI * 2); x.fill();
-      for (let i = 0; i < 4; i++) {
-        x.save();
-        x.rotate((i - 1.5) * 0.16);
-        x.beginPath(); x.ellipse((i - 1.5) * 1.2, -24, 2.2, 13 + (i === 1 || i === 2 ? 3 : 0), 0, 0, Math.PI * 2); x.fill();
-        x.restore();
-      }
-      x.save(); x.rotate(-1.1); x.beginPath(); x.ellipse(0, -14, 2.2, 8, 0, 0, Math.PI * 2); x.fill(); x.restore();
-      // dragged down the glass, streaky
-      x.fillStyle = "rgba(160,158,150,0.13)";
-      for (let i = 0; i < 4; i++) x.fillRect(-6 + i * 3.5, 4, 2.2, smear * (0.6 + Math.random() * 0.5));
-      x.restore();
-    };
-    hand(U(-0.75), V(2.48), -0.35, 60);
-    hand(U(1.18), V(2.5), 0.35, 70);
+    // where its hands were: the same hand as every other hand on this bus, in grime, dragged down the glass
+    drawPrint(x, U(-0.75), V(2.4), 122, -0.32);
+    drawPrint(x, U(1.12), V(2.42), 128, 0.3);
+    drawPrint(x, U(0.6), V(1.9), 96, 0.12, 0.7);
     // a dusty smear the shape of a body, where it was pressed against the glass
     const grd = x.createRadialGradient(U(0.3), V(2.15), 10, U(0.3), V(2.15), 120);
     grd.addColorStop(0, "rgba(120,118,112,0.32)");
@@ -477,49 +462,33 @@ export function buildBus(scene) {
   // Opening, the outer half swings in from the post while the inner half folds back against it,
   // so the whole leaf tucks up beside its post in the stairwell (half a leaf deep) and never
   // reaches the dash or the handrails.
-  // ---- hands on the glass (hidden until a scene wants them)
-  const handMat = mat({ color: 0x7f898c, emissive: 0x0b1316 });
-  const ashMat = mat({ color: 0x2c2a28 });
-  function hand(m, size = 1) {
-    const h = new THREE.Group();
-    h.add(box(0.1 * size, 0.12 * size, 0.012, m));                                   // the palm, flat on the glass
-    for (let i = 0; i < 4; i++) {
-      const f = box(0.019 * size, (0.075 + (i === 1 || i === 2 ? 0.015 : 0)) * size, 0.012, m);
-      const a = (i - 1.5) * 0.17;
-      f.position.set((i - 1.5) * 0.026 * size + Math.sin(a) * 0.05 * size, 0.1 * size, 0);
-      f.rotation.z = -a;
-      h.add(f);
-    }
-    const thumb = box(0.022 * size, 0.06 * size, 0.012, m);
-    thumb.position.set(-0.065 * size, 0.01 * size, 0);
-    thumb.rotation.z = 0.9;
-    h.add(thumb);
-    return h;
-  }
+  // ---- hands on the glass (hidden until a scene wants them): the hand itself pressed to the outside of the
+  // door and the windows, or the prints it leaves (on your window, where the thing held on)
   const handSets = { door: new THREE.Group(), windows: new THREE.Group(), ash: new THREE.Group() };
   Object.values(handSets).forEach((gr) => { gr.visible = false; bus.add(gr); });
   let handT = 0;
-  const pressOn = (gr, m, x, y, z, side, tilt, size = 1) => {
-    const h = hand(m, size);
+  const pressOn = (gr, kind, x, y, z, side, tilt, size = 1) => {
+    const h = handMesh(kind, size);
     h.position.set(x, y, z);
-    h.rotation.set(0, side > 0 ? Math.PI / 2 : -Math.PI / 2, tilt);      // palm toward the inside of the bus
+    h.rotation.set(0, side > 0 ? Math.PI / 2 : -Math.PI / 2, tilt);      // flat on the glass
     h.userData.baseY = y;
+    h.userData.slide = 0.05 + Math.random() * 0.12;                       // how far it slides down the glass
     gr.add(h);
   };
   // the door glass: a crowd of hands, high and low
   for (const [y, z, t] of [[1.95, 3.95, 0.2], [1.62, 4.25, -0.3], [2.1, 4.55, 0.1], [1.35, 4.8, 0.4], [1.8, 5.05, -0.15], [2.05, 5.35, 0.3], [1.1, 4.1, -0.5], [1.5, 5.4, 0.15]]) {
-    pressOn(handSets.door, handMat, -W - 0.035, y, z, -1, t, 0.95 + Math.random() * 0.2);
+    pressOn(handSets.door, "press", -W - 0.035, y, z, -1, t, 0.95 + Math.random() * 0.25);
   }
   // every window: pairs of hands, both sides, all the way down the bus
   for (const side of [-1, 1]) {
     for (let z = -5.2; z < (side < 0 ? 3.3 : 5.4); z += 1.05 + Math.random() * 0.4) {
       const y = 1.7 + Math.random() * 0.55;
-      pressOn(handSets.windows, handMat, side * (W + 0.035), y, z, side, (Math.random() - 0.5) * 0.9);
-      if (Math.random() < 0.7) pressOn(handSets.windows, handMat, side * (W + 0.035), y + (Math.random() - 0.5) * 0.3, z + 0.28, side, (Math.random() - 0.5) * 0.9);
+      pressOn(handSets.windows, "press", side * (W + 0.035), y, z, side, (Math.random() - 0.5) * 0.9, 0.9 + Math.random() * 0.3);
+      if (Math.random() < 0.7) pressOn(handSets.windows, "press", side * (W + 0.035), y + (Math.random() - 0.5) * 0.3, z + 0.28, side, (Math.random() - 0.5) * 0.9, 0.9 + Math.random() * 0.3);
     }
   }
-  // the driver's window: prints in ash, where it held on
-  for (const [y, z, t] of [[2.05, 4.3, 0.3], [1.8, 5.1, -0.2], [2.25, 4.95, 0.1]]) pressOn(handSets.ash, ashMat, W + 0.03, y, z, 1, t, 1.1);
+  // the driver's window: prints, where it held on
+  for (const [y, z, t] of [[2.05, 4.3, 0.3], [1.8, 5.1, -0.2], [2.25, 4.95, 0.1]]) pressOn(handSets.ash, "print", W + 0.03, y, z, 1, t, 1.15);
 
   const doorPanels = [];
   const leafW = (DZ1 - DZ0) / 2;
@@ -571,6 +540,23 @@ export function buildBus(scene) {
   // the little corner of body between the door and the windshield
   put(bus, box(0.08, 2.1, 0.3, shell), -W, 1.4, 5.84);
 
+  // breath on the glass: a fog pane inside every window, the whole windshield, the door and the back window
+  const fogPanes = { all: [] };
+  const fogPane = (name, w, h, x, y, z, ry, px, seed) => {
+    const p = makeFogPane(w, h, { px, seed });
+    p.mesh.position.set(x, y, z);
+    p.mesh.rotation.y = ry;
+    bus.add(p.mesh);
+    fogPanes.all.push(p);
+    if (name) fogPanes[name] = p;
+    return p;
+  };
+  fogPane("windshield", 2.46, 1.46, 0, 2.1, 5.972, Math.PI, 512, 3);
+  fogPane(null, 11.8, 1.26, W - 0.035, 1.95, 0, -Math.PI / 2, 768, 5);
+  fogPane(null, 9.5, 1.26, -W + 0.035, 1.95, -1.2, Math.PI / 2, 640, 9);
+  fogPane("door", 1.8, 1.42, -W + 0.07, 1.62, (DZ0 + DZ1) / 2, Math.PI / 2, 192, 11);
+  fogPane(null, 2.46, 1.36, 0, 2.05, -5.972, 0, 256, 13);
+
   // lights: interior, headlights, dash glow
   const interior = [new THREE.PointLight(0xe6eeff, 5, 9, 1.4), new THREE.PointLight(0xe6eeff, 4, 9, 1.4)];
   put(bus, interior[0], 0, 2.6, 2.5);
@@ -582,13 +568,16 @@ export function buildBus(scene) {
   const dashLight = put(bus, new THREE.PointLight(0xffb54a, 0.8, 2, 2), 0.6, 1.5, 5.4);
 
   // water that can rise inside the bus
-  const waterIn = put(bus, box(2.4, 0.02, 11.8, new THREE.MeshPhongMaterial({ color: 0x0d1d29, map: tex.water(), shininess: 120, transparent: true, opacity: 0.85 })), 0, 0.48, 0);
+  const waterIn = put(bus, new THREE.Mesh(new THREE.PlaneGeometry(2.42, 11.9).rotateX(-Math.PI / 2),
+    waterMaterial({ deep: 0x0a1810, scale: 2.2, chop: 1.4, murk: 0.4, opacity: 0.88, side: THREE.DoubleSide })), 0, 0.48, 0);
   waterIn.visible = false;
 
   // ---- state
   const state = { doorsOpen: false, doorAmt: 0, interior: "on", flickerT: 0, routeText: "", routeGlitch: false, radio: "CH 9", visorDown: false };
 
-  function drawRoute(t) {
+  // the route display. Text that fits sits in the middle; anything longer slides through it, right to left,
+  // the way a real LED sign scrolls
+  function drawRoute() {
     const c = route.ctx;
     c.fillStyle = "#0b0702";
     c.fillRect(0, 0, 160, 24);
@@ -596,9 +585,25 @@ export function buildBus(scene) {
     if (state.routeGlitch && Math.random() < 0.15) text = text.replace(/[A-Z?]/g, () => "?#%&@"[Math.floor(Math.random() * 5)]);
     c.fillStyle = state.routeGlitch ? "#ffd27a" : "#ffb54a";
     c.font = "bold 14px monospace";
-    c.textAlign = "center";
     c.textBaseline = "middle";
-    c.fillText(text, 80 + (state.routeGlitch && Math.random() < 0.1 ? (Math.random() - 0.5) * 6 : 0), 12);
+    const jitter = state.routeGlitch && Math.random() < 0.1 ? (Math.random() - 0.5) * 6 : 0;
+    const w = c.measureText(state.routeText).width;
+    if (w <= 150) {
+      state.routeScroll = null;
+      c.textAlign = "center";
+      c.fillText(text, 80 + jitter, 12);
+    } else {
+      // (one whole pass, a gap, and round again)
+      const lap = w + 60;
+      const x = 160 - ((state.routeScroll || 0) % (lap + 160));
+      c.textAlign = "left";
+      c.fillText(text, Math.round(x + jitter), 12);
+      state.routeScrolling = true;
+    }
+    // the LED grid over it
+    c.fillStyle = "rgba(0,0,0,.28)";
+    for (let i = 0; i < 160; i += 2) c.fillRect(i, 0, 1, 24);
+    for (let j = 0; j < 24; j += 2) c.fillRect(0, j, 160, 1);
     route.texture.needsUpdate = true;
   }
   function drawDash(info) {
@@ -673,7 +678,7 @@ export function buildBus(scene) {
       if (open !== state.doorsOpen) state.btnT = 0.18;     // the button clicks down
       state.doorsOpen = open;
     },
-    setRoute(text, glitch = false) { state.routeText = text; state.routeGlitch = glitch; drawRoute(); },
+    setRoute(text, glitch = false) { state.routeText = text; state.routeGlitch = glitch; state.routeScroll = 0; state.routeScrolling = false; drawRoute(); },
     setRadio(text) {
       if (text !== state.radio) state.knobTarget = (state.knobTarget || 0) - 1.1;   // the knob turns
       state.radio = text;
@@ -688,6 +693,9 @@ export function buildBus(scene) {
       for (const [name, group] of Object.entries(handSets)) group.visible = name === set || (set === "windows" && name === "door");
       handT = 0;
     },
+    // the glass misting over (0 clear ... 1 fogged right over)
+    fogPanes,
+    setFog(k) { fogPanes.all.forEach((p) => p.set(k)); },
     setSmudge(level) { if (level) smudge.material.map = smudgeTexes[level - 1]; smudge.visible = level > 0; },
     smudgeTextures: smudgeTexes,
     // where something lands on the windshield (bus space, feet of a 2 m figure)
@@ -696,6 +704,7 @@ export function buildBus(scene) {
     get interiorMode() { return state.interior; },
     get passengers() { return bus.children.filter((c) => c.userData.person).length; },
     setHeadlights(on) { head.intensity = on ? 160 : 0; },
+    get headlightsOn() { return head.intensity > 0; },
     // 0 = dry, 1 = up to the seats
     setWater(level) { waterIn.visible = level > 0; waterIn.position.y = 0.48 + level * 0.45; },
     update(dt, info) {
@@ -707,7 +716,8 @@ export function buildBus(scene) {
       handT += dt;
       for (const name of ["door", "windows"]) {
         if (!handSets[name].visible) continue;
-        for (const h of handSets[name].children) h.position.y = h.userData.baseY - Math.min(0.12, handT * 0.02) + Math.sin(handT * 3 + h.position.z * 5) * 0.004;
+        // pressing, flexing, sliding slowly down the glass
+        for (const h of handSets[name].children) h.position.y = h.userData.baseY - Math.min(h.userData.slide, handT * 0.03) + Math.sin(handT * 3 + h.position.z * 5) * 0.004;
       }
       doorPanels.forEach(({ pivot, fold, dir }) => {
         pivot.rotation.y = dir * eased * 1.45;        // the outer half swings in...
@@ -733,12 +743,19 @@ export function buildBus(scene) {
       });
       strips.forEach((s) => s.material.color.set(level > 0.2 ? (state.interior === "red" ? 0xff3a2a : 0xe8f0ff) : 0x202224));
       dashLight.intensity = state.interior === "off" ? 0.4 : 0.8;
-      // screens (redrawn a few times a second)
+      // the fog is only as bright as the lights on it; on the door, it folds away with the glass
+      for (const p of fogPanes.all) if (p.mesh.visible) p.light(Math.max(0.12, level));
+      fogPanes.door.mesh.visible = fogPanes.door.amount > 0.002 && state.doorAmt < 0.04;
+      // screens (redrawn a few times a second; a scrolling route display every frame, so it slides smoothly)
       dashTimer -= dt;
+      if (state.routeScrolling) {
+        state.routeScroll = (state.routeScroll || 0) + dt * 34;
+        drawRoute();
+      }
       if (dashTimer <= 0) {
         dashTimer = 0.15;
         drawDash(info);
-        drawRoute();
+        if (!state.routeScrolling) drawRoute();
       }
     },
     renderMirror(renderer, scene) {

@@ -93,8 +93,8 @@
  },
  "voices": {
   "you": {
-   "voice_id": "dSc4TfqfgT0HCcBNgETM",
-   "candidate": "0"
+   "voice_id": "zxRPIfLc13s7Hnb3RjQF",
+   "candidate": "r1"
   },
   "rhee": {
    "voice_id": "YZLBrscDVPWXHqP4ALjD",
@@ -141,8 +141,8 @@
    "candidate": "2"
   },
   "eddie": {
-   "voice_id": "hmMLB1aLNcNPC7BQuWcQ",
-   "candidate": "r0"
+   "voice_id": "lvlIGhiJAIudcM7vFnpI",
+   "candidate": "r2"
   },
   "dorothy": {
    "voice_id": "cM2m6bQcvj5T9lbhyjUs",
@@ -192,9 +192,14 @@
    "za45WWTmO8shqJfrJEwu"
   ],
   "eddie": [
-   "hmMLB1aLNcNPC7BQuWcQ",
-   "yUbEtAwOm7RXFl9SS9Uy",
-   "QtMQjiRlqB6x87Y9fNh9"
+   "ooEBMqK9sfnS8h3Ckj1c",
+   "nootbPMUO3TmexzLOGlD",
+   "lvlIGhiJAIudcM7vFnpI"
+  ],
+  "you": [
+   "Fk2Ol9maGgrQ01yJjmsY",
+   "zxRPIfLc13s7Hnb3RjQF",
+   "irqYdh8okjuRqFGvRcje"
   ]
  }
 }

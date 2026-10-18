@@ -137,7 +137,8 @@ export function createTraffic(scene, sfx) {
   }
   function place(c) {
     c.g.position.copy(route.at(c.d, c.lateral, 0));
-    c.g.rotation.set(0, route.heading(c.d) + Math.PI, 0);    // facing the other way down the road
+    // facing the other way down the road (the one on your tail goes your way)
+    c.g.rotation.set(0, route.heading(c.d) + (c.mode === "tail" ? 0 : Math.PI), 0);
   }
   function remove(c) {
     scene.remove(c.g);
@@ -154,6 +155,43 @@ export function createTraffic(scene, sfx) {
   }
   const okAt = (d, L) => d > 90 && d < L - 140 && !nearCorner(d, 35) && !Object.values(STOPS).some((s) => Math.abs(s - d) < 25);
 
+  let lastBusD = 0;
+  // the one on your tail: where it is and what it's doing, every frame
+  function tail(c, dt, busD, speed) {
+    const behind = busD - 9.8;                 // its nose just off your back bumper
+    const beside = busD + 4.6;                 // its passenger window level with yours
+    const honk = (dur) => { sfx("horn", dur); c.honks++; };
+    if (c.phase === "approach") {
+      c.d = Math.min(behind, c.d + (speed + 8) * dt);
+      if (c.d >= behind - 0.05) { c.phase = "tail"; c.honkT = 0.2; }
+    } else if (c.phase === "tail") {
+      c.d = behind;
+      c.honkT -= dt;
+      if (c.honkT <= 0 && !c.hush) { honk(c.honks === 0 ? 1.3 : 0.3); c.honkT = c.honks === 1 ? 1.8 : 0.45; }
+      c.flash -= dt;
+      if (c.flash <= 0) { c.flash = 0.2; setHeadlights(c, !c.beam.visible, 2.6); }   // flashing you
+    } else if (c.phase === "pass" || c.phase === "beside") {
+      setHeadlights(c, true, 1.6);
+      c.lateral += (-0.9 - c.lateral) * Math.min(1, dt * 1.6);
+      const want = beside - c.d;
+      c.d += Math.sign(want) * Math.min(Math.abs(want), (speed + 6) * dt, Math.abs(want) * dt * 3 + speed * dt + 0.02);
+      if (c.phase === "pass" && Math.abs(beside - c.d) < 0.4 && c.lateral < -0.7) c.phase = "beside";
+      if (c.phase === "beside") c.d = beside;
+      c.honkT -= dt;
+      if (c.honkT <= 0 && !c.hush) { honk(0.35); c.honkT = 0.62; }
+    } else if (c.phase === "away") {
+      c.speed = Math.max(c.speed, speed) + dt * 9;
+      c.d += c.speed * dt;
+      if (c.d - busD > 120) { remove(c); return; }
+    }
+    place(c);
+    if (c.passenger.visible) {
+      // its head turns to you
+      const local = c.g.worldToLocal(cam.clone());
+      c.paleHead.rotation.y = Math.atan2(local.x + 0.55, local.z - 0.1);
+    }
+  }
+
   return {
     // add a car for a moment so its shaders get compiled while the game loads
     warmCar() {
@@ -167,7 +205,39 @@ export function createTraffic(scene, sfx) {
     hold(seconds) { hold = Math.max(hold, seconds); },
     clear() { while (cars.length) remove(cars[0]); timer = 10; hold = 0; },
     spawn,
+    // The car that sits on your bumper (night 3). It comes up behind you with its high beams on, honking; pass()
+    // sends it out and alongside your window; quiet() stops the horn; domeOn() lights it up inside (nobody at
+    // the wheel, something in the passenger seat); leave(true) is gone in an instant.
+    tailgater() {
+      const m = carModel();
+      const c = { ...m, mode: "tail", phase: "approach", d: lastBusD - 48, lateral: LANE, speed: 0, t: 0, passed: true, honks: 0,
+        honkT: 0.4, hush: false, gone: false, flash: 0 };
+      c.passenger.visible = false;
+      c.dome.visible = false;
+      c.hazards.forEach((h) => { h.visible = false; });
+      setHeadlights(c, true, 2.6);                       // high beams, straight into your mirror
+      scene.add(c.g);
+      cars.push(c);
+      place(c);
+      c.pass = () => { if (!c.gone) c.phase = "pass"; };
+      c.quiet = () => { c.hush = true; };
+      c.domeOn = () => {
+        c.dome.visible = true;
+        c.driver.visible = false;                        // there's nobody at the wheel
+        c.passenger.visible = true;                      // ...and somebody right up against the glass
+        c.passenger.position.set(-0.55, 0, 0.1);
+      };
+      c.window = () => c.g.localToWorld(new THREE.Vector3(-0.8, 1.15, 0));
+      c.leave = (now = false) => {
+        if (c.gone) return;
+        c.gone = true;
+        if (now || !cars.includes(c)) { if (cars.includes(c)) remove(c); return; }
+        c.phase = "away";
+      };
+      return c;
+    },
     update(dt, { busD, speed, active, night, camera, player }) {
+      lastBusD = busD;
       hold = Math.max(0, hold - dt);
       if (active && hold <= 0 && cars.length < 2) {
         timer -= dt * (speed > 1 ? 1 : 0.3);
@@ -180,6 +250,7 @@ export function createTraffic(scene, sfx) {
       camera.getWorldPosition(cam);
       for (const c of [...cars]) {
         c.t += dt;
+        if (c.mode === "tail") { tail(c, dt, busD, speed); continue; }
         const rel = c.d - (busD + 5);           // + ahead of the bus nose, - behind it
         if (c.mode === "swerve") {
           // drifts across into your lane, flashing, then jerks back
