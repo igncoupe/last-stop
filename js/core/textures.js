@@ -173,13 +173,14 @@ export const tex = {
     lines.forEach((ln, i) => x.fillText(ln, w / 2, h / 2 + (i - (lines.length - 1) / 2) * font * 1.1));
     return toTexture(c, false);
   },
-  poster: (lines) => {
+  // a missing poster: who (a portraits.js person key) is in the photo
+  poster: (lines, who = "jun") => {
     const [c, x] = canvas(120, 160);
     x.fillStyle = "#e6e1d2"; x.fillRect(0, 0, 120, 160);
     x.fillStyle = "#a51616"; x.font = "bold 22px sans-serif"; x.textAlign = "center";
     x.fillText(lines[0], 60, 24);
     // a photocopied photo: grey, a face, shoulders
-    drawPhoto(x, "jun", 26, 32, 68, 70, { tone: "gray" });
+    drawPhoto(x, who === "jun" ? "jun" : `person:${who}`, 26, 32, 68, 70, { tone: "gray" });
     x.fillStyle = "#111"; x.font = "bold 11px monospace";
     lines.slice(1).forEach((ln, i) => x.fillText(ln, 60, 118 + i * 14));
     // rain streaks and a torn corner

@@ -54,6 +54,20 @@ export async function night3(g) {
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
+  // ---------- the windshield fogs up from the inside, and something writes in it
+  await g.until(() => g.d > STOPS["Elm & 4th"] + 45, 30000);
+  if (g.d < STOPS["Market St"] - 230) {
+    g.mood("dread");
+    const writing = g.fogWrite("STOP");
+    await g.think("The windshield's fogging up. From the inside.");
+    await writing;
+    g.sfx("breath");
+    await g.think("Somebody wrote in it. From the inside. Right in front of my face.");
+    if (f.maraAboard) await g.say("mara", "You didn't do that. Your hands are on the wheel. Your hands are on the wheel.");
+    await g.say("rhee", "Wipers, driver. You can't see the road like that.");
+    g.mood("uneasy");
+  }
+
   // ---------- Market St
   if (f.junRode) g.spawn("jun", "jun", { at: curb("Market St", 1), yaw: route.heading(STOPS["Market St"]) + Math.PI / 2 });
   if (f.calledMom) g.spawn("junmom", "junmom", { at: curb("Market St", 2), yaw: route.heading(STOPS["Market St"]) + Math.PI / 2 });
@@ -164,13 +178,37 @@ export async function night3(g) {
   } else if (stopped) {
     await g.peekWindow("hand", "Up on the fourth floor, a thin figure is pressing one hand against the window glass.");
   }
+  // a mailman in the rain, under the shelter, with his bag held against his chest
+  if (stopped && (g.bus.doorsOpen || (await openUp(g, 15000)))) {
+    g.spawn("frank", "frank", { at: curb("St. Agnes", 3), yaw: route.heading(STOPS["St. Agnes"]) + Math.PI / 2 });
+    const stayed = await g.atStop(async (g) => {
+      await g.actor("frank").walk([doorOutside()], { speed: 1.4 });
+      await g.say("frank", "Room for one more? I'm drowned out here.");
+      await g.board("frank", "L1");
+      f.frankRode = true;
+      f.metFrank = true;
+      await g.say("frank", "Frank Doyle. I carry the mail on Route 12. Thirty years, and they still won't give me a truck.");
+      await g.say("frank", "Found something on your bus, by the way. On the seat right behind you. It's got your name on it.");
+      const give = g.handOver("frank", "letter");
+      await g.wait(800);
+      await give;
+      await g.read({ kind: "note", lines: ["To my little one,", "Be good for Grandma. I'm on the last bus.", "I'll be home before you wake up.", "I love you to the moon and back."], scrawl: "- Mom", neat: true }, [
+        "It's addressed to me. At my grandmother's house. The postmark says March fourteenth, nineteen ninety-four.",
+        "Be good for Grandma. I'm on the last bus. I'll be home before you wake up. I love you to the moon and back. Mom.",
+        "I've never seen her handwriting before. I know it's hers.",
+      ]);
+      f.hasLetter = true;
+      await g.say("frank", "Everything gets delivered eventually. That's the job.");
+    });
+    if (!stayed && !f.frankRode) g.despawn("frank");
+  }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
   // ---------- the stop with no name: two blocks past St. Agnes
   const md = g.mysteryAhead();   // never behind you
   const crowd = [];
   for (let i = 0; i < 10; i++) {
-    const look = i === 1 ? "lena" : i === 2 ? "daniel" : "drowned";
+    const look = ["drowned", "lena", "daniel", "eddie", "dorothy", "drowned", "drowned", "drowned", "drowned", "drowned"][i];
     crowd.push(g.spawn(`drowned${i}`, look, { ghost: true, at: mysteryCurb(g, -1.8 + (i % 5) * 0.9, 6.4 + Math.floor(i / 5) * 0.6), yaw: route.heading(md) + Math.PI / 2 }));
   }
   const ivy = g.spawn("ivy", "ivy", { ghost: true, at: mysteryCurb(g, 1, 5.6), yaw: route.heading(md) + Math.PI / 2 });
@@ -180,6 +218,11 @@ export async function night3(g) {
   g.setDoors(true);
   g.lockDoors(true);
   await g.think("The doors opened by themselves.");
+  if (f.frankRode && g.actor("frank")) {
+    await g.say("frank", "Well. This is me.");
+    await g.alight("frank", mysteryCurb(g, 2.3, 6.9), { vanish: false });
+    await g.think("He walked into the shelter and stood with them, in the rain. Like he'd been there the whole time.");
+  }
   g.sfx("knock", 4);
   await g.wait(1500);
   g.sfx("knock", 6);
@@ -231,6 +274,7 @@ export async function night3(g) {
     g.vanish("ivy");
   }
   crowd.forEach((_, i) => g.vanish(`drowned${i}`));
+  g.vanish("frank");
   g.release();
   g.hint("Drive  ·  W gas");
   await g.departed();

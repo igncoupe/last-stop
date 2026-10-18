@@ -19,6 +19,7 @@ import { createShade } from "./world/shade.js";
 import { createTraffic } from "./world/traffic.js";
 import { createMenuArt } from "./core/menuArt.js";
 import { createSelfBody } from "./world/selfBody.js";
+import { createFile } from "./game/file.js";
 import { NIGHTS, ENDINGS, CREDITS } from "./story/nights.js";
 import { KIND_ENOUGH } from "./story/common.js";
 
@@ -97,6 +98,9 @@ const world = { scene, camera, player, drive, bus, props, places, city, settings
 const director = createDirector(world);
 const self = createSelfBody(scene, bus, player, camera);
 const g = director.g;
+// the Route 9 file: posters, clippings and Teodor's log, for you to find
+const file = createFile({ player, props, bus, drive, director, store });
+g.file = file;
 
 // the green door button on the dash (F does the same thing)
 function toggleDoors() {
@@ -190,6 +194,7 @@ function frame(now) {
   if (paused) return;
   if (playing && input.hit("KeyF")) toggleDoors();
   player.state.vibration = drive.speed / 14;
+  file.update(dt, input);
   player.update(dt, input);
   self.update(dt);
   // look at the rear-view mirror and your eyes focus on it: the view narrows so you can see who's back there
@@ -294,6 +299,7 @@ function resetWorld(n) {
   props.missingPoster.visible = false;
   places.bridge.group.visible = false;
   city.setLampsOn(true);
+  city.clearOuts();
   setSky("night");
   g.storm(false);
   g.route(null);
@@ -302,6 +308,9 @@ function resetWorld(n) {
   bus.group.updateMatrixWorld(true);
   const busBox = new THREE.Box3().setFromObject(bus.group).expandByScalar(-0.15);
   g.walkAt(props.depot.spawn, 0.35, [...props.colliders, busBox]);
+  file.setup(n);
+  // the first time, a word about what's lying around to be read
+  if (n === 1 && file.everCount === 0) setTimeout(() => { if (playing && g.state.night === 1) ui.toast("Look around. Some things can be read  ·  E", 4200); }, 9000);
 }
 
 async function play(startNight, saved) {
@@ -359,7 +368,7 @@ async function play(startNight, saved) {
   input.unlock();
   const e = ENDINGS[ending];
   await ui.fade(1, 1500);
-  await ui.card({ kicker: `Ending ${e.number} of 4`, title: e.title, sub: e.blurb, note: `Endings found: ${found.size} / 4${e.hint ? " · " + e.hint : ""}`, actions: [{ label: "Credits" }] });
+  await ui.card({ kicker: `Ending ${e.number} of 4`, title: e.title, sub: e.blurb, note: `Endings found: ${found.size} / 4 · Route 9 file: ${file.count} / ${file.total}${e.hint ? " · " + e.hint : ""}`, actions: [{ label: "Credits" }] });
   await ui.credits(CREDITS);
   location.reload();
 }
@@ -377,7 +386,7 @@ function showTitle() {
   $("btn-new").classList.toggle("primary", !saved);
   if (saved) $("btn-continue").textContent = `Continue · Night ${saved.night}`;
   const found = store.get(FOUND) || [];
-  $("endings-found").textContent = `Endings found: ${found.length} / 4`;
+  $("endings-found").textContent = `Endings found: ${found.length} / 4  ·  Route 9 file: ${file.everCount} / ${file.total}`;
 }
 
 async function begin(startNight, saved) {

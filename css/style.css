@@ -308,7 +308,7 @@ body[data-subs="large"] .subtitle { font-size: clamp(20px, 2.15vw, 30px); }
 .paper.on { opacity: 1; }
 .paper .sheet {
   width: min(460px, 78vw);
-  max-height: 70vh;
+  max-height: 84vh;
   overflow: hidden;
   padding: 26px 30px 30px;
   color: #1d1b17;
@@ -327,7 +327,7 @@ body[data-subs="large"] .subtitle { font-size: clamp(20px, 2.15vw, 30px); }
 .p-title { font-weight: 700; font-size: 20px; text-transform: uppercase; margin-bottom: 12px; border-bottom: 2px solid #1d1b17; padding-bottom: 6px; }
 .p-scrawl { font-family: "Segoe Print", "Bradley Hand", cursive; color: #2c3a73; font-size: 22px; transform: rotate(-4deg); margin-top: 14px; }
 /* pencil, in a hurry */
-.p-scrawl.rushed { color: #3b3b40; font-size: 23px; transform: rotate(-5deg) skewX(-8deg); white-space: nowrap; letter-spacing: -0.5px;
+.p-scrawl.rushed { padding-bottom: 14px; color: #3b3b40; font-size: 23px; transform: rotate(-5deg) skewX(-8deg); white-space: nowrap; letter-spacing: -0.5px;
   text-shadow: 0.6px 0.4px 0 rgba(70,70,76,.45), -0.4px 0 0.6px rgba(40,40,44,.35); }
 .p-scrawl.rushed span { display: inline-block; }
 .p-scrawl.rushed span.hard { color: #1d1d21; text-shadow: 0.8px 0.6px 0 rgba(30,30,34,.6); }
@@ -343,17 +343,27 @@ body[data-subs="large"] .subtitle { font-size: clamp(20px, 2.15vw, 30px); }
   box-shadow: inset 0 0 0 3px rgba(240, 236, 226, .85);
 }
 /* one face on a missing poster */
-.paper-poster .p-photo { width: 130px; height: 150px; margin: 4px auto 12px; filter: contrast(1.15); }
+.paper-poster .p-photo { width: min(130px, 19vh); height: min(150px, 22vh); margin: 2px auto 10px; filter: contrast(1.15); }
 /* a yellowed newspaper clipping */
 .paper-clipping .sheet { background: #d9cba3; font-family: Georgia, "Times New Roman", serif; font-size: 15px; transform: rotate(1.5deg); }
 .paper-clipping.on .sheet { transform: rotate(1.5deg); }
 .paper-clipping .p-title { font-family: Georgia, serif; font-size: 24px; text-transform: none; line-height: 1.1; }
 /* a missing poster */
 .paper-poster .sheet { background: #f2efe4; text-align: center; font-family: Arial, sans-serif; }
-.paper-poster .p-title { font-size: 40px; letter-spacing: .1em; color: #a51616; border: 0; }
+.paper-poster .p-title { font-size: 36px; letter-spacing: .1em; color: #a51616; border: 0; margin-bottom: 6px; padding-bottom: 0; }
+.paper-poster .sheet p { margin: 0 0 4px; }
+.paper-poster .p-scrawl { margin-top: 8px; }
 /* a handwritten note */
 .paper-note .sheet { background: #fbf6dc; font-family: "Segoe Print", "Bradley Hand", cursive; color: #26306b; font-size: 18px; transform: rotate(-2.5deg); }
 .paper-note.on .sheet { transform: rotate(-2.5deg); }
+/* a page of Teodor's driver's log: ruled paper, ballpoint */
+.paper-log .sheet { background: #f4f0e2 repeating-linear-gradient(transparent 0 25px, #b9c6d8 25px 26px); font-family: "Segoe Print", "Bradley Hand", cursive; color: #1f2a5a; font-size: 16px; line-height: 26px; transform: rotate(-1deg); }
+.paper-log.on .sheet { transform: rotate(-1deg); }
+.paper-log .p-kicker { font-family: Arial, sans-serif; color: #7a1f1f; }
+.paper-log .p-title { font-family: inherit; text-transform: none; font-size: 19px; border-bottom: 0; margin-bottom: 4px; }
+.paper-log .sheet p { margin: 0; }
+/* how to put a found thing away */
+.p-footer { position: absolute; left: 0; right: 0; bottom: 2.5vh; text-align: center; font-size: 13px; letter-spacing: .14em; color: #e9e2cf; text-shadow: 0 1px 3px #000; }
 
 /* credits roll */
 .credits { position: fixed; inset: 0; z-index: 25; overflow: hidden; background: #000; }

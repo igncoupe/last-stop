@@ -20,6 +20,16 @@ export const LOOKS = {
   rosie:   { height: 1.7, shirt: 0x3b2b2b, pants: 0x1f1d22, skin: 0xd6b096, hair: 0x5a3a22 },
   harold:  { height: 1.72, shirt: 0x6b6f72, pants: 0x3a3d40, skin: 0xa9adb0, hair: 0x7a7a7a, wet: true },
   drowned: { height: 1.72, shirt: 0x2f3a40, pants: 0x20262a, skin: 0xa7afb3, hair: 0x1d1d1d, wet: true },
+  // five more of the fourteen, the way they were the night they got on
+  eddie:   { height: 1.72, shirt: 0xe4e1d8, pants: 0x2a2c30, skin: 0xb8865f, hair: 0x15100c, apron: 0xd8d4c8 },          // diner whites, an apron
+  dorothy: { height: 1.58, shirt: 0x6b4f6a, pants: 0x3d3540, skin: 0xd8bfab, hair: 0xd4d0cc, hunched: true, bag: 0x7a5b3a },
+  frank:   { height: 1.8, shirt: 0x3f5370, pants: 0x2b3240, skin: 0xd3ad8c, hair: 0x5a4a3c, backpack: 0x5a3f26, mustache: true },   // a mailbag
+  carmen:  { height: 1.62, shirt: 0x8a4a5a, pants: 0x2a2a32, skin: 0xc49470, hair: 0x120d0a },
+  marcus:  { height: 1.82, shirt: 0x2f4a3a, pants: 0x1f2228, skin: 0x6e4a33, hair: 0x0e0b09 },
+  // kids in raincoats, at the end of the driveways
+  kidred:   { height: 1.12, shirt: 0xb0302a, pants: 0x2c3342, skin: 0xc9b8aa, hair: 0x3a2a1a, hood: true, child: true },
+  kidblue:  { height: 1.18, shirt: 0x2f5f9a, pants: 0x2c2c34, skin: 0xd2b49a, hair: 0x1a120c, hood: true, child: true },
+  kidgreen: { height: 1.08, shirt: 0x3e7a44, pants: 0x30302c, skin: 0xbf9c80, hair: 0x5a3a22, hood: true, child: true },
 };
 
 export class Person {
@@ -126,6 +136,9 @@ export class Person {
       this.arms.forEach((a) => { a.rotation.x = -0.9; });
     }
     if (look.cane) { const c = box(0.03, 0.9, 0.03, m(0x3a2a1a)); c.position.set(0.3, 0.45, 0.15); this.body.add(c); }
+    if (look.apron) { const a = box(0.36, leg * 0.75, 0.02, m(look.apron)); a.position.set(0, leg * 0.72, 0.13); this.body.add(a); }
+    if (look.bag) { const b = box(0.24, 0.2, 0.1, m(look.bag)); b.position.set(-0.32, leg * 0.92, 0.04); this.body.add(b); }   // a knitting bag on her arm
+    if (look.mustache) { const mu = box(0.12, 0.025, 0.02, hair); mu.position.set(0, 0.08, 0.118); this.neck.add(mu); }
     if (look.hunched) chest.rotation.x = 0.18;
 
     this.mode = "stand";
@@ -211,6 +224,12 @@ export class Person {
     this.arms[1].rotation.set(on ? -1.35 : 0, 0, on ? 0.12 : 0);
   }
   get rightHand() { return this.arms[1].children[1]; }
+  // wave: the right hand up over the head, side to side (or flag down a bus); off puts it back down
+  wave(on) {
+    this.waving = on ? { t: Math.random() * 3 } : null;
+    this.reaching = on;
+    if (!on) this.arms[1].rotation.set(0, 0, 0);
+  }
   // take the cap off: the hand comes up, lifts it, and holds it against the chest
   capOff(seconds = 1.6) {
     if (!this.cap || this.capAnim || this.capHeld) return Promise.resolve();
@@ -299,6 +318,10 @@ export class Person {
         arm.rotation.set(-0.95, 0, 0);
         A.done();
       }
+    }
+    if (this.waving) {
+      this.waving.t += dt;
+      this.arms[1].rotation.set(-2.75, 0, -0.25 + Math.sin(this.waving.t * 7) * 0.35);
     }
     // turn the head toward something
     if (this.headTarget) {

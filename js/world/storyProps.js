@@ -72,6 +72,41 @@ export function makeStoryProp(kind) {
     const wet = box(0.35, 0.01, 0.29, mat({ color: 0x151b24 }));
     wet.position.y = 0.032;
     g.add(wet);
+  } else if (kind === "knitting") {
+    // Mrs. Kessler's knitting, left on her seat: half a scarf, two needles, the ball of yarn, all soaked
+    const scarf = box(0.16, 0.025, 0.34, mat({ color: 0x6a2a3a }));
+    scarf.rotation.y = 0.4;
+    g.add(scarf);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), mat({ color: 0x5a2230 }));
+    ball.position.set(0.1, 0.04, 0.12);
+    g.add(ball);
+    for (const s of [-1, 1]) {
+      const needle = box(0.008, 0.008, 0.3, mat({ color: 0xb8bcc0 }));
+      needle.position.set(s * 0.03, 0.025, -0.05);
+      needle.rotation.y = 0.4 + s * 0.15;
+      g.add(needle);
+    }
+  } else if (kind === "payphone") {
+    // a payphone on a post at the curb, the old kind with a hood: built facing +z (the road)
+    const steel = mat({ color: 0x5a5f66 });
+    const post = box(0.1, 1.2, 0.1, steel);
+    post.position.y = 0.6;
+    g.add(post);
+    const hood = box(0.62, 0.78, 0.36, mat({ color: 0x2c4a6e }));
+    hood.position.set(0, 1.5, 0.08);
+    g.add(hood);
+    const face = box(0.36, 0.5, 0.04, steel);
+    face.position.set(0, 1.48, 0.27);
+    g.add(face);
+    const handset = box(0.07, 0.26, 0.07, mat({ color: 0x111214 }));
+    handset.position.set(-0.13, 1.5, 0.31);
+    g.add(handset);
+    const sign = box(0.5, 0.1, 0.02, glow(0xd8e4f0));
+    sign.position.set(0, 1.95, 0.27);
+    g.add(sign);
+    const keys = box(0.14, 0.18, 0.01, mat({ color: 0x9aa0a6 }));
+    keys.position.set(0.06, 1.45, 0.295);
+    g.add(keys);
   } else if (kind === "jacketHung") {
     // your jacket, hanging off the back of the driver's seat
     const j = box(0.46, 0.55, 0.05, mat({ color: 0x1d2532 }));

@@ -20,6 +20,12 @@ export const CAST = {
   rhee94:  { name: "Dispatch (tape, 1994)", color: "#86cf9b", fx: "radio", voice: "am_fenrir", speed: 0.96, pitch: 0.92 },
   harold:  { name: "Harold Rhee", color: "#9aa0ad", fx: "ghost", voice: "am_fenrir", speed: 0.86, pitch: 0.92 },
   voices:  { name: "Voices", color: "#9aa0ad", fx: "whisper", voice: "af_nicole", speed: 0.85, pitch: 0.97 },
+  // five more of the fourteen. They seem alive. (Their voices were designed with tools/design_voices.py.)
+  eddie:   { name: (f) => (f.metEddie ? "Eddie" : "Kid in an apron"), color: "#e8c98a", fx: "dry", voice: "am_puck", speed: 1.05, pitch: 1.05 },
+  dorothy: { name: (f) => (f.metDorothy ? "Mrs. Kessler" : "Old woman"), color: "#d3a6d0", fx: "dry", voice: "bf_isabella", speed: 0.9, pitch: 0.95 },
+  frank:   { name: (f) => (f.metFrank ? "Frank" : "Mailman"), color: "#9fc0e8", fx: "dry", voice: "am_adam", speed: 1.0, pitch: 0.95 },
+  carmen:  { name: (f) => (f.metCarmen ? "Carmen" : "Young woman"), color: "#f2a0a0", fx: "dry", voice: "af_river", speed: 1.0, pitch: 1.0 },
+  marcus:  { name: (f) => (f.metMarcus ? "Marcus" : "Young man"), color: "#9fe0b8", fx: "dry", voice: "am_eric", speed: 1.0, pitch: 0.98 },
 };
 
 // the words that actually get spoken for a dialogue option, or null for

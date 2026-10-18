@@ -173,16 +173,18 @@ export function createPlayer(camera, scene) {
       hovered = null;
       if (free && s.interactables.length) {
         ray.setFromCamera(center, camera);
-        ray.far = REACH;
+        // (some things can be read from further off: a poster on a shelter, from the driver's seat)
+        ray.far = Math.max(REACH, ...s.interactables.map((e) => e.reach || 0));
         const meshes = s.interactables.map((e) => e.mesh).filter((m) => m && m.visible !== false);
-        const hit = ray.intersectObjects(meshes, true)[0];
-        if (hit) {
-          hovered = s.interactables.find((e) => e.mesh === hit.object || hit.object.parent === e.mesh || e.mesh.getObjectById(hit.object.id));
-          if (hovered && !hovered.label()) hovered = null;
+        for (const hit of ray.intersectObjects(meshes, true)) {
+          const e = s.interactables.find((x) => x.mesh === hit.object || hit.object.parent === x.mesh || x.mesh.getObjectById(hit.object.id));
+          if (!e || hit.distance > (e.reach || REACH)) continue;
+          if (e.label()) hovered = e;
+          break;
         }
       }
       ui.prompt(hovered ? hovered.label() : null);
-      if (hovered && input.hit("KeyE")) hovered.use();
+      if (hovered && input.hit("KeyE") && !s.blockUse) hovered.use();
     },
   };
 }

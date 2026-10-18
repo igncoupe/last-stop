@@ -188,6 +188,13 @@ export function buildBus(scene) {
   // the dash: full depth in front of the driver, a shallow shelf on the door side so the front door can fold
   put(bus, box(1.42, 0.45, 0.535, trim), 0.49, 1.165, 5.7175);       // driver's side: x -0.22..1.2, z 5.45..5.985
   put(bus, box(0.98, 0.45, 0.315, trim), -0.71, 1.165, 5.8275);      // door side: x -1.2..-0.22, z 5.67..5.985
+  // Teodor's old driver's log, pushed up against the windshield at the end of the dash (js/game/file.js)
+  const logbook = put(bus, new THREE.Group(), 1.11, 1.405, 5.57);          // (left of the binnacle, so you can see it)
+  logbook.rotation.y = 0.2;
+  put(logbook, box(0.17, 0.03, 0.23, mat({ color: 0x4a2f1c })), 0, 0, 0);                  // the cover, cracked brown
+  put(logbook, box(0.012, 0.022, 0.215, mat({ color: 0xe6dcc0 })), -0.08, 0, 0);            // the page edges
+  put(logbook, box(0.09, 0.002, 0.05, mat({ color: 0xd8cfae })), 0, 0.016, 0.04);           // a paper label
+  put(logbook, box(0.02, 0.002, 0.07, mat({ color: 0x8a1f1f })), 0.05, 0.016, -0.08);       // a red ribbon marker
   const destTex = tex.sign("9  NORTHGATE", { bg: "#120c02", fg: "#ffb54a", w: 128, h: 20, font: 15 });
   put(bus, new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.28), glow(0xffffff, { map: destTex })), 0, 2.83, 6.07);
 
@@ -646,6 +653,7 @@ export function buildBus(scene) {
     mirrorCam,
     mirrorRT,
     interactables: [radio, doorBtn, visor],
+    logbook,
     radioMesh: radio,
     // points (local) people walk through to get on: outside, steps, aisle
     boardPath: [new THREE.Vector3(-2.3, 0, 4.6), new THREE.Vector3(-0.9, 0.45, 4.6), new THREE.Vector3(-0.1, 0.45, 3.6)],

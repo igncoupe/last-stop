@@ -63,6 +63,12 @@ export async function night2(g) {
     }
   })();
 
+  // ---------- past Elm, kids at the end of the driveways in their raincoats, waving at the bus. At midnight.
+  // (they're out there from the start; Mara's talk after Elm waits until you've seen them)
+  let seenKids;
+  const kidsSeen = new Promise((r) => { seenKids = r; });
+  const kids = wavingKids(g, seenKids);
+
   // ---------- Elm & 4th: Mara again
   const mara = g.spawn("mara", "mara", { at: curb("Elm & 4th", 2), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
   let stopped = await g.arrive("Elm & 4th");
@@ -107,7 +113,8 @@ export async function night2(g) {
   await closeDoorsAndGo(g);
 
   const chat = f.maraAboard && f.maraHelped ? (async () => {
-    await g.wait(3000);
+    await kidsSeen;                  // (always comes: the kids say so even when they never show)
+    await g.wait(1500);
     g.mood("grief");
     await g.say("mara", "There's a man on my ward. Room four B. Ninety-one years old. No visitors. Ever.");
     await g.say("mara", "He barely talks. But every night, right around this time, he opens his eyes and asks me two things.");
@@ -127,6 +134,7 @@ export async function night2(g) {
   else g.props.missingPoster.visible = true;
   stopped = await g.arrive("Market St");
   await chat;
+  await kids;
   if (f.junRode) {
     if (stopped && (await openUp(g))) {
       const stayed = await g.atStop(async (g) => {
@@ -195,6 +203,8 @@ export async function night2(g) {
     await g.until(() => g.d > STOPS["St. Agnes"] - 120);
     g.sfx("bell");
   }
+  // an old woman with a knitting bag, waiting at the hospital stop
+  g.spawn("dorothy", "dorothy", { at: curb("St. Agnes", 2.4), yaw: route.heading(STOPS["St. Agnes"]) + Math.PI / 2 });
   stopped = await g.arrive("St. Agnes");
   if (f.maraAboard && stopped && (await openUp(g))) {
     if (f.maraHelped) {
@@ -207,7 +217,33 @@ export async function night2(g) {
   } else if (f.maraAboard) {
     await g.say("mara", "Seriously? That was my stop.");
   }
+  if (stopped && (g.bus.doorsOpen || (await openUp(g, 15000)))) {
+    const stayed = await g.atStop(async (g) => {
+      await g.actor("dorothy").walk([doorOutside()], { speed: 0.8 });
+      await g.say("dorothy", "Oh, good. I was afraid I'd missed it. My sister's up on the third floor. Her hip. She'll outlive us all.");
+      await g.board("dorothy", "L2", 0.8);
+      f.dorothyRode = true;
+    });
+    if (!stayed) g.actor("dorothy")?.walk([curb("St. Agnes", 2.4)], { speed: 0.8 });
+  } else {
+    await g.think("There was an old woman with a knitting bag at St. Agnes. She waved, like she knew the bus.");
+  }
+  if (!f.dorothyRode) g.despawn("dorothy");
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
+  const dotChat = f.dorothyRode ? (async () => {
+    await g.wait(2500);
+    f.metDorothy = true;
+    await g.say("dorothy", "I'm Dorothy Kessler. I taught third grade in Ashgrove for forty-one years. I've seen half this city at eight years old.");
+    await g.say("dorothy", "Yours too, I think. You have a face I've seen in my classroom.");
+    await g.say("dorothy", "Would you wake me at Ashgrove, dear? I always nod off after Northgate.");
+    const c = await g.choose(["“I'll wake you.”", "“This bus doesn't go to Ashgrove.”"]);
+    if (c === 0) {
+      g.kind();
+      await g.say("dorothy", "You're a good egg. I had a girl in my class who said that to me every morning. She wanted to be a nurse.");
+    } else {
+      await g.say("dorothy", "Oh, it always has, dear. You'll see.");
+    }
+  })() : Promise.resolve();
 
   // ---------- Canal Row: the flood
   g.flood(true, 0.45);
@@ -227,6 +263,8 @@ export async function night2(g) {
     g.auto(2.5, Math.min(STOPS["Canal Row"], g.d + 25));
     await g.until(() => g.drive.speed < 0.4, 15000);
   }
+  await dotChat;
+  if (f.dorothyRode) await g.say("dorothy", "Oh. The river's up over the road. It was just like this the night the bridge");
   g.spawn("daniel", "daniel", { at: doorOutside(), yaw: route.heading(g.d) + Math.PI / 2 });
   g.sfx("knock");
   await g.think("Someone's knocking on the doors.");
@@ -270,12 +308,14 @@ export async function night2(g) {
       g.interior("on");
       g.amb({ engine: 0.3 });
       await g.think(f.gaveJacket ? "The lights are back. He's gone. My jacket is folded on his seat. Soaked through. Still warm." : "The lights are back. His seat is empty, and dark with water.");
+      await dorothyGone(g);
       if (g.bus.doorsOpen) g.setDoors(false);
     });
     if (!stayed) {
       g.vanish("daniel");
       g.interior("on");
       g.amb({ engine: 0.3 });
+      await dorothyGone(g);
     }
   } else {
     await g.think("I'm not opening those doors.");
@@ -293,6 +333,7 @@ export async function night2(g) {
     g.bus.setHands(null);
     g.interior("on");
     g.vanish("daniel");
+    await dorothyGone(g);
   }
   g.release();
   g.hint("Drive  ·  W gas");
@@ -314,7 +355,7 @@ export async function night2(g) {
   const md = g.mysteryAhead();   // never behind you
   const crowd = [];
   for (let i = 0; i < 8; i++) {
-    crowd.push(g.spawn(`drowned${i}`, i === 0 ? "lena" : i === 3 ? "ivy" : "drowned", { ghost: true, at: mysteryCurb(g, -1.8 + (i % 4) * 1.2, 6.4 + Math.floor(i / 4) * 0.6), yaw: route.heading(md) + Math.PI / 2 }));
+    crowd.push(g.spawn(`drowned${i}`, ["lena", "eddie", "drowned", "ivy", "drowned", "dorothy", "drowned", "drowned"][i], { ghost: true, at: mysteryCurb(g, -1.8 + (i % 4) * 1.2, 6.4 + Math.floor(i / 4) * 0.6), yaw: route.heading(md) + Math.PI / 2 }));
   }
   await g.until(() => g.d > md - 120);
   // the bus brakes by itself, gently, from full speed
@@ -376,4 +417,41 @@ export async function night2(g) {
   g.sfx("static", 1);
   await g.think("The display flickered. The stop with no name moved again. It's after St. Agnes now. It's getting closer.");
   await endShift(g);
+}
+
+// Mrs. Kessler went when the lights did: just her knitting on the seat
+async function dorothyGone(g) {
+  if (!g.flags.dorothyRode || !g.actor("dorothy")) return;
+  g.vanish("dorothy");
+  g.prop("knitting", { seat: "L2" });
+  await g.think("Mrs. Kessler's seat is empty. Just her knitting, half a scarf, soaked through.");
+}
+
+// one at the end of every driveway on the block: kids in raincoats, waving at the bus. As it goes by, each
+// one stops waving and turns to watch it go. When you look back, the driveways are empty.
+async function wavingKids(g, seen) {
+  const looks = ["kidred", "kidblue", "kidgreen", "kidblue", "kidred"];
+  const spots = [[578, 1], [606, -1], [633, 1], [658, -1], [684, 1]];
+  if (g.d > spots[0][0] - 20) { seen(); return; }
+  const kids = spots.map(([d, side], i) => {
+    const k = g.spawn(`kid${i}`, looks[i], { at: route.at(d, side * 7.2, 0), yaw: route.heading(d) + (side > 0 ? Math.PI / 2 : -Math.PI / 2) });
+    k.wave(true);
+    return { k, d };
+  });
+  const eye = () => g.camera.getWorldPosition(new THREE.Vector3());
+  const watching = g.frames(() => {
+    for (const kid of kids) {
+      if (kid.k.waving && g.d > kid.d - 3) { kid.k.wave(false); kid.passed = true; }
+      if (kid.passed) kid.k.lookAt(eye());
+    }
+    return g.d > 720;
+  });
+  await g.until(() => g.d > 548);
+  await g.think("There's a kid at the end of that driveway, in a raincoat. Waving at the bus.");
+  await g.until(() => g.d > 640);
+  await g.think("Another one. And another. One at every house. Little raincoats, all of them waving.");
+  if (g.flags.maraAboard) await g.say("mara", "Whose kids are those? It's almost midnight.");
+  seen();
+  await watching;
+  kids.forEach((_, i) => g.vanish(`kid${i}`));
 }

@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { STOPS, route, LANE, CURB } from "../world/route.js";
 import { SELF_LAYER } from "../world/selfBody.js";
+import { makeGhostBus } from "../world/ghostBus.js";
 import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, KIND_ENOUGH } from "./common.js";
 
 export async function night5(g) {
@@ -19,7 +20,28 @@ export async function night5(g) {
   g.sfx("static", 0.8);
   await g.say("rhee", "Last run, driver. Big night. Full bus.");
   await g.say("rhee", "You know what to do. You make up the time.");
+
+  // ---------- someone in from the rain, at the depot doors
+  const marcus = g.spawn("marcus", "marcus", { at: new THREE.Vector3(-4.9, 0, -12.6), yaw: Math.PI });
+  await marcus.walk([doorOutside()], { speed: 1.5 });
+  await g.say("marcus", "Hey. Is this the 9? Does it still go out to Ashgrove?");
+  const ride = await g.choose(["“Get on.”", "“Not in service. Sorry.”"]);
+  if (ride === 0) {
+    g.kind();
+    f.marcusRode = true;
+    f.metMarcus = true;
+    await g.board("marcus", "L2", 1.5);
+    await g.think("He paid with a token. They stopped making tokens before I was born.");
+    await g.say("marcus", "Sorry. I'm Marcus. I'm a little nervous. I'm going to ask her tonight. I've had the ring a month.");
+  } else {
+    await g.say("marcus", "Right. Course not. Not anymore.");
+    marcus.walk([new THREE.Vector3(-4.9, 0, -6)], { speed: 1.2 }).then(() => g.vanish("marcus"));
+  }
   await closeDoorsAndGo(g);
+
+  // ---------- the other Route 9, going the other way
+  await g.until(() => g.d > 85, 40000);
+  if (g.d < 190) await oldNine(g);
 
   // ---------- Elm & 4th: Rosie, and Teodor in uniform
   const elm = STOPS["Elm & 4th"];
@@ -76,6 +98,9 @@ export async function night5(g) {
   await g.say("teodor", "March fourteenth, nineteen ninety-four. I was eleven minutes late.");
   await g.say("teodor", "I asked to wait out the storm. Harold said no. Harold said make up the time. And I was scared of losing my job, and I had a schedule, and I did what I was told.");
   await g.say("teodor", "Fourteen people. Lena. Daniel. Little Ivy. Eleven more. I knew every one of their faces. I used to wave.");
+  if (f.eddieRode || f.dorothyRode || f.frankRode || f.carmenRode || f.marcusRode) {
+    await g.say("teodor", "Eddie. Mrs. Kessler. Frank, with his mail. Carmen. Marcus. You've met them. They've been riding with you all week.");
+  }
   await g.say("teodor", "Your mother sat right behind me, every night. She talked about her kid the whole way home. You. She talked about you.");
   await g.wait(1200);
   await g.say("teodor", "They pulled me out of the river alive. Everyone said I survived.");
@@ -98,7 +123,7 @@ export async function night5(g) {
   const md = g.mysteryAhead();   // never behind you
   const crowd = [];
   for (let i = 0; i < 14; i++) {
-    const look = i === 0 ? "lena" : i === 1 ? "daniel" : i === 2 ? "ivy" : "drowned";
+    const look = ["lena", "daniel", "ivy", "eddie", "dorothy", "frank", "carmen", "marcus"][i] || "drowned";
     crowd.push(g.spawn(`g${i}`, look, { ghost: true, at: mysteryCurb(g, -2.4 + (i % 7) * 0.8, 6.0 + Math.floor(i / 7) * 0.8), yaw: route.heading(md) + Math.PI / 2 }));
   }
   await g.until(() => g.d > md - 80);
@@ -112,6 +137,10 @@ export async function night5(g) {
   g.sfx("thunder");
   await g.think("The display stopped flickering. For the first time, the stop has a name. Ashgrove.");
   await g.think("Fourteen of them. Standing in a rain that isn't falling anywhere else. They're not knocking. They're just waiting. Like they always have.");
+  if (f.marcusRode && g.actor("marcus")) {
+    g.vanish("marcus");
+    await g.think("Marcus's seat is empty. He's out there with them, in the rain. He's still smiling.");
+  }
   await g.say("lena", "Hi, sweetheart.");
   await g.think("Mom.");
   f.knowsMother = true;
@@ -218,6 +247,7 @@ async function endHome(g, crowd, deadAir) {
   g.sfx("bell");
   await g.wait(500);
   await g.think("Fourteen fares. Fourteen old coins in the box. Ivy rang the bell and giggled.");
+  if (g.file && g.file.allPosters()) await g.think("I know all their names now. Lena. Daniel. Ivy. Carmen. Eddie. Grace. Mrs. Kessler. Frank. Marcus. Sam. Rosa. Tommy. Abby. Henry.");
   await g.say("lena", "Thank you for stopping.");
   if (deadAir) {
     await g.say("harold", "I'm sorry. I'm so sorry. I thought the schedule was the job.");
@@ -272,6 +302,50 @@ async function endHome(g, crowd, deadAir) {
   await g.fade(1, 2500, true);
   await dawn(g, deadAir);
   return deadAir ? "deadair" : "home";
+}
+
+// the Route 9 bus of 1994 comes the other way: lit up, full, Teodor at the wheel. He lifts a hand.
+async function oldNine(g) {
+  const f = g.flags;
+  const ghost = makeGhostBus();
+  let gd = g.d + 170;
+  g.holdTraffic(25);
+  g.place(ghost.group, route.at(gd, -LANE, 0), route.heading(gd) + Math.PI);
+  ghost.group.visible = true;
+  const driver = g.spawn("oldnine", "uniform");
+  driver.sit(ghost.group, ghost.driverSeat, 0);
+  let passed = false;
+  let honked = false;
+  const driving = g.frames((dt) => {
+    gd -= 5 * dt;                                  // an old bus, taking its time
+    ghost.group.position.copy(route.at(gd, -LANE, 0));
+    ghost.group.rotation.y = route.heading(gd) + Math.PI;
+    const ahead = gd - g.d;
+    if (!honked && ahead < 16) {
+      honked = true;
+      driver.wave(true);
+      g.sfx("horn", 0.22);
+      g.sfx("whoosh");
+    }
+    if (!passed && ahead < -6) { passed = true; driver.wave(false); }
+    return ahead < -75 || gd < 30;
+  });
+  await g.until(() => gd - g.d < 75, 15000);     // (its lights, coming out of the fog)
+  g.mood("grief");
+  await g.think("A bus, coming the other way. An old one. Brown and cream, like in the photos.");
+  await g.until(() => passed, 15000);
+  await g.think("Route 9. Ashgrove. The driver had a brown cap. He lifted one hand off the wheel, the way drivers do.");
+  if (f.marcusRode) await g.say("marcus", "Huh. Two 9s tonight.");
+  await driving;
+  ghost.group.visible = false;
+  g.despawn("oldnine");
+  if (g.d < 370) {
+    g.hint("Check your mirror");
+    await g.until(() => g.lookingAtMirror() || g.d > 395, 7000);
+    g.hint(null);
+    await g.think("It's not in the mirror. There's nothing back there but the road.");
+  }
+  g.mood("dread");
 }
 
 // stars above, and stars in the river below; where the bridge ends, a road of starlight carries on

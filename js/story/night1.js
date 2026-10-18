@@ -1,8 +1,8 @@
 // NIGHT 1 — "Your first run on Route 9."
 // Kindness: wait for Mara (+1), let Jun ride (+1), stop at Canal Row (+1)
 import * as THREE from "three";
-import { STOPS, route } from "../world/route.js";
-import { curb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
+import { STOPS, route, CURB } from "../world/route.js";
+import { curb, curbAt, flagStop, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
 
 export async function night1(g) {
   const f = g.flags;
@@ -39,8 +39,13 @@ export async function night1(g) {
     await g.wait(500);
     await g.say("teodor", "You've got kind eyes. I've seen them before. That's going to make this harder for you.");
   }
+  await g.think("Somebody left an old logbook on the dash, pushed up against the glass. Route 9. Nineteen ninety-four.");
   await closeDoorsAndGo(g);
   await g.think("Elm and Fourth is first. Then Market, St. Agnes, Canal Row, Northgate.");
+
+  // ---------- the streetlights go out, one at a time, down the block toward the bus
+  await g.until(() => g.d > 95, 40000);
+  if (g.d < 200) await lightsOut(g);
 
   // ---------- Elm & 4th: someone running for the bus
   let stopped = await g.arrive("Elm & 4th");
@@ -138,6 +143,35 @@ export async function night1(g) {
     })();
   }
 
+  // ---------- a kid in a diner apron, flagging the bus down where there's no stop
+  const eddieAt = 1062;
+  g.spawn("eddie", "eddie", { at: curbAt(eddieAt), yaw: route.heading(eddieAt) + Math.PI / 2 });
+  if (await flagStop(g, "eddie", eddieAt, "There's a kid in a diner apron at the curb, waving his arm at me. There's no stop here.")) {
+    const stayed = await g.atStop(async (g) => {
+      await g.actor("eddie").walk([doorOutside()], { speed: 1.5 });
+      await g.say("eddie", "Thanks, man! I know it's not a stop. My feet are killing me. Double shift.");
+      await g.board("eddie", "L2", 1.5);
+      f.eddieRode = true;
+      g.kind();
+      await g.think("He paid in quarters. Every one of them is from nineteen ninety-three or older.");
+    });
+    if (!stayed) g.actor("eddie")?.walk([curbAt(eddieAt)], { speed: 1 });
+  } else {
+    await g.think("He dropped his arm and watched me go by.");
+  }
+  if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
+  if (!f.eddieRode) g.despawn("eddie");
+  if (f.eddieRode) {
+    (async () => {
+      await g.wait(2500);
+      f.metEddie = true;
+      await g.say("eddie", "I'm Eddie. I wash dishes at Lou's, on Market. Best pie in the city. Worst tips.");
+      await g.say("eddie", "I'm saving up for a car for my mom. Her feet are worse than mine. Three hundred and twelve dollars so far. It's in a coffee can.");
+      const c = await g.choose(["“She's lucky to have you.”", "[Nod]"]);
+      if (c === 0) await g.say("eddie", "Don't tell her. It's a surprise. She thinks I spend it all on comics.");
+    })();
+  }
+
   // ---------- St. Agnes
   if (f.maraAboard) {
     await g.until(() => g.d > STOPS["St. Agnes"] - 120);
@@ -178,7 +212,39 @@ export async function night1(g) {
   await g.wait(800);
   g.props.requestStop.light(true);
   await g.think("Its head turned to follow me. Then the light went out. And it was gone.");
+  if (f.eddieRode) await g.say("eddie", "You saw that too, right? Okay. Good. I thought it was the double shift.");
   g.mood("uneasy");
+
+  // ---------- Eddie gets off by the canal, where there's no stop either
+  if (f.eddieRode) {
+    await g.until(() => g.d > 1545, 30000);
+    const dropAt = Math.max(1628, g.d + 75);
+    if (dropAt < 1700) {
+      g.sfx("bell");
+      await g.say("eddie", "Can you let me off up here? By the canal path. It's a shortcut home.");
+      const off = await g.arrive("Flag stop", { at: dropAt });
+      if (off && (await openUp(g, 12000))) {
+        await g.say("eddie", "Thanks, man. Same time tomorrow. I'll bring you some pie.");
+        await g.alight("eddie", null, { vanish: false });
+        // round the front of the bus, across the road, to the rail along the water
+        const walk = g.actor("eddie")?.walk([route.at(dropAt + 7, 1.2, 0), curbAt(dropAt + 11, -CURB + 0.8)], { speed: 1.6, parent: g.bus.group.parent });
+        await g.wait(2600);
+        await g.think("He walked across the road in front of the bus, toward the canal. Toward the water.");
+        await walk;
+        g.vanish("eddie");
+        await g.think("And then I couldn't see him anymore.");
+      } else {
+        await g.wait(1200);
+        g.vanish("eddie");
+        g.prop("puddle", { seat: "L2" });
+        await g.think("I looked in the mirror. His seat's empty. I didn't stop. I didn't open the doors.");
+      }
+    } else {
+      g.vanish("eddie");
+      g.prop("puddle", { seat: "L2" });
+    }
+    if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
+  }
 
   // ---------- Canal Row
   g.amb({ water: 0.25 });
@@ -311,4 +377,34 @@ export async function night1(g) {
   if (f.junRode) await g.say("rhee", "And no more free rides. I mean it.");
   await g.say("rhee", "Get some sleep. Same time tomorrow.");
   await endShift(g);
+}
+
+// a block ahead of the bus, the streetlights go out one at a time, coming toward it. When the dark gets to
+// the bus, they all come back on at once.
+async function lightsOut(g) {
+  const near = g.d;
+  const lamps = g.streetlights.filter((l) => l.d > near + 70 && l.d < near + 230).sort((a, b) => b.d - a.d);
+  if (lamps.length < 4) return;
+  g.mood("dread");
+  let i = 0;
+  let t = 0.4;
+  const going = g.frames((dt) => {
+    t -= dt;
+    if (t <= 0 && i < lamps.length) {
+      if (lamps[i].d - g.d < 26) return true;          // the dark has got to the bus
+      g.lampOut(lamps[i], true);
+      g.sfxAt("click", lamps[i].pos, { gain: 0.8, range: 160 });
+      i++;
+      t = 0.42;
+    }
+    return i >= lamps.length;
+  });
+  await g.think("The streetlights are going out. One at a time, down the block. Coming toward me.");
+  await going;
+  await g.wait(900);
+  g.sfx("lightsout");
+  lamps.forEach((l) => g.lampOut(l, false));
+  await g.think("Then they all came back on at once. Like something changed its mind.");
+  await g.say("rhee", "Power's been funny on this side of town all week, driver. Keep moving.");
+  g.mood("calm");
 }

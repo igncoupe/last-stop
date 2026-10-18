@@ -12,6 +12,8 @@ Be careful who you stop for. Be more careful who you don't.
 - You really drive the bus. You choose who to stop for by pulling over and opening the doors.
 - Every character is voiced (voices created with Boson AI's Higgs Audio), with subtitles
 - 5 nights, about an hour, and 4 endings
+- Fourteen people drowned on Route 9 in 1994. Some of them still ride it, and some flag you down where there's no stop.
+- The Route 9 file: 24 things to find for yourself (missing posters on the shelters, clippings in an old locker at the depot, the 1994 driver's log on your dash). Read every poster and, if you get them home, you'll know all their names.
 - A generated horror score, rain, radio static, and in-world jumpscares: the drowned, a shadow that stalks the route, and cars on the other side of the road that aren't right
 
 > Content warning: jumpscares, loud sounds, flashing lights, and themes of death, drowning and grief. Jumpscares can be turned off on the title screen.

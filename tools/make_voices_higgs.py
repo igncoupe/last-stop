@@ -117,7 +117,10 @@ def spell_number(m):
         words_ = n2w(n)
     else:
         return m.group(0)
-    if suffix in ("st", "nd", "rd", "th"):
+    if suffix == "s":                                        # "two 9s": nines
+        *head, last = words_.split()
+        words_ = " ".join(head + [last[:-1] + "ies" if last.endswith("y") else last + "s"])
+    elif suffix in ("st", "nd", "rd", "th"):
         *head, last = words_.split()
         last = ORDS.get(last, last[:-1] + "ieth" if last.endswith("y") else last + "th")
         words_ = " ".join(head + [last])
@@ -126,7 +129,7 @@ def spell_number(m):
 
 def words(text):
     t = text.lower().replace("st.", "saint").replace("4b", "four b").replace("ash grove", "ashgrove")
-    t = re.sub(r"(\d+)(st|nd|rd|th)?\b", spell_number, t.replace(":", " "))
+    t = re.sub(r"(\d+)(st|nd|rd|th|s)?\b", spell_number, t.replace(":", " "))
     out = []
     for w in WORDS.findall(t):
         out.extend(SAME.get(w, NUM.get(w, w)).split())

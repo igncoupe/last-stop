@@ -5,7 +5,8 @@
 import * as THREE from "three";
 import { route, STOPS, CURB } from "../world/route.js";
 
-export const KIND_ENOUGH = 7;
+// how kind you have to have been for them to get on at Ashgrove (about half of every chance there is)
+export const KIND_ENOUGH = 9;
 
 // a point on the sidewalk at a stop; `back` moves it along the road (negative = behind)
 export function curb(name, back = 0, side = CURB - 1.6) {
@@ -13,6 +14,23 @@ export function curb(name, back = 0, side = CURB - 1.6) {
 }
 export function mysteryCurb(g, back = 0, side = CURB - 1.6) {
   return route.at(g.props.mystery.d + back, side, 0);
+}
+// ...and anywhere along the road
+export function curbAt(d, side = CURB - 1.6) {
+  return route.at(d, side, 0);
+}
+
+// someone at the curb where there's no stop, flagging the bus down (they're already standing there).
+// The bus pulls in by itself, like at any stop, and W drives past. True if you stopped with the doors open.
+export async function flagStop(g, key, d, thought = null) {
+  await g.until(() => g.d > d - 115);
+  const p = g.actor(key);
+  if (p) p.wave(true);
+  const arriving = g.arrive("Flag stop", { at: d });
+  if (thought) await g.think(thought);
+  const stopped = await arriving;
+  if (p) p.wave(false);
+  return stopped && (await openUp(g, 15000));
 }
 
 let doorTrigger = null;

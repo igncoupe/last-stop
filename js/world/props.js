@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { ribbon, radialTexture } from "./city.js";
-import { makeTimeClock, makeNoticeBoard } from "./depotProps.js";
+import { makeTimeClock, makeNoticeBoard, makeLockers } from "./depotProps.js";
 import { route, STOPS, CURB, LANE } from "./route.js";
 
 const glass = () => new THREE.MeshLambertMaterial({ color: 0x8aa0b0, transparent: true, opacity: 0.18, depthWrite: false });
@@ -305,6 +305,10 @@ function buildDepot(scene, props) {
   boardObj.group.position.set(-5.56, 1.65, -14.6);
   boardObj.group.rotation.y = Math.PI / 2;
   g.add(boardObj.group);
+  // a row of old drivers' lockers against the wall behind the office; the last one was Teodor's
+  const locker = makeLockers();
+  locker.group.position.set(-9.7, 0, -23.6);
+  g.add(locker.group);
   const clock = clockObj.hit;
   const board = boardObj.hit;
   const lights = [new THREE.PointLight(0xdfe8ff, 30, 30, 1.5), new THREE.PointLight(0xdfe8ff, 22, 26, 1.5)];
@@ -313,9 +317,12 @@ function buildDepot(scene, props) {
   g.add(...lights);
   scene.add(g);
 
-  props.colliders.push(...walls.map((w) => new THREE.Box3().setFromObject(w)), new THREE.Box3().setFromObject(office));
+  g.updateMatrixWorld(true);
+  props.colliders.push(...walls.map((w) => new THREE.Box3().setFromObject(w)), new THREE.Box3().setFromObject(office),
+    new THREE.Box3(new THREE.Vector3(-10, 0, -24), new THREE.Vector3(-9.4, 2, -20.8)));         // the lockers
+  locker.setClipping(null);
   props.depot = {
-    group: g, clock, board, clockObj, boardObj, lights,
+    group: g, clock, board, clockObj, boardObj, lights, locker,
     spawn: new THREE.Vector3(-4.4, 1.7, -5.5),
     update(dt, minutes) { clockObj.update(dt, minutes); },
   };

@@ -427,6 +427,28 @@ const SFX = {
     out(g, 0.6, t, 0.2, dur - 0.2);
   },
   // a wheel that needs oil, rolling slowly past the end of the hall
+  // an old telephone bell: two short trills (the phone call on night 2, the payphones on night 4)
+  ring(t, bursts = 1) {
+    for (let b = 0; b < bursts; b++) {
+      for (const [start, len] of [[0, 0.42], [0.62, 0.42]]) {
+        const tt = t + b * 3 + start;
+        const am = ctx.createGain();
+        am.gain.value = 0.5;                       // (0..1, trilling)
+        const lfo = tone(tt, len, "square", 22);
+        const depth = gainNode(0.5);
+        lfo.connect(depth);
+        depth.connect(am.gain);
+        const bell = ctx.createBiquadFilter();
+        bell.type = "bandpass";
+        bell.frequency.value = 1150;
+        bell.Q.value = 3;
+        tone(tt, len, "triangle", 1080).connect(bell);
+        tone(tt, len, "triangle", 1290).connect(bell);
+        bell.connect(am);
+        out(am, 0.32, tt, 0.004, len, 0.15);
+      }
+    }
+  },
   squeak(t, times = 4) {
     for (let i = 0; i < times; i++) {
       const tt = t + i * 0.7;

@@ -1,9 +1,9 @@
 // NIGHT 4 — "Channel 9 is still broadcasting."
 // Kindness: brake at the bridge (+1), keep Daniel's present safe (+1)
 import * as THREE from "three";
-import { STOPS, route, LANE } from "../world/route.js";
+import { STOPS, route, LANE, CURB } from "../world/route.js";
 import { makeGift } from "../world/depotProps.js";
-import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
+import { curb, curbAt, flagStop, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
 
 export async function night4(g) {
   const f = g.flags;
@@ -48,9 +48,38 @@ export async function night4(g) {
   }
   await closeDoorsAndGo(g);
 
+  // ---------- a young woman with no coat, waving the bus down. She's looking for someone.
+  const carmenAt = 422;
+  g.spawn("carmen", "carmen", { at: curbAt(carmenAt), yaw: route.heading(carmenAt) + Math.PI / 2 });
+  if (await flagStop(g, "carmen", carmenAt, "A young woman at the curb, waving me down. No coat. She's soaked.")) {
+    const stayed = await g.atStop(async (g) => {
+      await g.actor("carmen").walk([doorOutside()], { speed: 1.5 });
+      await g.say("carmen", "Thank you. I'm sorry. Have you seen a little girl? She's six. A yellow raincoat. She always runs ahead, and I lose her.");
+      await g.board("carmen", "R1", 1.4);
+      f.carmenRode = true;
+      g.kind();
+    });
+    if (!stayed) g.actor("carmen")?.walk([curbAt(carmenAt)], { speed: 1 });
+  } else {
+    await g.think("She ran a few steps after the bus. Then she stopped, and stood in the road, looking up and down it.");
+  }
+  if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
+  if (!f.carmenRode) g.despawn("carmen");
+  const carmenChat = f.carmenRode ? (async () => {
+    await g.wait(1500);
+    const opts = f.ivyRode ? ["“She rode up front with me. She rang the bell.”", "“I'm sorry. I haven't.”"] : ["“I'll keep an eye out for her.”", "“I haven't seen anyone.”"];
+    const c = await g.choose(opts);
+    f.metCarmen = true;
+    if (c === 0 && f.ivyRode) await g.say("carmen", "She did? She loves that bell. Mr. Varga lets her ring it at every stop. I'm Carmen. She's Ivy. She's all I've got.");
+    else if (c === 0) await g.say("carmen", "Thank you. I'm Carmen. She's Ivy. She's all I've got.");
+    else await g.say("carmen", "Okay. Okay. She'll turn up. She always turns up.");
+    await g.think("She sat with her purse on her knees, and looked out of the window at every corner.");
+  })() : Promise.resolve();
+
   // ---------- Elm & 4th: Mara, and the sun visor
   if (f.maraHelped) g.spawn("mara", "mara", { at: curb("Elm & 4th", 1), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
   let stopped = await g.arrive("Elm & 4th");
+  await carmenChat;
   if (f.maraHelped && stopped && (await openUp(g))) {
     const stayed = await g.atStop(async (g) => {
       await g.actor("mara").walk([doorOutside()], { speed: 1.2 });
@@ -83,6 +112,7 @@ export async function night4(g) {
   await g.until(() => g.drive.speed < 0.15, 15000);
   g.park();
   await g.think("The engine coughed twice and died. The bus rolled to a stop on its own, in the middle of the block.");
+  if (f.carmenRode) await g.say("carmen", "It does this. Right here. It did this that night too.");
   await g.wait(1500);
   await g.think("A streetlight glare, right in my eyes.");
   g.hint("Pull down the sun visor");
@@ -151,7 +181,7 @@ export async function night4(g) {
   g.despawn("jun");
   g.despawn("mara");
   // they're waiting in a line along the curb, one behind the other
-  const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"], ["d11", "drowned", "R1"], ["d12", "drowned", "R2"]];
+  const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"], ["d11", "drowned", f.carmenRode ? "L3" : "R1"], ["d12", "drowned", "R2"]];
   walkers.forEach(([key, look], i) => g.spawn(key, look, { ghost: true, at: mysteryCurb(g, -0.6 - i * 1.05, 6.3), yaw: route.heading(md) }));
   await g.autoStop(md);
   g.lockDoors(true);
@@ -159,7 +189,10 @@ export async function night4(g) {
   g.rain(true);
   await g.think("The doors opened by themselves. This time they don't wait for me. They're getting on.");
   // the others are already sitting in the back. Nobody saw them get on.
-  ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "B0"].forEach((seat, i) => { g.spawn(`d${i + 1}`, "drowned", { ghost: true }); g.seat(`d${i + 1}`, seat); });
+  // (Carmen, if she's aboard, is one of them: one fewer already sitting there)
+  const already = f.carmenRode ? ["R3", "L4", "R4", "L5", "R5", "L6", "B0"] : ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "B0"];
+  const theirLooks = ["eddie", "dorothy", "frank", "drowned", "marcus", "drowned", "drowned", f.carmenRode ? "drowned" : "carmen"];
+  already.forEach((seat, i) => { g.spawn(`d${i + 1}`, theirLooks[i], { ghost: true }); g.seat(`d${i + 1}`, seat); });
   const boarding = [];
   for (const [key, , seat] of walkers) {
     boarding.push(g.board(key, seat, 1.5));
@@ -169,6 +202,7 @@ export async function night4(g) {
   g.setDoors(false);
   g.sfx("drip");
   g.mood("dread");
+  if (f.carmenRode) await g.think("The little girl in the yellow raincoat sat down in front of her mother. Her mother put a hand on her hood, and kept it there.");
   await g.think("Fourteen. They don't pay. They don't look at me. They sit, and they drip.");
   g.bus.setWater(0.1);
   await g.wait(1500);
@@ -340,6 +374,9 @@ async function bridge(g) {
   }
   g.mood("uneasy");
 
+  // ---------- out in the empty lots, the payphones ring as the bus goes by
+  await payphones(g);
+
   // the rest of the run, then Northgate
   await g.arrive("Northgate");
   await openUp(g, 25000);
@@ -355,4 +392,40 @@ async function bridge(g) {
   g.sfx("whisper");
   await g.think("The stop with no name is right after Elm and Fourth now. Tomorrow, it'll be waiting.");
   await endShift(g);
+}
+
+// three payphones on the corners of empty lots, a block apart. Each one starts ringing as the bus comes up
+// to it, and stops when it's gone by. After the third, they all stop at once.
+async function payphones(g) {
+  const first = Math.max(2088, g.d + 80);
+  if (first > 2300) return;                          // not enough road left before Northgate
+  const at = [first, first + 96, first + 192].filter((d) => d < 2400);
+  const phones = at.map((d) => g.prop("payphone", { at: route.at(d, CURB - 1.3, 0), yaw: route.heading(d) - Math.PI / 2 }));
+  const ringing = (i) => g.d > at[i] - 85 && g.d < at[i] + 12;
+  let t = 0;
+  let done = false;
+  const bells = g.frames((dt) => {
+    t -= dt;
+    if (t <= 0) {
+      t = 3;
+      phones.forEach((ph, i) => { if (ringing(i)) g.sfxAt("ring", ph.localToWorld(new THREE.Vector3(0, 1.5, 0.3)), { gain: 0.9, range: 110 }); });
+    }
+    return done;
+  });
+  await g.until(() => g.d > at[0] - 80, 30000);
+  g.mood("dread");
+  await g.think("A payphone's ringing. Out here, in the empty lots. Nobody's lived out here in years.");
+  if (at[1]) {
+    await g.until(() => g.d > at[1] - 80, 30000);
+    await g.think("Another one. Ringing as I go by. Like it's handing me on to the next.");
+  }
+  if (at[2]) {
+    await g.until(() => g.d > at[2] - 80, 30000);
+    await g.say("rhee", "You should pick up, driver. It's for you.");
+  }
+  await g.until(() => g.d > at[at.length - 1] + 14, 30000);
+  done = true;
+  await bells;
+  await g.think("And then they all stopped. At the same time.");
+  g.mood("uneasy");
 }

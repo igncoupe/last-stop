@@ -15,6 +15,18 @@ const PEOPLE = {
   d:       { skin: "#e1c2a6", hair: "#b08848", shirt: "#3b2b2b" },
   e:       { skin: "#b98a6c", hair: "#2b211a", shirt: "#2f3a40" },
   f:       { skin: "#d2a988", hair: "#9a9a9a", shirt: "#4a4038" },
+  // the rest of the fourteen
+  eddie:   { skin: "#b8865f", hair: "#15100c", shirt: "#e4e1d8" },
+  dorothy: { skin: "#d8bfab", hair: "#d4d0cc", shirt: "#6b4f6a" },
+  frank:   { skin: "#d3ad8c", hair: "#5a4a3c", shirt: "#3f5370", mustache: true },
+  carmen:  { skin: "#c49470", hair: "#120d0a", shirt: "#8a4a5a" },
+  marcus:  { skin: "#6e4a33", hair: "#0e0b09", shirt: "#2f4a3a" },
+  grace:   { skin: "#e0c0a2", hair: "#a8743a", shirt: "#d06a70" },
+  sam:     { skin: "#8a5e44", hair: "#141010", shirt: "#5d6e5a" },
+  rosa:    { skin: "#c99a78", hair: "#3a2a22", shirt: "#6a3d4e" },
+  thomas:  { skin: "#dcb48e", hair: "#0d0b0a", shirt: "#3a4a6a" },
+  abby:    { skin: "#e3c3a3", hair: "#140f0c", shirt: "#a83a32" },
+  henry:   { skin: "#d2a988", hair: "#9a9a9a", shirt: "#4a4038", mustache: true },
 };
 
 // one person, head and shoulders, standing on baseY, centred on cx; u is the size of a "pixel"
@@ -76,8 +88,8 @@ export function drawPhoto(ctx, kind, px, py, w, h, { tone = null } = {}) {
     // fourteen people in two rows, on the steps of a bus, a long time ago. A woman holding a child on her hip.
     x.fillStyle = "#8c8574"; x.fillRect(0, 0, w, h);
     x.fillStyle = "#6e6a5c"; x.fillRect(0, h * 0.62, w, h * 0.38);
-    const back = ["b", "c", "daniel", "d", "e", "f", "a"];
-    const front = ["lena", "ivy", "a", "e", "c", "b", "d"];
+    const back = ["henry", "sam", "daniel", "frank", "dorothy", "rosa", "marcus"];
+    const front = ["lena", "ivy", "carmen", "eddie", "grace", "thomas", "abby"];
     const u = w / 105;
     back.forEach((k, i) => person(x, (i + 0.5) * (w / 7), h * 0.66, u, PEOPLE[k]));
     front.forEach((k, i) => {
@@ -91,6 +103,26 @@ export function drawPhoto(ctx, kind, px, py, w, h, { tone = null } = {}) {
     person(x, w / 2, h + 1, w / 16, PEOPLE.varga);
     x.fillStyle = "#c9a640"; x.fillRect(w / 2 + w * 0.12, h - w * 0.22, w * 0.08, w * 0.05);   // his badge
     age(x, w, h, tone || "sepia");
+  } else if (kind.startsWith("person:") && PEOPLE[kind.slice(7)]) {
+    // one of them, head and shoulders: a school photo, a work ID, a snapshot someone gave the paper
+    x.fillStyle = "#7a8794"; x.fillRect(0, 0, w, h);
+    const g = x.createRadialGradient(w / 2, h * 0.4, 2, w / 2, h * 0.4, w * 0.7);
+    g.addColorStop(0, "rgba(255,255,255,.22)"); g.addColorStop(1, "rgba(0,0,0,.18)");
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    const who = PEOPLE[kind.slice(7)];
+    person(x, w / 2, h + 1, w / (who.child ? 13 : 17), who);
+    age(x, w, h, tone || "gray");
+  } else if (kind === "bridge") {
+    // the Ashgrove bridge the morning after: a river, and a span that stops in the air
+    x.fillStyle = "#9a9486"; x.fillRect(0, 0, w, h);
+    x.fillStyle = "#5e5d58"; x.fillRect(0, h * 0.58, w, h * 0.42);                       // the river
+    x.fillStyle = "#3a3934";
+    x.fillRect(0, h * 0.42, w * 0.38, h * 0.07);                                          // the deck, up to the break
+    x.fillRect(w * 0.62, h * 0.45, w * 0.38, h * 0.07);
+    for (const px2 of [0.12, 0.3, 0.72, 0.9]) x.fillRect(w * px2, h * 0.49, w * 0.04, h * 0.2);   // piers
+    x.beginPath(); x.moveTo(w * 0.38, h * 0.42); x.lineTo(w * 0.47, h * 0.64); x.lineTo(w * 0.38, h * 0.49); x.fill();   // the broken end, hanging
+    x.fillStyle = "#2a2a28"; for (let i = 0; i < 6; i++) x.fillRect(w * (0.42 + i * 0.03), h * (0.61 + (i % 2) * 0.02), w * 0.012, h * 0.04);   // divers' boats
+    age(x, w, h, tone || "sepia");
   } else {
     x.fillStyle = "#777"; x.fillRect(0, 0, w, h);
   }
@@ -101,15 +133,17 @@ export function drawPhoto(ctx, kind, px, py, w, h, { tone = null } = {}) {
 // what a document's photo caption shows
 export function photoKind(caption) {
   const t = String(caption || "").toUpperCase();
+  if (t.startsWith("PERSON:")) return "person:" + t.slice(7).toLowerCase();
+  if (t.includes("BRIDGE")) return "bridge";
   if (t.includes("JUN")) return "jun";
   if (t.includes("14") || t.includes("VICTIM")) return "victims";
   if (t.includes("VARGA")) return "varga";
   return "victims";
 }
-export function photoURL(caption, w = 160, h = 110) {
+export function photoURL(caption, w = 160, h = 110, tone = null) {
   const c = document.createElement("canvas");
   c.width = w;
   c.height = h;
-  drawPhoto(c.getContext("2d"), photoKind(caption), 0, 0, w, h);
+  drawPhoto(c.getContext("2d"), photoKind(caption), 0, 0, w, h, { tone });
   return c.toDataURL();
 }

@@ -193,6 +193,7 @@ export const ui = {
       document.body.append(p);
     }
     p.className = `paper paper-${doc.kind || "notice"}`;
+    p.dataset.findable = doc.findable || "";          // (something you found yourself, not the story's)
     p.replaceChildren();
     const sheet = document.createElement("div");
     sheet.className = "sheet";
@@ -201,9 +202,9 @@ export const ui = {
     if (doc.photo) {
       const ph = document.createElement("div");
       ph.className = "p-photo";
-      ph.textContent = doc.photo;
+      ph.textContent = doc.caption ?? (doc.photo.startsWith("PERSON:") ? "" : doc.photo);
       const poster = doc.kind === "poster";
-      ph.style.backgroundImage = `url(${photoURL(doc.photo, poster ? 130 : 200, poster ? 150 : 120)})`;
+      ph.style.backgroundImage = `url(${photoURL(doc.photo, poster ? 130 : 200, poster ? 150 : 120, doc.kind === "clipping" ? "sepia" : null)})`;
       sheet.append(ph);
     }
     for (const line of doc.lines || []) { const l = document.createElement("p"); l.textContent = line; sheet.append(l); }
@@ -233,9 +234,15 @@ export const ui = {
       }
       sheet.append(s);
     }
-    p.append(sheet);
+    if (doc.footer) { const ft = document.createElement("div"); ft.className = "p-footer"; ft.textContent = doc.footer; p.append(sheet, ft); }
+    else p.append(sheet);
     void p.offsetWidth;
     p.classList.add("on");
+  },
+  // is the paper up something you found yourself (its id), or the story's ("")? null: nothing's up
+  paperOpen() {
+    const p = document.getElementById("paper");
+    return p && p.classList.contains("on") ? p.dataset.findable || "" : null;
   },
 
   loading(text) {

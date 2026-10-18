@@ -98,13 +98,21 @@ export function createDirector(w) {
       gr.add(bag);
       return gr;
     },
+    letter: () => {
+      const gr = new THREE.Group();
+      gr.add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.004, 0.1), new THREE.MeshLambertMaterial({ color: 0xe9e1cc })));
+      const stamp = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.005, 0.03), new THREE.MeshLambertMaterial({ color: 0x9a3a2a }));
+      stamp.position.set(0.06, 0.001, -0.03);
+      gr.add(stamp);
+      return gr;
+    },
     badge: () => {
       const gr = new THREE.Group();
       gr.add(new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.025, 0.008), new THREE.MeshLambertMaterial({ color: 0xb8913a, emissive: 0x2a1e08 })));
       return gr;
     },
   };
-  const DASH_SPOT = { coffee: new THREE.Vector3(0.18, 1.45, 5.72), soup: new THREE.Vector3(-0.5, 1.44, 5.82), badge: new THREE.Vector3(1.02, 1.4, 5.58) };
+  const DASH_SPOT = { coffee: new THREE.Vector3(0.18, 1.45, 5.72), soup: new THREE.Vector3(-0.5, 1.44, 5.82), badge: new THREE.Vector3(1.1, 1.425, 5.6), letter: new THREE.Vector3(0.45, 1.395, 5.62) };
   let held = null;                     // what you're holding on foot
   const handed = [];                   // everything you've been given tonight (cleared each night)
   const storyProps = [];               // things the story talks about, put where it says (cleared each night)
@@ -220,9 +228,10 @@ export function createDirector(w) {
 
     // ---------- the bus ----------
     // wait until the bus stops at a stop (true) or drives past it (false)
-    async arrive(name, { hint = true } = {}) {
+    // (at: a distance along the road, for someone flagging the bus down where there's no stop)
+    async arrive(name, { hint = true, at = null } = {}) {
       s.waiting = "arrive " + name;
-      const d = name === "???" ? props.mystery.d : STOPS[name];
+      const d = at !== null ? at : name === "???" ? props.mystery.d : STOPS[name];
       if (hint) nav = { stop: { d, name: name === "???" ? "???" : name } };
       drive.dockAt(d);
       await until(() => drive.stoppedNear(d) || drive.passed(d));
@@ -455,6 +464,10 @@ export function createDirector(w) {
         const shelter = props.stops[where.stop].group;
         shelter.add(p);
         p.position.set(...where.at);
+      } else if (where.at) {
+        scene.add(p);
+        p.position.copy(where.at);
+        p.rotation.y = where.yaw || 0;
       } else if (where.seat) {
         bus.group.add(p);
         const s = bus.seatSlots[where.seat];
@@ -468,6 +481,15 @@ export function createDirector(w) {
       storyProps.push(p);
       return p;
     },
+    // anything the story builds itself, out in the world for tonight (taken away at the end of the night)
+    place(obj, at, yaw = 0) {
+      scene.add(obj);
+      obj.position.copy(at);
+      obj.rotation.y = yaw;
+      obj.userData.t0 = performance.now();
+      storyProps.push(obj);
+      return obj;
+    },
     // the drowned don't walk off. They're just gone when you look again.
     vanish(key) { g.despawn(key); },
 
@@ -475,7 +497,20 @@ export function createDirector(w) {
     mood(m) { Sound.mood(m); },
     amb(levels) { Sound.ambience(levels); },
     sfx(name, ...args) { Sound.sfx(name, ...args); },
+    sfxAt(name, at, { gain = 0.6, range = 70 } = {}, ...args) {
+      const from = camera.getWorldPosition(new THREE.Vector3());
+      const dist = at.distanceTo(from);
+      if (dist > range) return;
+      const local = camera.worldToLocal(at.clone());
+      const pan = THREE.MathUtils.clamp(local.x / Math.max(1, dist), -1, 1) * 0.8;
+      Sound.sfxAt(name, { gain: gain * (1 - dist / range) ** 1.4, pan, muffle: 600 + 3400 * (1 - dist / range) }, ...args);
+    },
     lamps(on) { w.city.setLampsOn(on); },
+    // no other cars on the road for a while
+    holdTraffic(seconds) { w.traffic.hold(seconds); },
+    // the streetlights, one at a time: { d, side, ... } (out: dark, whatever else is going on)
+    get streetlights() { return w.city.lamps; },
+    lampOut(lamp, out) { w.city.setLampOut(lamp, out); },
     rain(on) { props.rain.set(on); Sound.ambience({ rain: on ? 1 : 0 }); },
     flood(on, level) { props.flood.set(on, level); },
     storm(on) { storm = on; g.rain(on); stormT = 3; },
@@ -678,6 +713,96 @@ export function createDirector(w) {
   };
   // a flash of lightning over an empty road
   g.flash = () => { w.lightning(); setTimeout(() => Sound.sfx("thunder"), 300 + Math.random() * 600); };
+  // the windshield fogs up from the inside, right in front of you, and a finger writes in it, one letter at
+  // a time. Resolves once the word is written; the fog clears by itself a while later.
+  const LETTERS = {
+    S: [[[0.86, 0.14], [0.5, 0.03], [0.15, 0.16], [0.2, 0.42], [0.8, 0.58], [0.86, 0.84], [0.5, 0.98], [0.12, 0.86]]],
+    T: [[[0.04, 0.06], [0.96, 0.06]], [[0.5, 0.06], [0.5, 0.98]]],
+    O: [Array.from({ length: 17 }, (_, i) => [0.5 + Math.sin((i / 16) * Math.PI * 2) * 0.42, 0.52 - Math.cos((i / 16) * Math.PI * 2) * 0.46])],
+    P: [[[0.16, 0.98], [0.16, 0.05], [0.62, 0.05], [0.86, 0.18], [0.86, 0.38], [0.62, 0.5], [0.16, 0.5]]],
+  };
+  g.fogWrite = async (word, { letterMs = 700 } = {}) => {
+    s.waiting = "writing on the glass";
+    const c = document.createElement("canvas");
+    c.width = 256;
+    c.height = 192;
+    const x = c.getContext("2d");
+    // breath on cold glass: grey, thin at the top, thicker at the bottom, no hard edges
+    const grad = x.createLinearGradient(0, 0, 0, 192);
+    grad.addColorStop(0, "rgba(150,160,168,.35)");
+    grad.addColorStop(1, "rgba(165,173,180,.7)");
+    x.fillStyle = grad;
+    x.fillRect(0, 0, 256, 192);
+    for (let i = 0; i < 420; i++) { x.fillStyle = `rgba(200,208,214,${0.08 + Math.random() * 0.22})`; x.fillRect(Math.random() * 256, Math.random() * 192, 1 + Math.random() * 2, 1 + Math.random() * 2); }
+    x.globalCompositeOperation = "destination-in";
+    const edge = x.createRadialGradient(128, 104, 30, 128, 104, 150);
+    edge.addColorStop(0, "rgba(0,0,0,1)");
+    edge.addColorStop(0.7, "rgba(0,0,0,.85)");
+    edge.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = edge;
+    x.fillRect(0, 0, 256, 192);
+    x.globalCompositeOperation = "source-over";
+    const t = new THREE.CanvasTexture(c);
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.86), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false }));
+    glass.position.set(0.62, 2.02, 5.962);
+    glass.rotation.y = Math.PI;                       // facing you
+    bus.group.add(glass);
+    storyProps.push(glass);
+    let k = 0;
+    await until((dt) => { k = Math.min(1, k + dt / 2.6); glass.material.opacity = k * 0.75; return k >= 1; });
+    // the letters are wiped clear of the fog
+    x.globalCompositeOperation = "destination-out";
+    x.strokeStyle = "#000";
+    x.lineWidth = 10;
+    x.lineCap = "round";
+    x.lineJoin = "round";
+    const W = 48, Hh = 92, gap = 11;
+    const left = (256 - (word.length * W + (word.length - 1) * gap)) / 2;
+    const bottoms = [];
+    for (let i = 0; i < word.length; i++) {
+      const strokes = (LETTERS[word[i]] || []).map((st) => st.map(([u, v]) => [left + i * (W + gap) + u * W, 42 + v * Hh]));
+      const len = strokes.reduce((a, st) => a + st.slice(1).reduce((b, p, j) => b + Math.hypot(p[0] - st[j][0], p[1] - st[j][1]), 0), 0);
+      Sound.sfx("squeak", 1);
+      let drawn = 0;
+      await until((dt) => {
+        drawn = Math.min(len, drawn + (len * dt * 1000) / letterMs);
+        x.beginPath();
+        let left2 = drawn;
+        for (const st of strokes) {
+          x.moveTo(st[0][0], st[0][1]);
+          for (let j = 1; j < st.length && left2 > 0; j++) {
+            const seg = Math.hypot(st[j][0] - st[j - 1][0], st[j][1] - st[j - 1][1]);
+            const f = Math.min(1, left2 / seg);
+            x.lineTo(st[j - 1][0] + (st[j][0] - st[j - 1][0]) * f, st[j - 1][1] + (st[j][1] - st[j - 1][1]) * f);
+            left2 -= seg;
+          }
+        }
+        x.stroke();
+        t.needsUpdate = true;
+        return drawn >= len;
+      });
+      bottoms.push(left + i * (W + gap) + W * 0.5);
+      await g.wait(180);
+    }
+    // the wet runs down from the letters
+    x.lineWidth = 3;
+    let d = 0;
+    await until((dt) => {
+      d = Math.min(1, d + dt / 1.6);
+      x.beginPath();
+      bottoms.forEach((bx, i) => { x.moveTo(bx + (i % 2 ? 9 : -7), 130); x.lineTo(bx + (i % 2 ? 9 : -7), 130 + d * 50); });
+      x.stroke();
+      t.needsUpdate = true;
+      return d >= 1;
+    });
+    // ...and some time later, it fades off the glass
+    (async () => {
+      await g.wait(6000);
+      let f = 1;
+      await until((dt) => { f = Math.max(0, f - dt / 4); glass.material.opacity = f * 0.75; return f <= 0; });
+      glass.removeFromParent();
+    })();
+  };
   // the camera leaves your seat: out the door, up at Room 4B's window on the fourth floor of St. Agnes, and
   // back, while you say what you see. pose: what the figure in the window is doing
   g.peekWindow = async (pose, line, { dim = false } = {}) => {

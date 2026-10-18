@@ -272,3 +272,74 @@ export function makeGift() {
   t.rotation.set(-0.2, 0.2, -0.25);
   return g;
 }
+
+// Teodor Varga's old locker, at the end of a row of them in the depot: door hanging open, the night's
+// clipping taped inside it
+export function makeLockers() {
+  const g = new THREE.Group();
+  const steel = mat({ color: 0x4c5560 });
+  const dark = mat({ color: 0x23272c });
+  for (let i = 0; i < 5; i++) {
+    const z = i * 0.62;
+    const body = box(0.55, 1.9, 0.6, steel);
+    body.position.set(0, 0.95, z);
+    g.add(body);
+    for (let v = 0; v < 3; v++) { const s = box(0.005, 0.03, 0.3, dark); s.position.set(0.28, 1.62 + v * 0.06, z); g.add(s); }   // vents
+  }
+  // the last one is his: the door swung open, a name strip, the inside dark
+  const z = 4 * 0.62;
+  const inside = box(0.02, 1.7, 0.54, mat({ color: 0x15171a }));
+  inside.position.set(0.27, 0.97, z);
+  g.add(inside);
+  const doorPivot = new THREE.Group();
+  doorPivot.position.set(0.29, 0, z + 0.29);
+  doorPivot.rotation.y = -1.9;                 // swung open, out into the room
+  const door = box(0.03, 1.8, 0.58, steel);
+  door.position.set(0, 0.95, -0.29);
+  doorPivot.add(door);
+  g.add(doorPivot);
+  const name = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.07), mat({ map: tex.sign("T. VARGA · 9", { bg: "#d8d2be", fg: "#2a2418", w: 64, h: 14, font: 9 }) }));
+  name.position.set(0.282, 1.86, z);
+  name.rotation.y = Math.PI / 2;
+  g.add(name);
+  // the clipping, taped inside the back of the locker
+  const clipCanvas = document.createElement("canvas");
+  clipCanvas.width = 64;
+  clipCanvas.height = 84;
+  const clipTex = new THREE.CanvasTexture(clipCanvas);
+  clipTex.magFilter = THREE.NearestFilter;
+  const clip = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.34), mat({ map: clipTex }));
+  clip.position.set(0.29, 1.3, z);
+  clip.rotation.y = Math.PI / 2;
+  g.add(clip);
+  // what you press E on: the open locker, door and all
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.9, 0.9), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+  hit.position.set(0.45, 0.95, z);
+  g.add(hit);
+  return {
+    group: g,
+    hit,
+    setClipping(title) {
+      clip.visible = !!title;
+      if (!title) return;
+      const x = clipCanvas.getContext("2d");
+      x.fillStyle = "#d9cba3"; x.fillRect(0, 0, 64, 84);
+      x.fillStyle = "#1d1b17"; x.font = "bold 7px serif";
+      // the headline, wrapped
+      const words = title.split(" ");
+      let line = "";
+      let y = 10;
+      for (const w of words) {
+        if (x.measureText(line + w).width > 58 && line) { x.fillText(line.trim(), 3, y); y += 8; line = ""; }
+        line += w + " ";
+      }
+      x.fillText(line.trim(), 3, y);
+      x.fillStyle = "#6b6450"; x.fillRect(4, y + 5, 26, 20);                                   // a photo
+      x.fillStyle = "rgba(40,36,28,.55)";
+      for (let r = y + 5; r < 80; r += 4) x.fillRect(33, r, 27, 1.5);                           // columns of print
+      for (let r = y + 29; r < 80; r += 4) x.fillRect(4, r, 26, 1.5);
+      x.fillStyle = "rgba(200,190,140,.6)"; x.fillRect(22, 0, 20, 4);                           // tape
+      clipTex.needsUpdate = true;
+    },
+  };
+}

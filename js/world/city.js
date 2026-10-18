@@ -288,6 +288,12 @@ export function buildCity(scene) {
     lights.push(l);
   }
   const lampsOn = { value: true };
+  function paint(lamp) {
+    const lit = lampsOn.value && !lamp.out && (lamp.on || !lamp.flicky);
+    lamp.head.material.color.set(lit ? 0xffd9a0 : 0x1a1a1a);
+    lamp.cone.visible = lit;
+    lamp.pool.visible = lit;
+  }
 
   return {
     group,
@@ -297,7 +303,19 @@ export function buildCity(scene) {
       headMat.color.set(on ? 0xffd9a0 : 0x202020);
       coneMat.visible = on;
       poolMat.visible = on;
+      for (const lamp of lamps) if (lamp.own && !lamp.flicky) paint(lamp);
     },
+    // one streetlight on its own: out = dark, whatever the rest are doing
+    setLampOut(lamp, out) {
+      if (!lamp.own) {
+        lamp.own = true;                      // its own materials, so it can go dark by itself
+        if (!lamp.flicky) { lamp.head.material = new THREE.MeshBasicMaterial({ color: 0xffd9a0 }); lamp.cone.material = coneMat.clone(); lamp.pool.material = poolMat.clone(); }
+      }
+      lamp.out = out;
+      paint(lamp);
+    },
+    // every light back to normal (a new night)
+    clearOuts() { for (const lamp of lamps) if (lamp.out) { lamp.out = false; paint(lamp); } },
     update(focus, dt = 0.016) {
       for (const lamp of lamps) {
         if (!lamp.flicky) continue;
@@ -305,7 +323,7 @@ export function buildCity(scene) {
         if (lamp.t <= 0) {
           lamp.on = !lamp.on;
           lamp.t = lamp.on ? 0.05 + Math.random() * (Math.random() < 0.2 ? 3 : 0.4) : 0.04 + Math.random() * 0.25;
-          const lit = lamp.on && lampsOn.value;
+          const lit = lamp.on && lampsOn.value && !lamp.out;
           lamp.head.material.color.set(lit ? 0xffd9a0 : 0x1a1a1a);
           lamp.cone.visible = lit;
           lamp.pool.visible = lit;
@@ -318,7 +336,7 @@ export function buildCity(scene) {
         .slice(0, lights.length);
       lights.forEach((l, i) => {
         const n = near[i];
-        l.intensity = lampsOn.value && n && n.lamp.on ? 40 : 0;     // dim, never hide (hiding recompiles shaders)
+        l.intensity = lampsOn.value && n && n.lamp.on && !n.lamp.out ? 40 : 0;     // dim, never hide (hiding recompiles shaders)
         if (n) l.position.copy(n.lamp.pos);
       });
     },
