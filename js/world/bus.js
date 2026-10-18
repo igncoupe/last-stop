@@ -705,6 +705,16 @@ export function buildBus(scene) {
     get passengers() { return bus.children.filter((c) => c.userData.person).length; },
     setHeadlights(on) { head.intensity = on ? 160 : 0; },
     get headlightsOn() { return head.intensity > 0; },
+    // the solid body of the bus, in the world: what you can't walk through. Only the shell, never whatever's
+    // attached to it (the camera rides in it with things hanging off it; the doorway has a trigger box)
+    bounds() {
+      bus.updateMatrixWorld(true);
+      const box = new THREE.Box3();
+      for (const x of [-W - 0.05, W + 0.05]) for (const y of [0, 3.35]) for (const z of [-6.15, 6.2]) {
+        box.expandByPoint(bus.localToWorld(new THREE.Vector3(x, y, z)));
+      }
+      return box;
+    },
     // 0 = dry, 1 = up to the seats
     setWater(level) { waterIn.visible = level > 0; waterIn.position.y = 0.48 + level * 0.45; },
     update(dt, info) {

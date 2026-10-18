@@ -336,9 +336,8 @@ function resetWorld(n) {
   g.route(null);
   Sound.ambience({ wind: 1, hum: 0 });
   // you start by the dispatch office, facing the bus; the bus is solid
-  bus.group.updateMatrixWorld(true);
-  const busBox = new THREE.Box3().setFromObject(bus.group).expandByScalar(-0.15);
-  g.walkAt(props.depot.spawn, 0.35, [...props.colliders, busBox]);
+  // (just the bus's own body: last night's camera, and everything hanging off it, is still riding in the bus)
+  g.walkAt(props.depot.spawn, 0.35, [...props.colliders, bus.bounds()]);
   file.setup(n);
   // the first time, a word about what's lying around to be read
   if (n === 1 && file.everCount === 0) setTimeout(() => { if (playing && g.state.night === 1) ui.toast("Look around. Some things can be read  ·  E", 4200); }, 9000);
