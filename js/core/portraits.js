@@ -4,10 +4,10 @@
 
 const PEOPLE = {
   jun:     { skin: "#d9b28f", hair: "#0e0e10", shirt: "#26292e", hood: true, straps: "#d8b21e" },
-  lena:    { skin: "#c49a7a", hair: "#4a3626", shirt: "#8a7a9a", long: true },
+  lena:    { skin: "#7a5038", hair: "#120c0a", shirt: "#8a7a9a", long: true },
   daniel:  { skin: "#c6a184", hair: "#241c16", shirt: "#23262c" },
   ivy:     { skin: "#e0b996", hair: "#3a2a1a", shirt: "#e0b42a", hood: true, child: true, long: true },
-  kid:     { skin: "#d8b08e", hair: "#2a1d14", shirt: "#8fb0d0", child: true },
+  kid:     { skin: "#6e4630", hair: "#0e0a08", shirt: "#8fb0d0", child: true },      // the driver, at four
   varga:   { skin: "#cdb8a4", hair: "#5a4532", shirt: "#5a4632", cap: "#4a3a2a", mustache: true },
   a:       { skin: "#5b3a26", hair: "#120c0a", shirt: "#3d6fa8", long: true },
   b:       { skin: "#d6b096", hair: "#7a7a7a", shirt: "#6b6f72" },

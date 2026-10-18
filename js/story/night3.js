@@ -196,7 +196,7 @@ export async function night3(g) {
       await g.board("frank", "L1");
       f.frankRode = true;
       f.metFrank = true;
-      await g.say("frank", "Frank Doyle. I carry the mail on Route 12. Thirty years, and they still won't give me a truck.");
+      await g.say("frank", "Frank Doyle. I carry the mail on Route 12. Thirty years, and they still won't give me a damn truck.");
       await g.say("frank", "Found something on your bus, by the way. On the seat right behind you. It's got your name on it.");
       const give = g.handOver("frank", "letter");
       await g.wait(800);
@@ -237,7 +237,7 @@ export async function night3(g) {
   g.sfx("knock", 6);
   g.shake(1.2);
   await g.think("Knocking. Not on the doors. Under the floor. Under my feet. Like people trapped in something, beating on the walls.");
-  await g.say("rhee", "CLOSE THE DOORS. Driver, CLOSE THEM.");
+  await g.say("rhee", "CLOSE THE DOORS. Driver, close the goddamn DOORS.");
   await g.say("teodor", "She's in there, you know. Your mother. In the cardigan. She sat right behind me every night.");
   g.actor("drowned1")?.watch(g.camera);
   g.hint("Look at the shelter");
@@ -321,8 +321,8 @@ export async function night3(g) {
   await g.until(() => g.drive.speed > 3, 8000);
   await g.shadeWindow({ hold: 1700 });
   g.mood("terror");
-  if (f.junAboard) await g.say("jun", "It's on the glass! It's ON the glass!");
-  await g.think("It's back. The thing from the first night. Spread across the glass like it's trying to get in.");
+  if (f.junAboard) await g.say("jun", "Oh shit! It's on the glass! It's ON the glass!");
+  await g.think("Oh, hell no. It's back. The thing from the first night. Spread across the glass like it's trying to get in.");
   g.shadeHide();
   await g.muse("Then the lights went, and it was gone. Only the handprints stayed. The rain won't wash them off.");
   g.release();
@@ -408,7 +408,7 @@ async function ward(g) {
   g.sfx("breath");
   g.mood("terror");
   await g.think("Make up the time. Written in the fog, from the inside. Nobody's touched that glass.");
-  if (g.actor("mara")) await g.say("mara", "That's not. I didn't. Oh my god.");
+  if (g.actor("mara")) await g.say("mara", "That's not. I didn't. Oh my god. What the fuck.");
   g.look(H.bedHead);
   await g.say("teodor", "You came back. Lena's child. You came back for her.");
   await g.say("teodor", "Don't let him make you late.");
@@ -448,11 +448,11 @@ async function honker(g) {
   if (done()) return car.leave();
   g.look(() => car.window());
   await g.wait(400);
-  await g.say("you", "Okay! You want to go around? Go around!", { after: 100 });
+  await g.say("you", "Okay! You wanna go around? Then go the fuck around!", { after: 100 });
   // you take one hand off the wheel and show them exactly what you think of that
   g.gesture("bird", true);
   await g.wait(400);
-  await g.say("you", "Yeah. Have a great night.", { after: 100 });
+  await g.say("you", "Yeah. Fuck you too. Have a great night.", { after: 100 });
   // the horn stops. The light comes on inside the car.
   car.quiet();
   await g.wait(800);
@@ -461,7 +461,7 @@ async function honker(g) {
   g.mood("dread");
   await g.wait(300);
   g.gesture("bird", false);
-  await g.think("Oh god. There's nobody driving it.", { after: 100 });
+  await g.think("Oh, shit. Oh my god. There's nobody driving it.", { after: 100 });
   // ...and you look away from her, back at the road. (If you can't, the bus makes you.)
   const ahead = () => g.bus.group.localToWorld(new THREE.Vector3(0.7, 1.6, 14));
   const roadLeft = () => g.d < STOPS["Elm & 4th"] - 170;

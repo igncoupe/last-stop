@@ -42,8 +42,10 @@ from make_driver_voice import delivery  # noqa: E402
 
 # who each speaker is. New voices, described from scratch: none of them is anyone real.
 VOICES = {
-    "you": "A man in his mid-thirties, a night-shift city bus driver who lost his mother when he was four. A clear, warm, "
-           "natural light baritone with crisp, close diction, gentle and earnest, a little tired. American, no accent.",
+    "you": "A Black man in his mid-thirties who grew up in the inner city, a night-shift city bus driver who lost his mother "
+           "when he was four. A clear, warm, natural baritone with an easy, unforced African American accent and a little "
+           "street in how he talks: relaxed, real, says what he thinks. Close, crisp diction, a little tired. Recorded close "
+           "up in a quiet room.",
     "rhee": "A man in his sixties, a night bus dispatcher heard over a two-way radio. A cold, clipped, controlled baritone with "
             "an unsettling calm. Precise and commanding. When he's pushed, it cracks into rage. American.",
     "dana": "A woman in her forties, a night dispatcher on a two-way radio. A warm, alert, practical alto with a slight Midwestern "
@@ -86,8 +88,9 @@ SAME_AS = {"momcall": "junmom", "rhee94": "rhee", "harold": "rhee"}
 PREVIEW_TEXT = {
     "voices": "You came back. He stopped. He stopped this time. We waited so long for someone to stop. "
               "We are still waiting at the stop with no name, in the rain.",
-    "you": "I asked for it. I didn't tell them why. There's an old man in the back row. I didn't see him get on. "
-           "My mother's name was Lena Marsh. I was four. Nobody ever told me how. They just said she wasn't coming home.",
+    "you": "Sir? Where are you headed? Sorry, kid. Rules. Okay! You wanna go around? Then go the fuck around! "
+           "Oh, shit. Oh my god. There's nobody driving it. My mother's name was Lena Marsh. I was four. "
+           "Nobody ever told me how. They just said she wasn't coming home.",
     "teodor94": "Dispatch, this is Route 9. The river's coming over the road at Canal. I want to hold at Northgate till it "
                 "passes. Harold, I've got kids on this bus.",
 }

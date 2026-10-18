@@ -22,7 +22,7 @@ export const LOOKS = {
   jun:     { height: 1.66, build: 0.86, shirt: 0x3a3f47, pants: 0x22252b, skin: 0xd9b28f, hair: 0x0e0e10, hairStyle: "short", backpack: 0x6b2d2d, hood: true, young: true },
   junmom:  { height: 1.6, f: true, build: 0.92, shirt: 0x5d6e5a, pants: 0x2d3330, skin: 0xd9b28f, hair: 0x15110f, hairStyle: "ponytail", coat: 0x4a5a48 },
   daniel:  { height: 1.8, build: 1.04, shirt: 0x23262c, pants: 0x1c1f24, skin: 0xb3b9bd, hair: 0x241c16, hairStyle: "short", gift: true, wet: true, coat: 0x2a2e34 },
-  lena:    { height: 1.67, f: true, build: 0.94, shirt: 0x8a7a9a, pants: 0x2c2a34, skin: 0xb6b9bc, hair: 0x4a3626, hairStyle: "long", wet: true, cardigan: 0xb7a6c4 },
+  lena:    { height: 1.67, f: true, build: 0.94, shirt: 0x8a7a9a, pants: 0x2c2a34, skin: 0xb6b9bc, hair: 0x14100c, hairStyle: "long", wet: true, cardigan: 0xb7a6c4 },
   ivy:     { height: 1.15, f: true, build: 0.9, shirt: 0xe0b42a, pants: 0x2c3b4d, skin: 0xbfc3c6, hair: 0x3a2a1a, hairStyle: "pigtails", hood: true, wet: true, child: true, buttons: 0xf2d24a },
   rosie:   { height: 1.7, f: true, build: 0.98, shirt: 0x3b2b2b, pants: 0x1f1d22, skin: 0xd6b096, hair: 0x5a3a22, hairStyle: "long", coat: 0x4a3434 },
   harold:  { height: 1.72, build: 0.9, shirt: 0x6b6f72, pants: 0x3a3d40, skin: 0xa9adb0, hair: 0x7a7a7a, hairStyle: "short", wet: true, cardigan: 0x5a5f62, headset: true, glasses: 0x1a1a1a },

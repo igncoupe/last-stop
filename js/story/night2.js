@@ -48,7 +48,7 @@ export async function night2(g) {
     await g.wait(500);
     await g.say("teodor94", "Dispatch, this is Route 9. The river's coming over the road at Canal. I want to hold at Northgate till it passes.");
     await g.say("rhee94", "Negative, Nine. You're eleven minutes down. Make up the time.");
-    await g.say("teodor94", "Harold, I've got kids on this bus.");
+    await g.say("teodor94", "Harold, damn it, I've got kids on this bus.");
     await g.say("rhee94", "Then get them home on schedule.");
     g.sfx("static", 0.8);
     g.radio("CH 9");
@@ -230,7 +230,7 @@ export async function night2(g) {
     });
     if (!stayed) g.actor("dorothy")?.walk([curb("St. Agnes", 2.4)], { speed: 0.8 });
   } else {
-    if (f.maraAboard) await g.say("mara", "Seriously? That was my stop.");
+    if (f.maraAboard) await g.say("mara", "Seriously? That was my damn stop.");
     await g.muse("There was an old woman with a knitting bag at St. Agnes. She waved, like she knew the bus.");
   }
   if (!f.dorothyRode) g.despawn("dorothy");

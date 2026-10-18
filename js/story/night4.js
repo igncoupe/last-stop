@@ -228,7 +228,7 @@ export async function night4(g) {
   g.mood("terror");
   g.auto(14);
   g.shake(1);
-  await g.think("The pedal is going down by itself.");
+  await g.think("The pedal's going down by itself. No. No, no, no. Shit.");
   await g.wait(2500);
   await bridge(g);
   g.lockDoors(false);
@@ -389,7 +389,7 @@ async function bridge(g) {
   await g.arrive("Northgate");
   await openUp(g, 25000);
   g.sfx("static", 0.6);
-  await g.say("dana", "Route 9! Route 9, come in. Your bus went dark for six minutes. GPS put you in the middle of the river. Are you okay?");
+  await g.say("dana", "Route 9! Route 9, come in. Jesus Christ. Your bus went dark for six minutes. GPS put you in the middle of the river. Are you okay?");
   await g.say("you", "I'm okay. I think.");
   await g.say("dana", "Listen to me. Whatever you're hearing on channel 9, it isn't us. Nobody's been on that channel since");
   g.sfx("static", 1);
@@ -470,7 +470,7 @@ async function sink(g) {
     if (!under && lv > 2.8) { under = true; g.underwater(true); g.sfx("bubbles", 3); }
     return lv >= 5.8;
   });
-  await g.think("It's coming in. Through the doors, through the floor. It's so cold. It's so cold.");
+  await g.think("Oh shit. Oh shit. It's coming in. Through the doors, through the floor. It's so cold.");
   await rising;
   // the lights go. Just the emergency light now, and the hull groaning
   g.interior("flicker");
@@ -491,7 +491,7 @@ async function sink(g) {
   await g.until(() => tries >= 3, 5000);
   gaveUp = true;
   g.hint(null);
-  await g.think("They won't open. They won't open. I can't get out.");
+  await g.think("Come on. Come on! They won't open. Fuck! I can't get out.");
   // all of them, out of their seats. Floating in the aisle and over the seats behind you, filling the bus back
   // into the dark, every face turned to yours. Your mother nearest, reaching for you.
   const order = ["lena", "carmen", "daniel", "d0", "d11", "ivy", "d12", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8"];
