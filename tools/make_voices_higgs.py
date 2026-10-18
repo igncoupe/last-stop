@@ -241,6 +241,20 @@ def generate(args):
     tmp.unlink(missing_ok=True)
 
 
+def voice_ok(sim, ratio, seconds, loud, whisper):
+    """Is it the same person? A close speaker match, and not suddenly a much higher (or lower) voice.
+    Shouting and whispering change a voice, so they get more room. A clip of a word or two is too short for
+    the speaker match to mean much, so there the pitch has to agree. A voice that's both higher and a weaker
+    match is how a man's line comes out sounding like a woman: that needs a strong match to pass."""
+    if whisper:
+        return seconds < 1.4 or sim >= 0.42
+    if seconds < 1.4:
+        return 0.75 <= ratio <= (2.0 if loud else 1.35)
+    if loud:
+        return sim >= 0.42 and 0.6 <= ratio <= 2.0 and (ratio <= 1.6 or sim >= 0.5)
+    return sim >= 0.5 and 0.6 <= ratio <= 1.55 and (ratio <= 1.3 or sim >= 0.68) and (ratio >= 0.75 or sim >= 0.7)
+
+
 # ---------------------------------------------------------------- step 2: is it the same person? (CPU)
 def voices(args):
     import librosa
@@ -286,10 +300,7 @@ def voices(args):
         # the same person: a close speaker match, and not suddenly a much higher (or lower) voice.
         # Shouting and whispering change a voice, so they get a little more room. A clip of a word or two is
         # too short for the speaker match to mean much, so there it's the pitch that has to agree.
-        if seconds < 1.4:
-            ok_voice = whisper or 0.75 <= ratio <= (2.0 if loud else 1.35)
-        else:
-            ok_voice = sim >= (0.42 if (loud or whisper) else 0.5) and (whisper or 0.6 <= ratio <= (2.0 if loud else 1.6))
+        ok_voice = voice_ok(sim, ratio, seconds, loud, whisper)
         # (the words again too, with what Whisper heard, in case the check has learned something since)
         if rec.get("heard") is not None:
             score, extra = word_score(texts[lid], rec["heard"])

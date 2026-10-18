@@ -30,7 +30,20 @@ export async function flagStop(g, key, d, thought = null) {
   if (thought) await g.think(thought);
   const stopped = await arriving;
   if (p) p.wave(false);
-  return stopped && (await openUp(g, 15000));
+  if (!stopped) return false;
+  // they come up to the doors and knock, if you leave them standing there
+  let waited = 0;
+  let over = false;
+  const knocking = g.frames((dt) => {
+    waited += dt;
+    if (over || g.bus.doorsOpen || g.drive.moving) return true;
+    if (waited > 8) { waited = 0; g.sfx("knock", 3); }
+    return false;
+  });
+  const opened = await openUp(g, 30000);
+  over = true;
+  await knocking;
+  return opened;
 }
 
 let doorTrigger = null;

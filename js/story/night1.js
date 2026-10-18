@@ -158,6 +158,7 @@ export async function night1(g) {
     if (!stayed) g.actor("eddie")?.walk([curbAt(eddieAt)], { speed: 1 });
   } else {
     await g.think("He dropped his arm and watched me go by.");
+    ghostEddie(g);           // (he's on the bus anyway)
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
   if (!f.eddieRode) g.despawn("eddie");
@@ -310,12 +311,24 @@ export async function night1(g) {
   // and somewhere in the middle of it, it comes down off the roof. It's been up there since Canal Row.
   await g.wait(3000 + Math.random() * 4000);
   await g.think("Okay. Breathe. Northgate's not far now. Just drive the bus.");
+  // and up on the roof, something walks slowly from the back of the bus toward the front. Nobody says anything.
+  let onRoof = true;
+  (async () => {
+    for (const z of [-4.3, -2.0, 0.4, 2.9]) {
+      await g.wait(3200 + Math.random() * 2600);
+      if (!onRoof) return;
+      g.sfxAt("roofsteps", g.bus.group.localToWorld(new THREE.Vector3(0.25, 3.3, z)), { gain: 0.6, range: 30, muffle: 480 }, 2 + Math.floor(Math.random() * 2));
+    }
+    await g.wait(2500);
+    if (onRoof) g.sfxAt("creak", g.bus.group.localToWorld(new THREE.Vector3(0.3, 3.3, 4.8)), { gain: 0.3, range: 30, muffle: 900 });
+  })();
   const dropAt = Math.min(2240, Math.max(g.d + 60, 1990 + Math.random() * 200));
   await g.until(() => g.d > dropAt, 40000);
   const ahead = () => g.bus.group.localToWorld(new THREE.Vector3(0.7, 1.6, 12));
   await g.until(() => g.drive.speed > 4 && !g.lookingAtMirror() && g.gazing(ahead(), 35), 8000);
   g.say("rhee", "Dispatch to Route 9. Northgate's clear tonight. Pull in, sign the log, and leave the keys in the—").catch(() => {});
   await g.wait(1300 + Math.random() * 1600);
+  onRoof = false;
   await g.shadeDrop({ keepParked: true });
   g.dread(true);
   g.mood("terror");
@@ -407,4 +420,21 @@ async function lightsOut(g) {
   await g.think("Then they all came back on at once. Like something changed its mind.");
   await g.say("rhee", "Power's been funny on this side of town all week, driver. Keep moving.");
   g.mood("calm");
+}
+
+// you drove past him at the curb. A little way on, he's in the back row anyway, in the mirror.
+async function ghostEddie(g) {
+  await g.wait(1500);
+  if (g.d > 1180 || g.flags.eddieRode) return;
+  g.spawn("eddie", "eddie", { ghost: true, mirrorOnly: true });
+  g.seat("eddie", "B1");
+  g.hint("Check your mirror");
+  await g.until(() => g.lookingAtMirror() || g.d > 1250, 9000);
+  g.hint(null);
+  g.sfx("whisper");
+  await g.think("There's a kid in a diner apron in the back row. The one who waved at me. I never let him on.");
+  await g.until(() => !g.lookingAtMirror(), 4000);
+  g.vanish("eddie");
+  g.prop("puddle", { seat: "B1" });
+  await g.think("When I looked again, his seat was empty. Just a wet seat, and a few old quarters.");
 }

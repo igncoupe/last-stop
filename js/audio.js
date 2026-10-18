@@ -427,6 +427,21 @@ const SFX = {
     out(g, 0.6, t, 0.2, dur - 0.2);
   },
   // a wheel that needs oil, rolling slowly past the end of the hall
+  // something heavy walking on the bus roof, slowly: a muffled thud, and the metal panel flexing under it
+  roofsteps(t, steps = 3) {
+    let tt = t;
+    for (let i = 0; i < steps; i++) {
+      out(tone(tt, 0.2, "sine", 72, 36), 0.55, tt, 0.004, 0.18, 0.25);
+      out(noise(tt, 0.14, "lowpass", 240), 0.5, tt, 0.003, 0.12, 0.25);
+      const flex = ctx.createBiquadFilter();
+      flex.type = "bandpass";
+      flex.frequency.value = 850 + Math.random() * 300;
+      flex.Q.value = 16;
+      tone(tt + 0.03, 0.28, "sawtooth", 170 + Math.random() * 50).connect(flex);
+      out(flex, 0.06, tt + 0.03, 0.01, 0.25, 0.15);
+      tt += 0.8 + Math.random() * 0.35;
+    }
+  },
   // an old telephone bell: two short trills (the phone call on night 2, the payphones on night 4)
   ring(t, bursts = 1) {
     for (let b = 0; b < bursts; b++) {

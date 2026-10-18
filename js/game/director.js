@@ -497,13 +497,13 @@ export function createDirector(w) {
     mood(m) { Sound.mood(m); },
     amb(levels) { Sound.ambience(levels); },
     sfx(name, ...args) { Sound.sfx(name, ...args); },
-    sfxAt(name, at, { gain = 0.6, range = 70 } = {}, ...args) {
+    sfxAt(name, at, { gain = 0.6, range = 70, muffle = null } = {}, ...args) {
       const from = camera.getWorldPosition(new THREE.Vector3());
       const dist = at.distanceTo(from);
       if (dist > range) return;
       const local = camera.worldToLocal(at.clone());
       const pan = THREE.MathUtils.clamp(local.x / Math.max(1, dist), -1, 1) * 0.8;
-      Sound.sfxAt(name, { gain: gain * (1 - dist / range) ** 1.4, pan, muffle: 600 + 3400 * (1 - dist / range) }, ...args);
+      Sound.sfxAt(name, { gain: gain * (1 - dist / range) ** 1.4, pan, muffle: muffle ?? 600 + 3400 * (1 - dist / range) }, ...args);
     },
     lamps(on) { w.city.setLampsOn(on); },
     // no other cars on the road for a while

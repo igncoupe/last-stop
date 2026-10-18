@@ -2,6 +2,7 @@
 // They can walk paths, get on the bus, sit, look at things, and be ghosts.
 import * as THREE from "three";
 import { mat, box } from "../core/ps1.js";
+import { makeGift } from "./depotProps.js";
 import { MIRROR_ONLY } from "./bus.js";
 
 const all = new Set();
@@ -130,10 +131,16 @@ export class Person {
     if (look.hood) { const h = box(0.27, 0.12, 0.08, shirt); h.position.set(0, 0.06, -0.16); this.neck.add(h); }
     if (look.lanyard) { const l = box(0.05, 0.08, 0.02, m(0xeeeeee)); l.position.set(0.06, leg + torso * 0.55, 0.13); this.body.add(l); }
     if (look.gift) {
-      this.gift = box(0.22, 0.16, 0.22, m(0x9fb3c8));
-      this.gift.position.set(0, leg + torso * 0.3, 0.24);
+      // Rosie's birthday present, held out in front of him in both hands (the same one that turns up later)
+      const lift = 0.9;
+      const inward = 0.12;
+      this.arms.forEach((a, i) => { a.rotation.set(-lift, 0, i === 0 ? inward : -inward); });
+      this.gift = makeGift();
+      this.gift.name = "held-gift";                // (not the one on the dashboard)
+      this.gift.scale.setScalar(1.55);
+      const reach = H * 0.34;
+      this.gift.position.set(0, leg + torso - 0.04 - reach * Math.cos(lift) + 0.02, reach * Math.sin(lift) - 0.04);
       this.body.add(this.gift);
-      this.arms.forEach((a) => { a.rotation.x = -0.9; });
     }
     if (look.cane) { const c = box(0.03, 0.9, 0.03, m(0x3a2a1a)); c.position.set(0.3, 0.45, 0.15); this.body.add(c); }
     if (look.apron) { const a = box(0.36, leg * 0.75, 0.02, m(look.apron)); a.position.set(0, leg * 0.72, 0.13); this.body.add(a); }
