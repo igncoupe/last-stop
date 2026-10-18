@@ -1,4 +1,4 @@
-// LAST STOP — entry point. Builds the world, runs the game loop, and plays
+// THE LAST STOP — entry point. Builds the world, runs the game loop, and plays
 // the five nights in order. Story lives in js/story/.
 import * as THREE from "three";
 import { makeRenderer } from "./core/ps1.js";
@@ -39,7 +39,7 @@ const params = new URLSearchParams(location.search);
 if (matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").matches && !params.has("force")) {
   $("screen-mobile").hidden = false;
   $("fade").style.opacity = 0;
-  throw new Error("Last Stop needs a keyboard and mouse.");
+  throw new Error("The Last Stop needs a keyboard and mouse.");
 }
 
 /* ---------- world ---------- */

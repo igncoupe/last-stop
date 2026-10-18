@@ -1,4 +1,4 @@
-# Last Stop
+# The Last Stop
 
 A first-person horror game about the last bus of the night.
 

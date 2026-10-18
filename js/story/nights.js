@@ -21,7 +21,7 @@ export const ENDINGS = {
 };
 
 export const CREDITS = `
-  <h2>LAST STOP</h2>
+  <h2>THE LAST STOP</h2>
   <p><strong>A game by</strong>igncoupe</p>
   <p><strong>Built with</strong>Claude</p>
   <p><strong>Voices</strong>Created with ElevenLabs</p>
