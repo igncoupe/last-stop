@@ -67,7 +67,7 @@ export const ui = {
   },
   clearSubtitle() { el.subtitle.classList.remove("on"); },
   // underwater: green-black, darker at the edges, light rippling across it
-  underwater(on) {
+  underwater(on, { drowning = false } = {}) {
     let u = document.getElementById("underwater");
     if (!u) {
       u = document.createElement("div");
@@ -76,6 +76,7 @@ export const ui = {
       document.body.append(u);
     }
     u.classList.toggle("on", !!on);
+    u.classList.toggle("drowning", !!on && drowning);
   },
   // big words in the middle of the screen (over black, in the endings); null takes them away
   caption(kicker, text) {

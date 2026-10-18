@@ -70,7 +70,8 @@ export function createDrive(bus) {
     detach(on) { s.detached = on; if (!on) place(); },
 
     update(dt, input, seated) {
-      if (s.detached) return;
+      // off the route (the bridge, the last ride): the script moves the bus, straight, so the wheel straightens too
+      if (s.detached) { s.steer = (s.steer || 0) * Math.max(0, 1 - dt * 6); return; }
       const prev = s.speed;
       const k = s.dock;
       if (s.control === "player" && k && !k.skipped && !k.done) {

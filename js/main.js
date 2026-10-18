@@ -214,7 +214,8 @@ function watchNorthgate(dt) {
 
 function frame(now) {
   nextFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000) * FAST;
+  // in a test run, window.__fast changes the speed mid-run (0 freezes the game for a screenshot)
+  const dt = Math.min(0.05, (now - last) / 1000) * (TEST && window.__fast != null ? window.__fast : FAST);
   last = now;
   if (paused) return;
   if (playing && input.hit("KeyF")) toggleDoors();

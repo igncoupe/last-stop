@@ -324,6 +324,62 @@ const SFX = {
     out(noise(t, dur, "bandpass", 2200, 0.7), 0.35, t, 0.1, dur - 0.1, 0.3);
     out(tone(t, dur, "sine", 48, 38), 0.5, t, 0.3, dur - 0.3, 0.2);
   },
+  // a gasp: dragging in air, after none
+  gasp(t) {
+    const n = noise(t, 0.75, "bandpass", 700, 1.6);
+    n.frequency.setValueAtTime(600, t);
+    n.frequency.exponentialRampToValueAtTime(2600, t + 0.6);
+    out(n, 0.9, t, 0.03, 0.7, 0.2);
+    out(tone(t, 0.5, "sine", 180, 320), 0.12, t, 0.05, 0.45);
+  },
+  // the hull groaning under the water: metal bending, a long way down
+  groan(t, dur = 3) {
+    for (const [f0, f1, lvl] of [[46, 31, 0.5], [93, 61, 0.22], [140, 95, 0.12]]) {
+      const o = tone(t, dur, "sawtooth", f0, f1);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 420;
+      o.connect(lp);
+      out(lp, lvl, t, dur * 0.3, dur * 0.7, 0.6);
+    }
+    out(noise(t, dur, "bandpass", 300, 3), 0.25, t, dur * 0.4, dur * 0.6, 0.5);
+  },
+  // the drowned, all of them at once: a low moan with no words in it, coming through the water
+  moan(t, dur = 6) {
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 700;
+    const g = gainNode(0);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.7, t + dur * 0.3);
+    g.gain.setValueAtTime(0.7, t + dur * 0.65);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    lp.connect(g);
+    g.connect(sfxBus);
+    send(g, 0.7);
+    for (let i = 0; i < 7; i++) {
+      const f = 88 + i * 21 + Math.random() * 10;
+      const o = tone(t, dur, "sawtooth", f, f * (0.8 + Math.random() * 0.1));
+      const vib = ctx.createOscillator();
+      vib.frequency.value = 2.5 + Math.random() * 3;
+      const amt = gainNode(f * 0.025);
+      vib.connect(amt);
+      amt.connect(o.frequency);
+      vib.start(t);
+      vib.stop(t + dur + 0.05);
+      // an "oo" and an "aa" in it, never quite either
+      for (const [ff, q] of [[420 + i * 25, 5], [780 + i * 45, 6]]) {
+        const bp = ctx.createBiquadFilter();
+        bp.type = "bandpass";
+        bp.frequency.value = ff;
+        bp.Q.value = q;
+        const lv = gainNode(0.6);
+        o.connect(bp);
+        bp.connect(lv);
+        lv.connect(lp);
+      }
+    }
+  },
   // air going up past you, underwater
   bubbles(t, dur = 2.5) {
     const n = Math.round(dur * 14);

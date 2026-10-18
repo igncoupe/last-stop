@@ -439,8 +439,9 @@ async function payphones(g) {
 }
 
 // Over the edge, into the river. The glass cracks, the water comes in through everything, up over the seats, up
-// over your head. The lights die. In the dark behind you, all of them are looking at you. And then something comes
-// up out of the black, toward the windshield, toward you.
+// over your head. The lights die. The doors won't open. Your air is running out. And when you turn round, they're
+// not in their seats any more: they're right behind you, all of them, drifting in the aisle, their faces at yours.
+// Your mother's closest. She reaches for you. Then they all come at once, and there's nothing.
 async function sink(g) {
   const bus = g.bus;
   g.shake(2.6);
@@ -451,6 +452,12 @@ async function sink(g) {
   g.amb({ water: 1, engine: 0 });
   g.sfx("gush", 5);
   g.mood("terror");
+  g.drive.state.speed = 0;
+  // the emergency lamp up over the windshield: soon the only thing lighting their faces (off for now; it's added
+  // here, in the crash, so the moment it comes on doesn't stutter)
+  const lamp = new THREE.PointLight(0x8fd6c4, 0, 8, 2);
+  lamp.position.set(0.35, 2.25, 5.6);
+  bus.group.add(lamp);
   let lv = 0.05;
   let under = false;
   const hull = bus.group;
@@ -465,19 +472,132 @@ async function sink(g) {
   });
   await g.think("It's coming in. Through the doors, through the floor. It's so cold. It's so cold.");
   await rising;
-  g.interior("off");
-  g.sfx("heartbeat", 8, 58);
-  await g.wait(1400);
-  // behind you, in the last of the light, every one of them has turned to look at you
-  for (const k of ["lena", "daniel", "ivy", "d0", "d11", "d12", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8"]) g.actor(k)?.watch(g.camera);
-  g.look(g.backRow());
-  await g.think("They're all looking at me. Every one of them. They're not scared. They've done this before.");
-  await g.wait(1200);
-  // and out there, in the headlights, in the murk: something coming up toward the glass
-  g.look(() => g.bus.group.localToWorld(new THREE.Vector3(0.7, 1.7, 9)));
+  // the lights go. Just the emergency light now, and the hull groaning
+  g.interior("flicker");
+  g.sfx("groan", 4);
+  await g.wait(700);
+  g.interior("dim");
+  g.sfx("heartbeat", 18, 118);
+  g.drowning(true);
+  // the doors: you hit the button, again and again. Nothing.
+  g.look(() => bus.group.localToWorld(new THREE.Vector3(-1.1, 1.3, 4.8)));
+  g.hint("Open the doors  [F]");
+  let tries = 0;
+  let gaveUp = false;
+  g.frames(() => {
+    if (g.keyHit("KeyF")) { tries++; g.sfx("click"); g.sfx("bang"); g.shake(0.9); g.sfx("bubbles", 0.6); }
+    return tries >= 3 || gaveUp;
+  });
+  await g.until(() => tries >= 3, 5000);
+  gaveUp = true;
+  g.hint(null);
+  await g.think("They won't open. They won't open. I can't get out.");
+  // all of them, out of their seats. Floating in the aisle and over the seats behind you, filling the bus back
+  // into the dark, every face turned to yours. Your mother nearest, reaching for you.
+  const order = ["lena", "carmen", "daniel", "d0", "d11", "ivy", "d12", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8"];
+  // bus space: x, z, and how high their face is (yours is at 1.75, right in front of the windshield at z 4.8)
+  const spots = [[0.25, 3.1, 1.74], [-0.2, 3.3, 1.62], [0.0, 2.45, 1.86], [0.8, 2.95, 2.0], [-0.74, 2.9, 1.9],
+    [0.3, 1.85, 1.5], [0.82, 2.15, 2.06], [-0.8, 2.1, 1.96], [-0.2, 1.3, 1.92], [0.9, 1.35, 2.08], [-0.9, 1.25, 2.0],
+    [0.15, 0.55, 1.84], [0.9, 0.45, 2.04], [-0.9, 0.4, 1.96], [-0.05, -0.35, 1.9], [0.5, -1.0, 1.95]];
+  const v = new THREE.Vector3();
+  const eye = bus.group.worldToLocal(g.camera.getWorldPosition(new THREE.Vector3()));
+  const floating = order.map((k) => g.actor(k)).filter(Boolean).map((p, i) => {
+    p.stand();
+    bus.group.attach(p.root);
+    const [x, z, face] = spots[i] || [(Math.random() - 0.5) * 1.6, -1.2 - i * 0.3, 1.9];
+    // limp: knees bent, legs hanging, arms lifted and drifting, leaning toward you
+    const lean = i === 0 ? 0.08 : 0.1 + Math.random() * 0.14;
+    p.root.rotation.set(lean, 0, 0);
+    p.hips.forEach((h) => { h.rotation.x = -0.3 + Math.random() * 0.35; });
+    p.knees.forEach((n) => { n.rotation.x = 0.35 + Math.random() * 0.5; });
+    const arms = p.arms.map((a, j) => {
+      const r = [-0.45 - Math.random() * 0.5, (j ? -1 : 1) * (0.3 + Math.random() * 0.35)];
+      a.rotation.set(r[0], 0, r[1]);
+      return r;
+    });
+    // how high to float them so the face ends up where it should (the little ones lower down)
+    p.root.position.set(x, 0, z);
+    p.root.updateMatrixWorld(true);
+    const headY = bus.group.worldToLocal(p.head.getWorldPosition(v)).y;
+    const base = (p.look.child ? Math.min(face, 1.5) : face) - headY;
+    p.root.position.y = base;
+    p.watch(g.camera);
+    p.slack(true);
+    // when they come for you, they come straight at your eyes (so wherever they are on screen, they just get
+    // bigger). Your mother comes right up to your face; the rest close in behind her, never nearer than 3/4 m.
+    p.root.updateMatrixWorld(true);
+    const toEye = eye.clone().sub(bus.group.worldToLocal(p.head.getWorldPosition(v)));
+    const len = toEye.length();
+    const most = i === 0 ? Math.max(0, 1 - 0.42 / len) : Math.max(0, Math.min(0.45, 1 - 0.75 / len));
+    return { p, from: p.root.position.clone(), toEye, most, arms, k: Math.random() * 6 };
+  });
+  const mom = g.actor("lena");
+  if (mom) mom.reachOut(true);                       // reaching for you
+  let t = 0;
+  let closer = 0;
+  let sinking = true;
+  const drift = g.frames((dt) => {
+    t += dt;
+    // the lamp follows the bus's lights: steady-ish when it's dim, stuttering, or dead
+    const mode = bus.interiorMode;
+    lamp.intensity = mode === "dim" ? (Math.random() < 0.04 ? 0.6 : 3.2) : mode === "flicker" ? (Math.random() < 0.5 ? 0.4 : 3.2) : 0;
+    for (const f of floating) {
+      const r = f.p.root;
+      r.position.copy(f.from).addScaledVector(f.toEye, f.most * closer);
+      r.position.y += Math.sin(t * 0.9 + f.k) * 0.05;
+      r.position.z += Math.sin(t * 0.6 + f.k) * 0.03;
+      r.rotation.z = Math.sin(t * 0.7 + f.k) * 0.06;
+      f.p.arms.forEach((a, j) => {
+        if (j === 1 && f.p.reaching) return;
+        a.rotation.x = f.arms[j][0] + Math.sin(t * 0.8 + f.k + j) * 0.12;
+        a.rotation.z = f.arms[j][1] + Math.sin(t * 0.5 + f.k * 2 + j) * 0.08;
+      });
+    }
+    return !sinking;
+  });
+  const behind = () => bus.group.localToWorld(new THREE.Vector3(0.3, 1.75, 3.2));
+  const facing = () => g.lookingBack() || g.gazing(behind(), 32);
+  g.sfx("knock", 2);                                 // something behind your seat
+  await g.wait(900);
+  g.hint("Turn around");
+  await g.until(facing, 8000);
+  if (!facing()) { g.look(behind); await g.until(facing, 3000); }   // you turn round anyway
+  g.hint(null);
+  g.sfx("sting");
+  g.sfx("moan", 7);
+  g.shake(0.8);
+  await g.wait(1500);
+  await g.think("Mom.");
+  await g.wait(500);
+  // the emergency light dies. In the dark there's just their eyes, all of them, coming closer.
+  // When the light comes back, they're right there.
+  const blackout = async (to, ms) => {
+    g.interior("off");
+    g.sfx("lightsout");
+    g.sfx("bubbles", ms / 1000);
+    floating.forEach((f) => f.p.eyeshine(true));
+    const from = closer;
+    let e = 0;
+    await g.frames((dt) => { e = Math.min(1, e + dt * 1000 / ms); closer = from + (to - from) * e * e; return e >= 1; });
+    floating.forEach((f) => f.p.eyeshine(false));
+    g.interior("dim");
+    g.sfx("click");
+  };
+  await blackout(0.5, 1300);
+  await g.say("voices", "Stay with us.");
+  await g.wait(400);
+  await blackout(1, 800);
+  await g.wait(250);
+  await g.scare("face");
+  // and then there's nothing at all
+  sinking = false;
+  await drift;
+  g.fade(1, 60);
+  g.silence(true);
+  g.drowning(false);
+  await g.wait(200);
+  lamp.removeFromParent();
   await g.wait(1600);
-  await g.scare("drift");
-  g.bus.setHeadlights(false);
-  await g.wait(2600);
-  g.bus.setHeadlights(true);
+  g.silence(false);
+  g.sfx("gasp");
 }

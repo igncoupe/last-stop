@@ -175,7 +175,8 @@ export class Person {
       const brow = add(head, box(0.05, 0.014, 0.012, m(look.brows || look.hair)), s * headW * 0.23, headH * 0.66, faceZ + 0.004);
       brow.rotation.z = s * (F ? -0.12 : 0.05);
     }
-    add(head, box(headW * 0.32, 0.014, 0.01, m(look.lips || shade(look.skin, 0.62))), 0, headH * 0.24, faceZ + 0.002);   // mouth
+    this.mouth = add(head, box(headW * 0.32, 0.014, 0.01, m(look.lips || shade(look.skin, 0.62))), 0, headH * 0.24, faceZ + 0.002);   // mouth
+    this.mouthY = headH * 0.24;
     if (look.glasses) {
       const gm = m(look.glasses);
       for (const s of [-1, 1]) {
@@ -340,6 +341,16 @@ export class Person {
     this.whites.color.set(on ? 0x2a3134 : 0xd8d2c8);          // no whites to their eyes
     if (on) this.skinMat.color.set(0x8c979b);
     return this;
+  }
+  // eyes that catch what little light there is: in the dark, a pale pair of them, looking at you
+  eyeshine(on) { this.eyeMat.emissive?.set(on ? 0x8fd8c6 : this.ghost ? 0x0b1518 : 0x000000); }
+  // the jaw hanging open, the way the drowned look
+  slack(on) {
+    if (!this.mouthShut) this.mouthShut = this.mouth.material;
+    if (!this.mouthOpen) this.mouthOpen = mat({ color: 0x050707 });
+    this.mouth.material = on ? this.mouthOpen : this.mouthShut;
+    this.mouth.scale.set(on ? 0.8 : 1, on ? 3.4 : 1, 1);
+    this.mouth.position.y = this.mouthY - (on ? 0.014 : 0);
   }
   setMirrorOnly(on) {
     this.root.traverse((o) => { if (o.isMesh) o.layers.set(on ? MIRROR_ONLY : 0); });

@@ -604,6 +604,12 @@ export function createDirector(w) {
     },
     // kept for older scripts: same as a face scare
     faceScare() { return g.scare("face"); },
+    // was this key pressed just now (for a scene that wants to know what you tried)
+    keyHit(code) { return w.input.hit(code); },
+    // nothing at all: every sound cut, at once (or back)
+    silence(on) { Sound.setMuted(on || !!settings.muted); },
+    // running out of air: the edges of the view closing in
+    drowning(on) { ui.underwater(true, { drowning: on }); },
     // under the water: the view goes green-black and thick, sound closes down, bubbles go up past you
     underwater(on) {
       ui.underwater(on);

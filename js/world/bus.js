@@ -747,12 +747,13 @@ export function buildBus(scene) {
       if (state.interior === "off") level = Math.random() < 0.01 ? 0.5 : 0;
       if (state.interior === "flicker") level = Math.sin(state.flickerT * 31) > 0.6 || Math.random() < 0.08 ? 0.15 : 1;
       if (state.interior === "red") level = 0.6;
+      if (state.interior === "dim") level = Math.random() < 0.05 ? 0.06 : 0.24;
       interior.forEach((l) => {
         l.intensity = 5 * level;
-        l.color.set(state.interior === "red" ? 0xff2a1a : 0xe6eeff);
+        l.color.set(state.interior === "red" ? 0xff2a1a : state.interior === "dim" ? 0x7fcfbf : 0xe6eeff);
       });
       strips.forEach((s) => s.material.color.set(level > 0.2 ? (state.interior === "red" ? 0xff3a2a : 0xe8f0ff) : 0x202224));
-      dashLight.intensity = state.interior === "off" ? 0.4 : 0.8;
+      dashLight.intensity = state.interior === "off" || state.interior === "dim" ? 0.4 : 0.8;
       // the fog is only as bright as the lights on it; on the door, it folds away with the glass
       for (const p of fogPanes.all) if (p.mesh.visible) p.light(Math.max(0.12, level));
       fogPanes.door.mesh.visible = fogPanes.door.amount > 0.002 && state.doorAmt < 0.04;
