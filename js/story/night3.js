@@ -1,7 +1,7 @@
 // NIGHT 3 — "A storm is coming in off the river."
 // Kindness: comfort Jun (+1), visit Room 4B (+1), let Ivy ride (+1)
 import * as THREE from "three";
-import { STOPS, route } from "../world/route.js";
+import { STOPS, route, LANE, roadY } from "../world/route.js";
 import { curb, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness, teodorGone } from "./common.js";
 
 export async function night3(g) {
@@ -26,8 +26,8 @@ export async function night3(g) {
   await closeDoorsAndGo(g);
 
   // ---------- someone on your tail, leaning on the horn. You let them know what you think of that.
-  await g.until(() => g.d > 70, 30000);
-  if (g.d < STOPS["Elm & 4th"] - 300) await honker(g);
+  await g.until(() => g.d > 30, 30000);
+  if (g.d < STOPS["Elm & 4th"] - 330) await honker(g);
 
   // ---------- Elm & 4th
   if (f.maraHelped) g.spawn("mara", "mara", { at: curb("Elm & 4th", 1), yaw: route.heading(STOPS["Elm & 4th"]) + Math.PI / 2 });
@@ -130,27 +130,25 @@ export async function night3(g) {
   }
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
 
-  // ---------- the radio plays 1994, while you drive to St. Agnes (slowly: the storm's at its worst here, and
-  // the bus won't go faster than this till it's over)
-  g.drive.setLimit(9);
+  // ---------- the radio plays 1994 the moment you pull away from Market, all the way to St. Agnes (whatever's
+  // left of what it does to you, you're still thinking as the bus pulls in at the hospital where she worked)
   const broadcast = (async () => {
-    await g.wait(900);
+    await g.wait(200);
     g.radio("CH 9 ????");
-    g.sfx("static", 1.6);
-    await g.wait(1600);
+    g.sfx("static", 1.0);
+    await g.wait(800);
     await g.say("radio94", "Repeating our top story. At twelve thirty-one this morning, the Ashgrove bridge collapsed during the storm.");
     await g.say("radio94", "A Route 9 city bus was crossing at the time. Divers have recovered fourteen.");
     g.sfx("static", 0.6);
     await g.say("radio94", "The driver, Teodor Varga, fifty-eight, was pulled from the river alive, and is in critical condition at St. Agnes.");
-    await g.say("radio94", "Among the dead, a St. Agnes nurse, Lena Marsh, thirty-one, who leaves behind a four-year-old child.");
-    await g.say("radio94", "Dispatch records show the bus was running eleven minutes behind sched");
+    await g.say("radio94", "Among the dead, a St. Agnes nurse, Lena Marsh, thirty-one, who leaves behind a four-year-old child.", { after: 0 });
     g.sfx("static", 0.4);
     g.radio("CH 9");
     await g.say("rhee", "That's enough of that.");
     f.knowsVarga = true;
     f.knowsMother = true;
     g.mood("grief");
-    await g.wait(1500);
+    await g.wait(500);
     await g.think("Lena Marsh.");
     await g.think("My mother's name was Lena Marsh. I was four.");
     if (f.knowsLena) await g.think("The woman in the shelter. Lena. She looked at me like she knew me. Because she did.");
@@ -171,7 +169,6 @@ export async function night3(g) {
     g.sfx("bell");
   }
   stopped = await g.arrive("St. Agnes");
-  g.drive.setLimit(14);
   await broadcast;
   if (f.maraAboard && stopped && (await openUp(g))) {
     await g.say("mara", "Fourth floor. Room four B. Please.");
@@ -300,12 +297,10 @@ export async function night3(g) {
   if (g.d < 1690) {
     g.amb({ water: 0.9 });
     await g.until(() => g.d > 1700);
-    g.drive.setLimit(5);
     await g.muse("Canal Row is a river now. The water's up to the second step.");
     await g.wait(3000);
     await g.think("In the lightning, there are faces under the water. Looking up.");
     await g.until(() => g.d > 1915);
-    g.drive.setLimit(14);
     g.amb({ water: 0 });
   }
 
@@ -435,8 +430,10 @@ async function ward(g) {
   await g.fade(0, 1000);
 }
 
-// A car comes up behind with its high beams on and sits on your bumper, leaning on the horn. It pulls out and
-// comes up alongside, still honking. You flip them off. Then the light comes on inside it.
+// A car comes up behind with its high beams on and sits on your bumper, leaning on the horn. An old car, filthy,
+// rusted. It pulls out and comes up alongside, still honking. You flip them off. The horn stops, and the light comes
+// on inside it: nobody at the wheel, water to the seats, and a drowned woman in the passenger seat, turning to look
+// at you. You look away, back at the road. She's in the road. Then she's on the glass.
 async function honker(g) {
   const car = g.tailgater();                 // (it drives itself: up behind you, then beside your window)
   const done = () => car.gone || g.d > STOPS["Elm & 4th"] - 110;
@@ -450,25 +447,47 @@ async function honker(g) {
   await g.until(() => car.phase === "beside" || done(), 9000);
   if (done()) return car.leave();
   g.look(() => car.window());
-  await g.wait(700);
-  await g.say("you", "Okay! You want to go around? Go around!");
+  await g.wait(400);
+  await g.say("you", "Okay! You want to go around? Go around!", { after: 100 });
   // you take one hand off the wheel and show them exactly what you think of that
   g.gesture("bird", true);
-  await g.wait(600);
-  await g.say("you", "Yeah. Have a great night.");
+  await g.wait(400);
+  await g.say("you", "Yeah. Have a great night.", { after: 100 });
   // the horn stops. The light comes on inside the car.
   car.quiet();
-  await g.wait(900);
+  await g.wait(800);
   car.domeOn();
   g.sfx("whisper");
-  await g.wait(1300);
-  await g.scare("face");
-  car.leave(true);
-  g.gesture("bird", false);
   g.mood("dread");
+  await g.wait(300);
+  g.gesture("bird", false);
+  await g.think("Oh god. There's nobody driving it.", { after: 100 });
+  // ...and you look away from her, back at the road. (If you can't, the bus makes you.)
+  const ahead = () => g.bus.group.localToWorld(new THREE.Vector3(0.7, 1.6, 14));
+  const roadLeft = () => g.d < STOPS["Elm & 4th"] - 170;
+  const lookedAway = await g.until(() => g.gazing(ahead(), 26) || !roadLeft(), 3500);
+  if (!lookedAway) { g.look(ahead); await g.until(() => g.gazing(ahead(), 26), 2500); }
+  // the car's gone. She's in the road, in the headlights, right in front of you. Then she's on the glass.
+  car.leave(true);
+  const d0 = g.d + 6 + 7;
+  const her = g.spawn("roadwoman", "carwoman", { ghost: true, at: route.at(d0, LANE, roadY(d0)), yaw: route.heading(d0) + Math.PI });
+  her.watch(g.camera);
+  her.reachOut(true);
+  g.sfx("shriek");
+  await g.wait(240);
+  g.despawn("roadwoman");
+  g.sfx("slam");
+  g.sfx("crack");
+  g.bus.setSmudge(2);                        // her hands, and the crack where her head hit
+  const wasDriving = g.drive.state.control === "player";
+  if (wasDriving) g.park();                  // you stand on the brake without meaning to
+  g.sfx("brake");
+  await g.scare("face");
+  if (wasDriving) g.release();
+  g.mood("terror");
   // (said on the way to Elm: the stop never waits on these)
   (async () => {
-    await g.think("There was nobody driving. When the light came on there was nobody behind the wheel. Just a face, coming at the glass.");
+    await g.think("She was in the car. Then she was in the road. Then she was on the glass.");
     await g.think("And the car's gone. Not ahead. Not behind. Just gone.");
     await g.say("rhee", "Both hands on the wheel, driver. You never know who's watching.");
     g.mood("uneasy");

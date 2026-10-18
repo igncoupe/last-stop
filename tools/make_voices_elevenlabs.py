@@ -68,8 +68,9 @@ VOICES = {
     "voices": "A breathy, hushed, eerie whisper, sad and very quiet, like many people whispering at once in the dark.",
     "eddie": "A seventeen-year-old Mexican-American kid from East Los Angeles, a diner dishwasher. A friendly, youthful "
              "light baritone with a clear Mexican-American accent. Talks quickly and cheerfully, a little tired after a double shift.",
-    "dorothy": "An elderly woman in her mid-seventies, a retired schoolteacher. A low, warm, gentle old woman's voice with the soft "
-               "rasp of age. Clear, careful diction, kind and a little amused. American.",
+    "dorothy": "An elderly woman in her mid-seventies, a retired schoolteacher, sitting right beside you. A warm, gentle old woman's "
+               "voice with the soft rasp of age, clear, careful diction, kind and a little amused. American. Recorded close up in a "
+               "quiet room with a studio microphone: full, present and crisp, in person, not on the phone.",
     "frank": "A big man in his early fifties, a mail carrier. A deep, husky baritone with a working-class American accent. "
              "Easygoing and warm, a joker, slightly out of breath.",
     "carmen": "A young Latina woman in her late twenties, a tired young mother looking for her daughter. A soft, warm alto, "

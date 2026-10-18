@@ -410,12 +410,15 @@ export function createDirector(w) {
       // someone already up on the steps (they came to the door to ask) just carries on in
       if (at.distanceTo(step) >= at.distanceTo(outside)) await p.walk([outside], { speed, parent: scene });
       const seatPos = bus.seatSlots[takeSeat(key, seatName)];
-      await p.walk([bus.boardPath[1], bus.boardPath[2]], { speed, parent: bus.group, ground: bus.groundAt });
+      const climbing = p.walk([bus.boardPath[1], bus.boardPath[2]], { speed, parent: bus.group, ground: bus.groundAt });
+      // they're aboard the moment they're on the steps: close the doors and pull away while they're still
+      // walking down the aisle, and you haven't left them behind (they carry on and sit down)
+      boardings++;
+      await climbing;
       Sound.sfx("coin");
       // the last step is up to the seat's own height (seats over the wheels sit on a platform)
       await p.walk([new THREE.Vector3(0, 0.45, seatPos.z + 0.4), new THREE.Vector3(seatPos.x * 0.6, seatPos.y, seatPos.z + 0.1)], { speed, parent: bus.group, ground: bus.groundAt });
       p.sit(bus.group, seatPos, 0);
-      boardings++;
     },
     // get off the bus and walk somewhere (a world position), then vanish
     async alight(key, to = null, { vanish = true, speed = 1.4 } = {}) {

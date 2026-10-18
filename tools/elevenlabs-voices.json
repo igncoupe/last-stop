@@ -66,9 +66,9 @@
    "mxB2k0HOkK2fLYWVua1K"
   ],
   "dorothy": [
-   "R4BcviXMx7zs0zjIEVMH",
-   "Z2VCqvt7OoK7HUPc6qjD",
-   "cM2m6bQcvj5T9lbhyjUs"
+   "7HfoHtsMmKPqk9klFgqX",
+   "QbLr4YRa8QmYztRPYlag",
+   "WTIYBcOhjeT93u0DDrXS"
   ],
   "frank": [
    "GUjcC5WziPx6psfoSujm",
@@ -145,8 +145,8 @@
    "candidate": "r2"
   },
   "dorothy": {
-   "voice_id": "cM2m6bQcvj5T9lbhyjUs",
-   "candidate": "2"
+   "voice_id": "kNVUB1ZKzA7rPuKqpTQO",
+   "candidate": "dorothy_t031_2"
   },
   "frank": {
    "voice_id": "GfQkJDOHn3fJ2AfhZ2Tx",
@@ -200,6 +200,11 @@
    "Fk2Ol9maGgrQ01yJjmsY",
    "zxRPIfLc13s7Hnb3RjQF",
    "irqYdh8okjuRqFGvRcje"
+  ],
+  "dorothy": [
+   "Cbv8Ne1OIvM4B0WK6VCm",
+   "4eex5HovOgJ6BQM3owUe",
+   "0wdDfyQX21ti5vridnx5"
   ]
  }
 }

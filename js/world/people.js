@@ -26,6 +26,8 @@ export const LOOKS = {
   ivy:     { height: 1.15, f: true, build: 0.9, shirt: 0xe0b42a, pants: 0x2c3b4d, skin: 0xbfc3c6, hair: 0x3a2a1a, hairStyle: "pigtails", hood: true, wet: true, child: true, buttons: 0xf2d24a },
   rosie:   { height: 1.7, f: true, build: 0.98, shirt: 0x3b2b2b, pants: 0x1f1d22, skin: 0xd6b096, hair: 0x5a3a22, hairStyle: "long", coat: 0x4a3434 },
   harold:  { height: 1.72, build: 0.9, shirt: 0x6b6f72, pants: 0x3a3d40, skin: 0xa9adb0, hair: 0x7a7a7a, hairStyle: "short", wet: true, cardigan: 0x5a5f62, headset: true, glasses: 0x1a1a1a },
+  // the woman in the car on your tail (night 3)
+  carwoman: { height: 1.64, f: true, build: 0.9, shirt: 0x2a2c30, pants: 0x1c1e22, skin: 0x9aa5a8, hair: 0x0a0a0c, hairStyle: "long", wet: true, lips: 0x3a3a40 },
   // the rest of the fourteen look different every time (see variant()), these are the defaults
   drowned: { height: 1.72, build: 1, shirt: 0x2f3a40, pants: 0x20262a, skin: 0xa7afb3, hair: 0x1d1d1d, hairStyle: "short", wet: true, random: true },
   // five more of the fourteen, the way they were the night they got on
