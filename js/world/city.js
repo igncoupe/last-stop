@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
-import { route, ROAD_HALF, CURB, districtAt, nearCorner, STOPS } from "./route.js";
+import { route, ROAD_HALF, CURB, districtAt, nearCorner, STOPS, roadY, DIP } from "./route.js";
 
 let seed = 4242;
 const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -16,14 +16,37 @@ export function ribbon(d0, d1, off0, off1, y, material, uvTile = [4, 4], step = 
   const idx = [];
   let n = 0;
   for (let d = d0; d <= d1 + 0.01; d += step) {
-    const a = route.at(d, off0, y);
-    const b = route.at(d, off1, y);
+    const yy = typeof y === "function" ? y(d) : y;           // (a function: a height that changes along the road)
+    const a = route.at(d, off0, yy);
+    const b = route.at(d, off1, yy);
     pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
     uv.push(0, d / uvTile[1], (off1 - off0) / uvTile[0], d / uvTile[1]);
     if (n > 0) {
       const i = n * 2;
       idx.push(i - 2, i - 1, i, i - 1, i + 1, i);
     }
+    n++;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return new THREE.Mesh(g, material);
+}
+
+// a vertical face along the road at `off`, from the road surface (wherever it is) up to `top`
+function dropWall(d0, d1, off, top, material, step = 2) {
+  const pos = [];
+  const uv = [];
+  const idx = [];
+  let n = 0;
+  for (let d = d0; d <= d1 + 0.01; d += step) {
+    const a = route.at(d, off, roadY(d) - 0.02);
+    const b = route.at(d, off, top);
+    pos.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    uv.push(d / 2, 0, d / 2, (top - a.y) / 2);
+    if (n > 0) { const i = n * 2; idx.push(i - 2, i - 1, i, i - 1, i + 1, i); }
     n++;
   }
   const g = new THREE.BufferGeometry();
@@ -48,12 +71,33 @@ export function buildCity(scene) {
   // ground, road, sidewalks
   const groundMat = mat({ map: tex.concrete(), color: 0x6a6a6a });
   groundMat.map.repeat.set(400, 400);
+  // the ground has a hole cut in it along the road at Canal Row, where the road sinks below it
+  const dipBox = new THREE.Vector4(Infinity, -Infinity, Infinity, -Infinity);
+  for (let d = DIP.from - 2; d <= DIP.to + 2; d += 4) {
+    for (const side of [-1, 1]) {
+      const p = route.at(d, side * (ROAD_HALF + 0.02), 0);
+      dipBox.set(Math.min(dipBox.x, p.x), Math.max(dipBox.y, p.x), Math.min(dipBox.z, p.z), Math.max(dipBox.w, p.z));
+    }
+  }
+  const ps1Compile = groundMat.onBeforeCompile;
+  groundMat.onBeforeCompile = (shader, r) => {
+    ps1Compile(shader, r);
+    shader.uniforms.uDipBox = { value: dipBox };
+    shader.vertexShader = "varying vec3 vGroundW;\n" + shader.vertexShader.replace("#include <project_vertex>",
+      "#include <project_vertex>\n  vGroundW = (modelMatrix * vec4(transformed, 1.0)).xyz;");
+    shader.fragmentShader = "uniform vec4 uDipBox;\nvarying vec3 vGroundW;\n" + shader.fragmentShader.replace("void main() {",
+      "void main() {\n  if (vGroundW.x > uDipBox.x && vGroundW.x < uDipBox.y && vGroundW.z > uDipBox.z && vGroundW.z < uDipBox.w) discard;");
+  };
+  groundMat.customProgramCacheKey = () => "ps1-ground-dip";
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000, 100, 100), groundMat);   // tiled, so the PS1 wobble stays small
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(600, -0.15, 800);
   group.add(ground);
 
-  group.add(ribbon(-10, L + 20, -ROAD_HALF, ROAD_HALF, 0.0, mat({ map: tex.asphalt() }), [5, 5]));
+  group.add(ribbon(-10, L + 20, -ROAD_HALF, ROAD_HALF, roadY, mat({ map: tex.asphalt() }), [5, 5], 2));
+  // where the road sinks at Canal Row, the sidewalks don't: a concrete edge drops from the curb down to the road
+  const curbFace = mat({ map: tex.concrete(), color: 0x8a8a86, side: THREE.DoubleSide });
+  for (const side of [1, -1]) group.add(dropWall(DIP.from - 2, DIP.to + 2, side * ROAD_HALF, 0.15, curbFace));
   const walk = mat({ map: tex.sidewalk() });
   group.add(ribbon(-10, L + 20, ROAD_HALF, CURB, 0.15, walk, [2, 2]));
   group.add(ribbon(-10, L + 20, -CURB, -ROAD_HALF, 0.15, walk, [2, 2]));
@@ -66,7 +110,7 @@ export function buildCity(scene) {
   const q = new THREE.Quaternion();
   dashes.forEach((d, i) => {
     q.setFromAxisAngle(route.up, route.heading(d));
-    m4.compose(route.at(d, 0, 0.02), q, new THREE.Vector3(1, 1, 1));
+    m4.compose(route.at(d, 0, 0.02 + roadY(d)), q, new THREE.Vector3(1, 1, 1));
     dash.setMatrixAt(i, m4);
   });
   group.add(dash);
@@ -187,7 +231,7 @@ export function buildCity(scene) {
       group.add(g);
       const pool = new THREE.Mesh(poolGeo, poolMat);
       pool.rotation.x = -Math.PI / 2;
-      pool.position.copy(route.at(d, side * (ROAD_HALF - 1.2), 0.03));
+      pool.position.copy(route.at(d, side * (ROAD_HALF - 1.2), 0.03 + roadY(d)));
       group.add(pool);
       // some lamps are dying: they buzz on and off
       const flicky = rand() < 0.16;

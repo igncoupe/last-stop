@@ -10,6 +10,7 @@ export async function night2(g) {
   const doorOutside = () => g.bus.group.localToWorld(g.bus.boardPath[0].clone());
   const terminalDoor = () => g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20));
   g.mood("uneasy");
+  g.flood(true, 0.45);              // the burst water main: Canal Row's flooded all night
   await g.wait(800);
   await g.muse("I barely slept. Every time I closed my eyes I heard dripping.");
   await g.think("Mom took the last bus home every night. That's most of what I remember about her. Her keys in the door, at one in the morning.");
@@ -250,7 +251,6 @@ export async function night2(g) {
   })() : Promise.resolve();
 
   // ---------- Canal Row: the flood
-  g.flood(true, 0.45);
   g.amb({ water: 0.6 });
   g.mood("dread");
   await g.until(() => g.d > 1690);
@@ -349,7 +349,6 @@ export async function night2(g) {
   await g.departed();
   g.hint(null);
   await g.until(() => g.d > 1915);
-  g.flood(false);
   g.amb({ water: 0 });
 
   // ---------- something in the aisle

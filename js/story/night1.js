@@ -1,13 +1,14 @@
 // NIGHT 1 — "Your first run on Route 9."
 // Kindness: wait for Mara (+1), let Jun ride (+1), stop at Canal Row (+1)
 import * as THREE from "three";
-import { STOPS, route, CURB } from "../world/route.js";
+import { STOPS, route, CURB, roadY } from "../world/route.js";
 import { curb, curbAt, flagStop, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness, teodorGone } from "./common.js";
 
 export async function night1(g) {
   const f = g.flags;
   g.mood("calm");
   g.amb({ engine: 0.3, rain: 0, water: 0 });
+  g.flood(true, 0.12);              // water lying in the dip at Canal Row, there all night (it hasn't rained)
   await g.wait(800);
   await g.muse("First night on Route 9. Nobody else wanted the shift.");
   await g.think("I asked for it. I didn't tell them why.");
@@ -236,7 +237,7 @@ export async function night1(g) {
         await g.say("eddie", "Thanks, man. Same time tomorrow. I'll bring you some pie.");
         await g.alight("eddie", null, { vanish: false });
         // round the front of the bus, across the road, to the rail along the water
-        const walk = g.actor("eddie")?.walk([route.at(dropAt + 7, 1.2, 0), curbAt(dropAt + 11, -CURB + 0.8)], { speed: 1.6, parent: g.bus.group.parent });
+        const walk = g.actor("eddie")?.walk([route.at(dropAt + 7, 1.2, roadY(dropAt + 7)), curbAt(dropAt + 11, -CURB + 0.8)], { speed: 1.6, parent: g.bus.group.parent });
         await g.wait(2600);
         await g.think("He walked across the road in front of the bus, toward the canal. Toward the water.");
         await walk;
@@ -255,7 +256,7 @@ export async function night1(g) {
     if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
   }
 
-  // ---------- Canal Row
+  // ---------- Canal Row: it hasn't rained all week, but there's water lying in the dip in the road
   g.amb({ water: 0.25 });
   await g.until(() => g.d > STOPS["Canal Row"] - 140);
   await g.muse("Canal Row. The route sheet says nobody ever gets on here.");

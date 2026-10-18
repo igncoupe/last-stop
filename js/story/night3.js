@@ -10,6 +10,7 @@ export async function night3(g) {
   const terminalDoor = () => g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20));
   g.sky("storm");
   g.storm(true);
+  g.flood(true, 0.55);              // the river's over the road at Canal Row, and it's there all night
   g.mood("uneasy");
   await g.wait(1000);
   await g.muse("The rain is so loud on the depot roof it sounds like applause.");
@@ -297,7 +298,6 @@ export async function night3(g) {
 
   // ---------- Canal Row is a river (only if it's still ahead of you)
   if (g.d < 1690) {
-    g.flood(true, 0.55);
     g.amb({ water: 0.9 });
     await g.until(() => g.d > 1700);
     g.drive.setLimit(5);
@@ -306,7 +306,6 @@ export async function night3(g) {
     await g.think("In the lightning, there are faces under the water. Looking up.");
     await g.until(() => g.d > 1915);
     g.drive.setLimit(14);
-    g.flood(false);
     g.amb({ water: 0 });
   }
 

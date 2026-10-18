@@ -5,7 +5,7 @@ import { mat, glow, box, decal } from "../core/ps1.js";
 import { tex } from "../core/textures.js";
 import { ribbon, radialTexture } from "./city.js";
 import { makeTimeClock, makeNoticeBoard, makeLockers } from "./depotProps.js";
-import { route, STOPS, CURB, LANE } from "./route.js";
+import { route, STOPS, CURB, LANE, ROAD_HALF, DIP, roadY } from "./route.js";
 import { waterMaterial } from "./water.js";
 
 const glass = () => new THREE.MeshLambertMaterial({ color: 0x8aa0b0, transparent: true, opacity: 0.18, depthWrite: false });
@@ -45,15 +45,16 @@ function stopBox(d) {
   const g = new THREE.Group();
   const paint = decal(new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.85 }), 2);
   const fill = decal(new THREE.MeshBasicMaterial({ color: 0xe0b23a, transparent: true, opacity: 0.12, depthWrite: false }), 1);
-  g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE + 1.5, 0.025, fill, [3, 3], 1));
-  g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE - 1.3, 0.03, paint, [1, 1], 1));
-  g.add(ribbon(d - 17, d + 6, LANE + 1.3, LANE + 1.5, 0.03, paint, [1, 1], 1));
-  g.add(ribbon(d - 17, d - 16.7, LANE - 1.5, LANE + 1.5, 0.03, paint, [1, 1], 0.3));
-  g.add(ribbon(d + 5.7, d + 6, LANE - 1.5, LANE + 1.5, 0.03, paint, [1, 1], 0.3));
+  const on = (y) => (dd) => y + roadY(dd);                 // (painted on the road, wherever the road is)
+  g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE + 1.5, on(0.025), fill, [3, 3], 1));
+  g.add(ribbon(d - 17, d + 6, LANE - 1.5, LANE - 1.3, on(0.03), paint, [1, 1], 1));
+  g.add(ribbon(d - 17, d + 6, LANE + 1.3, LANE + 1.5, on(0.03), paint, [1, 1], 1));
+  g.add(ribbon(d - 17, d - 16.7, LANE - 1.5, LANE + 1.5, on(0.03), paint, [1, 1], 0.3));
+  g.add(ribbon(d + 5.7, d + 6, LANE - 1.5, LANE + 1.5, on(0.03), paint, [1, 1], 0.3));
   const word = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.3), decal(new THREE.MeshBasicMaterial({ map: tex.sign("BUS\nSTOP", { bg: "rgba(0,0,0,0)", fg: "#e0b23a", w: 64, h: 32, font: 13 }), transparent: true, depthWrite: false }), 2));
   word.rotation.set(-Math.PI / 2, 0, 0, "YXZ");
   word.rotation.y = route.heading(d) + Math.PI;
-  word.position.copy(route.at(d - 3, LANE, 0.035));
+  word.position.copy(route.at(d - 3, LANE, 0.035 + roadY(d - 3)));
   g.add(word);
   return g;
 }
@@ -165,18 +166,20 @@ export function buildProps(scene) {
   scene.add(rails);
   scene.add(ribbon(1565, 2040, -CURB + 0.15, -CURB + 0.25, 1.1, mat({ color: 0x3b3f45 }), [1, 1], 2));
 
-  // ---- flood over the road at Canal Row: brown river water over the asphalt, the road just showing through
-  // at the edges where it's shallow
-  const floodMat = decal(waterMaterial({ deep: 0x14140e, horizon: 0x2a2218, scale: 1.3, chop: 1.1, murk: 0.45, opacity: 0.95 }), 3);
-  const flood = ribbon(1690, 1915, -CURB - 0.5, CURB + 0.5, 0.2, floodMat, [5, 5], 2);
+  // ---- the flood at Canal Row: brown river water lying in the dip in the road. It's flat, and the road slopes
+  // down into it, so it begins where the road goes under, the way a flood really does. (A sheet the width of the
+  // road between the curb walls; where the road's higher than the water, the road hides it.)
+  const floodMat = waterMaterial({ deep: 0x14140e, horizon: 0x2a2218, scale: 1.3, chop: 1.1, murk: 0.45, opacity: 0.95 });
+  const flood = ribbon(DIP.from, DIP.to, -ROAD_HALF - 0.03, ROAD_HALF + 0.03, 0, floodMat, [5, 5], 2);
   flood.visible = false;
   scene.add(flood);
   let level = 0.2;
   props.flood = {
     mesh: flood,
-    set(on, lv = 0.2) { level = lv; flood.visible = on; flood.position.y = lv - 0.2; },
+    // lv: how deep it is at the bottom of the dip, roughly (0.45 is up to the bus's second step)
+    set(on, lv = 0.2) { level = lv; flood.visible = on; flood.position.y = -DIP.depth + lv * 0.75; },
     update() {},
-    covers: (d) => flood.visible && d > 1690 && d < 1915,
+    covers: (d) => flood.visible && roadY(d) < flood.position.y,
   };
   void level;
 

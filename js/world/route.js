@@ -97,3 +97,12 @@ export const DISTRICTS = [
   { from: 2460, to: 99999, kind: "terminal" },
 ];
 export const districtAt = (d) => DISTRICTS.find((z) => d >= z.from && d < z.to).kind;
+
+// The low stretch of road at Canal Row, beside the canal: it slopes down, runs flat along the bottom past the
+// stop, and climbs out again. When the river's up, this is where the water collects.
+export const DIP = { from: 1650, down: 1700, up: 1905, to: 1955, depth: 0.6 };
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+// how far below the usual road level the road is, d meters along the route
+export const roadDip = (d) => DIP.depth * smooth(DIP.from, DIP.down, d) * (1 - smooth(DIP.up, DIP.to, d));
+// the height of the road surface
+export const roadY = (d) => -roadDip(d);

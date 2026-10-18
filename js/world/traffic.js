@@ -8,7 +8,7 @@
 //   parked   - stopped on the far side, hazards on, door open, empty. Its horn goes off as you pass.
 import * as THREE from "three";
 import { mat, glow, box } from "../core/ps1.js";
-import { route, LANE, ROAD_HALF, STOPS, nearCorner } from "./route.js";
+import { route, LANE, ROAD_HALF, STOPS, nearCorner, roadY } from "./route.js";
 
 const PAINT = [0x2b3442, 0x4a1f1f, 0x8a8370, 0x3a3d40, 0x1f2a22, 0x5a5048, 0x6b6b70];
 const put = (parent, mesh, x, y, z) => { mesh.position.set(x, y, z); parent.add(mesh); return mesh; };
@@ -136,7 +136,7 @@ export function createTraffic(scene, sfx) {
     place(c);
   }
   function place(c) {
-    c.g.position.copy(route.at(c.d, c.lateral, 0));
+    c.g.position.copy(route.at(c.d, c.lateral, roadY(c.d)));
     // facing the other way down the road (the one on your tail goes your way)
     c.g.rotation.set(0, route.heading(c.d) + (c.mode === "tail" ? 0 : Math.PI), 0);
   }

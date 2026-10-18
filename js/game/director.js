@@ -7,7 +7,7 @@ import { Sound } from "../audio.js";
 import { CAST, spoken, lineId } from "../story/cast.js";
 import { Person } from "../world/people.js";
 import { makeStoryProp } from "../world/storyProps.js";
-import { route, STOPS, LANE } from "../world/route.js";
+import { route, STOPS, LANE, roadY } from "../world/route.js";
 
 // a glowing arrow (with a light beam) that bobs over wherever you need to go
 function makeMarker() {
@@ -725,7 +725,7 @@ export function createDirector(w) {
   // standing in the road ahead, only there for the length of a lightning flash
   g.shadeFlash = async (ahead) => {
     w.traffic.hold(12);
-    shade.standAt(route.at(drive.d + 6 + ahead, LANE, 0), camPos());
+    shade.standAt(route.at(drive.d + 6 + ahead, LANE, roadY(drive.d + 6 + ahead)), camPos());
     w.lightning();
     setTimeout(() => Sound.sfx("thunder"), 300 + Math.random() * 500);
     await g.wait(260);
@@ -765,7 +765,7 @@ export function createDirector(w) {
     w.traffic.hold(30);
     const nose = () => drive.d + 6;
     const d0 = nose() + ahead;
-    shade.crouchAt(route.at(d0, LANE, 0), bus.group.localToWorld(new THREE.Vector3(0, 1.6, 6)));
+    shade.crouchAt(route.at(d0, LANE, roadY(d0)), bus.group.localToWorld(new THREE.Vector3(0, 1.6, 6)));
     Sound.sfx("rise", 2.4);
     let still = 0;
     await until((dt) => {

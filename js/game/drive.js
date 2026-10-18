@@ -1,7 +1,7 @@
 // Driving the bus along Route 9. The road steers for you; you handle the
 // gas (W), the brake (S) and the doors. Scripts can take the wheel.
 import * as THREE from "three";
-import { route, LANE } from "../world/route.js";
+import { route, LANE, roadY } from "../world/route.js";
 
 export const MAX_SPEED = 14;      // m/s (about 31 mph)
 const ACCEL = 2.4;
@@ -35,9 +35,11 @@ export function createDrive(bus) {
   const pos = new THREE.Vector3();
 
   function place() {
-    pos.copy(route.at(s.d, LANE, 0));
+    pos.copy(route.at(s.d, LANE, roadY(s.d)));
     bus.group.position.copy(pos);
-    bus.group.rotation.set(s.pitch, route.heading(s.d), s.roll, "YXZ");
+    // nose down going into the dip at Canal Row, nose up coming out
+    const slope = Math.atan((roadY(s.d - 3) - roadY(s.d + 3)) / 6);
+    bus.group.rotation.set(s.pitch + slope, route.heading(s.d), s.roll, "YXZ");
   }
   place();
 
