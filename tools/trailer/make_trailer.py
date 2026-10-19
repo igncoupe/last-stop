@@ -4,7 +4,7 @@
 
 RAW_DIR holds one folder of PNG frames per shot (960x540, 60 fps), audio/*.wav (48 kHz) and text/*.png (1920x1080
 overlays). Out comes 1920x1080, 60 fps, H.264 (High, BT.709) + AAC 48 kHz stereo, faststart: what Steam asks for.
-No jumpscares in it: the scares are the game's to show you.
+81 seconds, told in order: 1994, tonight, what goes wrong, who they are, the choice. No jumpscares in it.
 """
 import argparse
 import math
@@ -20,159 +20,145 @@ SR = 48000
 
 # ---------------------------------------------------------------- the cut
 FPS = 60
-END = 122.5
+END = 81.0
 
-# shots: (start, end, what, options). what: a shot's folder of frames, or "black". Options: src (first frame),
-# fin/fout (fade from/to whatever is under it, in seconds), text/tin/tout (a card's words, and their fades).
-# Shots that overlap are mixed: the later one fades in over the earlier (a crossfade); a gap is black.
+# The story, in order: 1994, the tape (the driver asks to wait out the storm; dispatch says make up the time), the
+# bridge, fourteen drowned. Tonight: the new driver, the two rules, a stop that shouldn't exist, the drowned at the
+# shelter (they just want a ride home). Things get worse. Then who they are: his mother was one of them. Then it
+# happens again (make up the time), and the choice: stop for them.
 CUT = [
-    (1.6, 6.0, "s_storm_ext", {"src": 0, "fin": 1.2, "fout": 0.7}),
-    (6.2, 8.8, "black", {"text": "card_route9", "tin": 0.5, "tout": 0.6}),
-    (9.0, 14.3, "n1_oldman", {"src": 0, "fin": 0.7}),
-    (13.9, 18.9, "n_display", {"src": 0, "fin": 0.4, "fout": 0.6}),
-    (19.3, 22.0, "black", {"text": "card_stop", "tin": 0.5, "tout": 0.6}),
-    (22.2, 27.7, "n2_shelter_close", {"src": 0, "fin": 0.9}),
-    (27.2, 32.2, "n2_lena_door", {"src": 0, "fin": 0.5, "fout": 0.6}),
-    (32.8, 38.2, "s_fog", {"src": 150, "fin": 0.6}),
-    (37.8, 43.9, "s_honk2", {"src": 760, "fin": 0.5}),
-    (43.6, 48.2, "s_honk2_close", {"src": 1112, "fin": 0.3, "fout": 0.9}),
-    (48.8, 52.9, "n3_teodor_bed", {"src": 0, "fin": 0.8}),
-    (52.4, 58.6, "n3_window_fog", {"src": 300, "fin": 0.5, "fout": 0.6}),
-    (59.0, 62.4, "s_board", {"src": 20, "fin": 0.6}),
-    (62.0, 66.5, "s_board", {"src": 440, "fin": 0.4}),
-    (66.1, 75.4, "s_mom_behind", {"src": 20, "fin": 0.5, "fout": 0.5}),
-    (75.6, 79.6, "s_bridge_ext", {"src": 300, "fin": 0.3, "lift": 1.15}),
-    (79.3, 82.9, "s_wreck_wide", {"src": 0, "fin": 0.3, "lift": 1.6}),
-    (82.55, 88.55, "s_plunge", {"src": 30, "fin": 0.35, "lift": 1.15}),
-    (88.0, 92.5, "s_flood_in", {"src": 0, "fin": 0.4}),
-    (92.2, 95.7, "s_doors", {"src": 0, "fin": 0.3}),
-    (95.4, 104.88, "s_turn", {"src": 20, "fin": 0.4}),
-    (107.6, 111.6, "n5_fourteen", {"src": 0, "fin": 1.2, "fout": 0.9}),
-    (111.8, 117.8, "black", {"text": "title", "tin": 1.2}),
+    (0.8, 11.3, "s_bridge_drive", {"src": 0, "fin": 0.9, "lift": 1.15}),
+    (11.0, 14.6, "s_wreck_wide", {"src": 0, "fin": 0.3, "fout": 0.5, "lift": 1.6}),
+    (14.5, 18.6, "s_storm_ext", {"src": 40, "fin": 0.6, "lift": 1.15}),
+    (18.4, 23.4, "n1_oldman", {"src": 0, "fin": 0.5}),
+    (23.2, 27.6, "n_display", {"src": 40, "fin": 0.4}),
+    (27.4, 32.4, "n2_shelter_close", {"src": 20, "fin": 0.5}),
+    (32.2, 35.3, "n2_lena_door", {"src": 50, "fin": 0.5}),
+    (35.1, 37.3, "s_fog", {"src": 260, "fin": 0.15}),
+    (37.1, 39.95, "s_honk4", {"src": 845, "fin": 0.15}),
+    (39.8, 42.25, "s_honk4_close", {"src": 1150, "fin": 0.15}),
+    (42.1, 44.75, "n3_window_fog", {"src": 470, "fin": 0.15}),
+    (44.6, 48.6, "s_board", {"src": 440, "fin": 0.3}),
+    (48.4, 55.9, "s_mom_behind", {"src": 20, "fin": 0.4, "fout": 0.3}),
+    (55.7, 58.2, "s_bridge_drive", {"src": 742, "fin": 0.3, "lift": 1.15}),
+    (58.0, 62.6, "s_plunge", {"src": 60, "fin": 0.3, "lift": 1.15}),
+    (62.4, 64.6, "s_doors", {"src": 0, "fin": 0.3}),
+    (64.4, 70.2, "s_turn", {"src": 80, "fin": 0.35}),
+    (72.5, 75.6, "n5_fourteen", {"src": 0, "fin": 0.8, "fout": 0.6}),
+    (75.6, 78.9, "black", {"text": "title", "tin": 0.6, "flicker": True}),
 ]
 
-# words on screen: (from, to, png in text/). Subtitles start when the voice does and stay a beat after.
 OVERLAYS = [
-    (2.30, 7.90, "s_rhee_evening_full"),
-    (9.30, 14.20, "s_rhee_rules"),
-    (14.40, 20.70, "s_you_display"),
-    (22.60, 27.70, "s_mara_ride"),
-    (28.10, 31.80, "s_lena_met"),
-    (32.20, 33.70, "s_voices_came"),
-    (39.22, 42.30, "s_you_fu"),
-    (43.90, 48.20, "s_you_nobody"),
-    (50.00, 51.50, "s_old_late"),
-    (53.00, 58.60, "s_old_radio"),
-    (59.80, 65.10, "s_you_doors"),
-    (71.20, 72.50, "s_lena_grew"),
-    (73.50, 74.60, "s_you_mom"),
-    (75.90, 79.00, "s_rhee_eleven"),
-    (79.50, 82.30, "s_rhee_make"),
-    (82.50, 84.80, "s_rhee_faster"),
-    (88.40, 93.10, "s_you_coming3"),
-    (93.40, 96.70, "s_you_comeon2"),
-    (102.70, 104.60, "s_voices_stay"),
-    (106.40, 107.90, "s_lena_hi"),
-    (108.80, 111.40, "card_stopfor"),
-    (114.00, 117.80, "wishlist"),
-    (118.20, 121.70, "s_rhee_tomorrow"),
+    (1.3, 6.4, "cap_1994"),
+    (1.4, 6.3, "s_t94_river"),
+    (6.5, 11.5, "s_r94_neg"),
+    (11.9, 14.3, "s_radio_14"),
+    (15.0, 18.0, "cap_tonight"),
+    (15.1, 20.6, "s_rhee_evening_full"),
+    (20.7, 25.5, "s_rhee_rules"),
+    (25.6, 30.1, "s_you_display2"),
+    (30.3, 35.4, "s_mara_ride"),
+    (37.5, 40.5, "s_you_fu"),
+    (40.6, 42.1, "s_you_nobody3"),
+    (42.4, 44.9, "s_old_listened"),
+    (45.0, 52.6, "s_radio_lena"),
+    (53.2, 54.5, "s_lena_grew"),
+    (54.9, 55.8, "s_you_mom"),
+    (56.0, 58.75, "s_rhee_make"),
+    (62.8, 65.3, "s_you_comeon"),
+    (69.4, 71.1, "s_voices_stay"),
+    (71.6, 73.0, "s_lena_hi"),
+    (73.2, 75.4, "card_stopfor"),
+    (76.8, 78.9, "wishlist"),
+    (79.2, 80.9, "s_rhee_seeyou"),
 ]
-FADE_TEXT = {"card_stopfor": 0.5, "wishlist": 0.6}
+FADE_TEXT = {"cap_1994": 0.6, "cap_tonight": 0.6, "card_stopfor": 0.5, "wishlist": 0.5}
 
-# sound: (at, wav in audio/, gain dB, options). A voice line's `at` is when the voice starts (silence before it is
-# trimmed). Options: cut=(from, to) seconds into the file (always in the quiet between words), fin/fout fades,
-# loop=seconds to fill (crossfaded), bus = vo | music | amb | sfx
 V = {"bus": "vo"}
 SOUND = [
-    # the street, the storm, the first night
-    (0.30, "amb_rain", -3, {"loop": 21.0, "fin": 2.0, "fout": 1.5, "bus": "amb"}),
-    (1.40, "sfx_static", -9, {"cut": (0.1, 1.2)}),
-    (2.20, "amb_rain_engine", -4, {"cut": (2.0, 8.0), "fin": 1.5, "fout": 1.5, "bus": "amb"}),
-    (2.30, "vo_018b35f7", 0, V),
-    (6.20, "sfx_bang", -10, {}),
-    (6.20, "mood_uneasy", -3, {"loop": 15.5, "fin": 1.5, "fout": 2.5, "bus": "music"}),
-    (9.30, "vo_2383af51", 0, {"cut": (3.1, 8.19), "bus": "vo"}),
-    (13.95, "sfx_static", -12, {"cut": (0.1, 0.7)}),
-    (14.40, "vo_3e6533b0", 0, V),
-    (19.30, "sfx_bang", -10, {}),
-    # the shelter, Mom at the doors, the fog
-    (20.50, "mood_dread", -2, {"loop": 55.2, "fin": 2.5, "fout": 0.6, "bus": "music"}),
-    (22.00, "amb_rain", -7, {"loop": 16.0, "fin": 0.8, "fout": 0.6, "bus": "amb"}),
-    (22.60, "vo_97309180", 0, V),
-    (28.10, "vo_07c2370f", 0, V),
-    (29.50, "sfx_whisper", -6, {}),
-    (32.20, "vo_6fd90922", 0, V),
-    (33.30, "sfx_squeak", -5, {}),
-    (35.50, "sfx_squeak", -9, {"cut": (0.1, 2.5)}),
-    # the car
-    (37.80, "amb_rain_engine", -6, {"cut": (2.0, 8.5), "fin": 0.4, "fout": 0.4, "bus": "amb"}),
-    (37.95, "sfx_horn", -5, {"cut": (0.1, 1.5)}),
-    (39.22, "vo_83a0fb23", 0, V),
-    (43.60, "sfx_rise", -7, {}),
-    (43.90, "vo_e9e244bf", 0, V),
-    # St. Agnes, 4B
-    (48.90, "sfx_beeps", -11, {"cut": (0.1, 4.0)}),
-    (50.00, "vo_c8b7b688", 0, V),
-    (52.60, "sfx_squeak", -8, {"cut": (0.1, 3.0)}),
-    (53.00, "vo_e19a942e", 0, V),
-    (55.30, "sfx_squeak", -10, {"cut": (0.1, 2.0)}),
-    # they get on; Mom
-    (59.00, "sfx_door", -9, {}),
-    (59.80, "vo_0cfa0f8e", 0, V),
-    (66.00, "amb_rain", -13, {"loop": 9.4, "fin": 1.0, "fout": 0.5, "bus": "amb"}),
-    (66.20, "sfx_breath", -8, {}),
-    (67.40, "sfx_heartbeat", -11, {}),
-    (66.80, "sfx_drip", -6, {}),
-    (68.60, "sfx_drip", -8, {}),
-    (71.20, "vo_4518468c", 0, V),
-    (73.50, "vo_9298e7e3", 0, V),
-    (73.70, "sfx_rise", -5, {"cut": (0.0, 3.0)}),
-    # the bridge
-    (75.60, "mood_terror", -3, {"loop": 29.3, "fin": 0.6, "fout": 0.05, "bus": "music"}),
-    (75.60, "amb_rain", -6, {"loop": 7.0, "fin": 0.2, "fout": 0.6, "bus": "amb"}),
-    (75.90, "vo_ce82045a", 0, V),
-    (78.70, "sfx_thunder", -5, {}),
-    (79.50, "sfx_sting", -2, {}),
-    (79.55, "sfx_thunder", -1, {}),
-    (79.50, "sfx_slam", -4, {}),
-    (79.50, "vo_e5be74f8", 2, V),
-    (82.55, "sfx_ignition", -6, {}),
-    (82.50, "vo_8937e20f", 0, {"cut": (0.0, 2.2), "bus": "vo"}),
-    (83.58, "sfx_scrape", -2, {}),
-    (83.58, "sfx_bang", -5, {}),
-    (84.05, "sfx_thunder", -5, {}),
-    (84.55, "sfx_plunge", 0, {}),
-    (84.55, "sfx_slam", -5, {}),
-    (84.85, "sfx_gush", -4, {}),
-    (85.35, "sfx_splash", -7, {}),
-    # under
-    (88.00, "amb_underwater", 0, {"loop": 16.9, "fin": 0.4, "fout": 0.05, "bus": "amb"}),
-    (88.00, "sfx_gush", -3, {}),
-    (88.40, "vo_c8838305", 0, {"cut": (0.0, 5.2), "bus": "vo"}),
-    (92.70, "sfx_bang", -2, {}),
-    (93.00, "sfx_heartbeat", -4, {}),
-    (93.30, "sfx_bang", -2, {}),
-    (93.40, "vo_2b0a3f5c", 0, {"cut": (0.0, 3.73), "bus": "vo"}),
-    (93.90, "sfx_bang", -2, {}),
-    (95.30, "sfx_knock", -4, {}),
-    (97.50, "sfx_sting", -6, {}),
-    (97.50, "sfx_moan", 0, {"cut": (1.0, 6.5)}),
-    (101.15, "sfx_lightsout", 0, {}),
-    (101.15, "sfx_bubbles", -4, {}),
-    (102.48, "sfx_click", -4, {}),
-    (102.70, "vo_4f1ccf4b", 2, V),
-    (104.55, "sfx_lightsout", 0, {}),
-    # after
-    (106.40, "vo_6d286338", 0, V),
-    (107.40, "mood_grief", 1, {"loop": 9.5, "fin": 1.8, "fout": 2.5, "bus": "music"}),
-    (107.40, "amb_rain", -8, {"loop": 12.0, "fin": 1.5, "fout": 1.0, "bus": "amb"}),
-    (111.80, "sfx_thunder", 2, {}),
-    (111.80, "sfx_slam", -3, {}),
-    (118.20, "vo_755b438a", 0, V),
-    (121.90, "sfx_static", -8, {"cut": (0.1, 0.35)}),
+    # 1994: the storm, the tape, the bridge
+    (0.20, "sfx_static", -9, {"cut": (0.1, 1.2)}),
+    (0.40, "amb_rain", -4, {"loop": 14.4, "fin": 1.5, "fout": 0.6, "bus": "amb"}),
+    (0.60, "mood_dread", -6, {"loop": 14.0, "fin": 2.0, "fout": 0.8, "bus": "music"}),
+    (0.80, "amb_rain_engine", -8, {"cut": (2.0, 8.0), "loop": 10.5, "fin": 1.0, "fout": 1.0, "bus": "amb"}),
+    (1.40, "vo_ec7960bf", 0, {"cut": (2.2, 7.25), "bus": "vo"}),
+    (4.90, "sfx_thunder", -6, {}),
+    (6.50, "vo_b861e563", 0, V),
+    (10.90, "sfx_thunder", -3, {}),
+    (11.05, "sfx_sting", -5, {}),
+    (11.90, "vo_a7325815", 0, {"cut": (3.2, 5.97), "bus": "vo"}),
+    (14.60, "sfx_thunder", -6, {}),
+    # tonight
+    (14.50, "amb_rain_engine", -5, {"cut": (2.0, 7.0), "fin": 0.6, "fout": 1.0, "bus": "amb"}),
+    (14.50, "mood_uneasy", -3, {"loop": 20.8, "fin": 1.0, "fout": 0.5, "bus": "music"}),
+    (15.10, "vo_018b35f7", 0, V),
+    (18.40, "amb_rain", -7, {"loop": 17.0, "fin": 1.0, "fout": 0.4, "bus": "amb"}),
+    (20.70, "vo_2383af51", 0, {"cut": (3.1, 8.19), "bus": "vo"}),
+    (23.25, "sfx_static", -12, {"cut": (0.1, 0.7)}),
+    (25.60, "vo_3e6533b0", 0, {"cut": (1.4, 6.22), "bus": "vo"}),
+    (30.00, "sfx_whisper", -8, {}),
+    (30.30, "vo_97309180", 0, V),
+    # it gets worse
+    (35.10, "sfx_sting", -5, {}),
+    (35.10, "mood_terror", -2, {"loop": 9.5, "fin": 0.2, "fout": 0.5, "bus": "music"}),
+    (35.10, "sfx_heartbeat", -6, {}),
+    (35.30, "sfx_squeak", -6, {"cut": (0.1, 2.0)}),
+    (37.10, "sfx_bang", -8, {}),
+    (37.10, "amb_rain_engine", -7, {"cut": (2.0, 7.5), "fin": 0.2, "fout": 0.3, "bus": "amb"}),
+    (37.15, "sfx_horn", -6, {"cut": (0.1, 1.4)}),
+    (37.50, "vo_83a0fb23", 0, V),
+    (39.80, "sfx_bang", -8, {}),
+    (39.80, "sfx_rise", -8, {"cut": (0.0, 2.5)}),
+    (40.60, "vo_e9e244bf", 0, {"cut": (3.0, 4.77), "bus": "vo"}),
+    (42.10, "sfx_bang", -8, {}),
+    (42.20, "sfx_squeak", -8, {"cut": (0.1, 2.4)}),
+    (42.40, "vo_e19a942e", 0, {"cut": (3.4, 6.22), "bus": "vo"}),
+    # who they are
+    (44.60, "mood_grief", 0, {"loop": 11.3, "fin": 0.6, "fout": 0.5, "bus": "music"}),
+    (44.60, "sfx_door", -9, {}),
+    (45.00, "vo_37120f0c", 0, V),
+    (48.40, "amb_rain", -13, {"loop": 7.5, "fin": 0.8, "fout": 0.4, "bus": "amb"}),
+    (49.00, "sfx_heartbeat", -12, {}),
+    (53.20, "vo_4518468c", 0, V),
+    (54.90, "vo_9298e7e3", 0, V),
+    # and it happens again
+    (55.70, "mood_terror", -3, {"loop": 14.5, "fin": 0.3, "fout": 0.05, "bus": "music"}),
+    (55.70, "amb_rain_engine", -6, {"cut": (2.0, 8.0), "fin": 0.3, "fout": 0.5, "bus": "amb"}),
+    (56.00, "sfx_sting", -2, {}),
+    (56.00, "sfx_slam", -4, {}),
+    (56.00, "vo_e5be74f8", 2, V),
+    (56.10, "sfx_thunder", -2, {}),
+    (58.00, "sfx_ignition", -7, {}),
+    (58.58, "sfx_scrape", -2, {}),
+    (58.58, "sfx_bang", -5, {}),
+    (59.10, "sfx_thunder", -5, {}),
+    (59.55, "sfx_plunge", 0, {}),
+    (59.55, "sfx_slam", -5, {}),
+    (59.85, "sfx_gush", -4, {}),
+    (60.35, "sfx_splash", -7, {}),
+    (62.40, "amb_underwater", 0, {"loop": 7.8, "fin": 0.3, "fout": 0.05, "bus": "amb"}),
+    (62.40, "sfx_gush", -4, {}),
+    (62.60, "sfx_heartbeat", -4, {}),
+    (62.80, "vo_2b0a3f5c", 0, {"cut": (0.0, 2.95), "bus": "vo"}),
+    (62.90, "sfx_bang", -2, {}),
+    (63.50, "sfx_bang", -2, {}),
+    (64.10, "sfx_bang", -2, {}),
+    (64.60, "sfx_knock", -5, {}),
+    (65.60, "sfx_sting", -6, {}),
+    (65.60, "sfx_moan", 0, {"cut": (1.0, 5.5)}),
+    (69.15, "sfx_lightsout", 0, {}),
+    (69.15, "sfx_bubbles", -4, {}),
+    (69.40, "vo_4f1ccf4b", 2, V),
+    # stop for them
+    (71.40, "mood_grief", 1, {"loop": 9.6, "fin": 1.5, "fout": 1.5, "bus": "music"}),
+    (71.60, "vo_6d286338", 0, V),
+    (72.30, "amb_rain", -9, {"loop": 8.7, "fin": 1.5, "fout": 1.2, "bus": "amb"}),
+    (75.60, "sfx_thunder", 2, {}),
+    (75.60, "sfx_slam", -3, {}),
+    (79.20, "vo_755b438a", 0, {"cut": (1.5, 3.41), "bus": "vo"}),
+    (80.70, "sfx_static", -8, {"cut": (0.1, 0.35)}),
 ]
-# everything goes quiet, all at once: (from, to)
-SILENCE = [(104.88, 106.0)]
+SILENCE = []
 
 
 # ---------------------------------------------------------------- picture
@@ -263,7 +249,10 @@ def picture(t, fr):
             layer = up(grade(fr.shot(what, i), o.get("lift", 1.0)))
         frame = frame * (1 - k) + layer * k
         if o.get("text"):
-            put(frame, fr.overlay(o["text"]), fade_k(t, start, end - start, o.get("tin", 0), o.get("tout", 0)))
+            a = fade_k(t, start, end - start, o.get("tin", 0), o.get("tout", 0))
+            if o.get("flicker") and t - start < 0.56:
+                a = [1, 0, 1, 0.15, 1, 0.5, 1][int((t - start) / 0.08)]
+            put(frame, fr.overlay(o["text"]), a)
     for a, b, name in OVERLAYS:
         if a <= t < b:
             f = FADE_TEXT.get(name, 0.15)

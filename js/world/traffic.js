@@ -37,7 +37,7 @@ function carModel({ old = false } = {}) {
   const dark = mat({ color: 0x0c0d0f });
   const chrome = mat({ color: old ? 0x6a6458 : 0xb8bcc0 });
   const trimMat = mat({ color: 0x16171a });
-  const glass = new THREE.MeshLambertMaterial({ color: old ? 0x26322c : 0x1a2229, transparent: true, opacity: old ? 0.48 : 0.4, depthWrite: false, side: THREE.DoubleSide });
+  const glass = new THREE.MeshLambertMaterial({ color: old ? 0x3a4a44 : 0x1a2229, transparent: true, opacity: old ? 0.24 : 0.4, depthWrite: false, side: THREE.DoubleSide });
   const W = 0.88;                                   // half width
   // the body, from the side: bumpers, hood, beltline, trunk, with an arch over each wheel
   const WZ = 1.36, AR = 0.4;
@@ -55,8 +55,17 @@ function carModel({ old = false } = {}) {
   side.lineTo(2.16, 0.77);
   side.lineTo(2.27, 0.56);
   side.closePath();
-  const bodyGeo = new THREE.ExtrudeGeometry(side, { depth: W * 2, bevelEnabled: false, curveSegments: 10 }).rotateY(-Math.PI / 2).translate(W, 0, 0);
-  g.add(new THREE.Mesh(bodyGeo, paint));
+  // hollow, like a real car: the two sides (with the wheel arches), the hood and the trunk across the width, and a
+  // floor. The cabin between them is open down to the floor, so the seats, and whoever's in them, are really there.
+  const shell = (shape, depth, x) => g.add(new THREE.Mesh(
+    new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 10 }).rotateY(-Math.PI / 2).translate(x, 0, 0), paint));
+  shell(side, 0.05, W);
+  shell(side, 0.05, -W + 0.05);
+  const outline = (pts) => { const sh = new THREE.Shape(); sh.moveTo(...pts[0]); pts.slice(1).forEach((q) => sh.lineTo(...q)); sh.closePath(); return sh; };
+  shell(outline([[1.12, 0.72], [1.76, 0.72], [1.76, 0.3], [2.22, 0.3], [2.27, 0.56], [2.16, 0.77], [1.15, 0.87], [1.12, 0.87]]), W * 2 - 0.1, W - 0.05);
+  shell(outline([[-1.5, 0.72], [-1.76, 0.72], [-1.76, 0.3], [-2.22, 0.3], [-2.27, 0.56], [-2.18, 0.84], [-1.5, 0.89]]), W * 2 - 0.1, W - 0.05);
+  put(g, box(W * 2 - 0.1, 0.06, 2.62, paint), 0, 0.33, -0.19);                       // the floor pan
+  put(g, box(W * 2 - 0.1, 0.03, 0.25, trimMat), 0, 0.88, -1.38);                     // the parcel shelf
   // the greenhouse: glass all round, a roof, and the pillars
   const cab = new THREE.Shape();
   cab.moveTo(1.12, 0.87);
@@ -107,8 +116,8 @@ function carModel({ old = false } = {}) {
   const hazardMat = glow(0xffa32a);
   const hazards = [];
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) hazards.push(put(g, box(0.1, 0.07, 0.05, hazardMat), sx * 0.86, 0.72, sz * 2.24));
-  // the river car: rust bleeding through the paint, mud up the doors, weed caught in the grille, and inside, water
-  let flooded = null;
+  // the river car: rust bleeding through the paint, mud up the doors, weed caught in the grille
+  const flooded = null;
   if (old) {
     const rust = mat({ color: 0x5a3018 });
     for (let i = 0; i < 14; i++) {
@@ -119,9 +128,6 @@ function carModel({ old = false } = {}) {
     for (const s of [-1, 1]) put(g, box(0.008, 0.16, 3.6, mud), s * (W + 0.003), 0.4, 0);
     const weed = mat({ color: 0x2c3a1e });
     for (let i = 0; i < 6; i++) put(g, box(0.03, 0.2 + Math.random() * 0.2, 0.02, weed), -0.35 + i * 0.14, 0.52, 2.27).rotation.z = (Math.random() - 0.5) * 0.6;
-    flooded = put(g, new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.4).rotateX(-Math.PI / 2),
-      new THREE.MeshLambertMaterial({ color: 0x1a2a22, transparent: true, opacity: 0.82, depthWrite: false })), 0, 0.74, -0.4);
-    flooded.visible = false;
   }
   // headlights: a bright glow at each lamp (it blooms when it's pointed at you), and the light they throw on the road
   const beamMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xfff1d8, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -164,8 +170,8 @@ function carModel({ old = false } = {}) {
 // Returns the steering wheel (it turns by itself on some cars).
 function interior(g, { old, W, trimMat, chrome }) {
   const vinyl = mat({ color: old ? 0x2f2a21 : 0x3d3c40 });
-  const fabric = mat({ color: old ? 0x352f25 : 0x34363e });
-  const fabricDark = mat({ color: old ? 0x221e17 : 0x2a2c33 });
+  const fabric = mat({ color: old ? 0x51443a : 0x34363e });
+  const fabricDark = mat({ color: old ? 0x332a22 : 0x2a2c33 });
   const carpet = mat({ color: old ? 0x1a1813 : 0x16171b });
   const roofLining = mat({ color: old ? 0x5e584a : 0x8e8a80 });
   const stitch = mat({ color: old ? 0x1a1712 : 0x23252b });
@@ -176,7 +182,7 @@ function interior(g, { old, W, trimMat, chrome }) {
   put(g, box(inner * 2, 0.22, 0.38, vinyl), 0, 0.74, 0.99);
   put(g, box(inner * 2, 0.04, 0.44, vinyl), 0, 0.875, 1.04).rotation.x = -0.12;
   put(g, box(0.48, 0.08, 0.17, vinyl), 0.42, 0.9, 0.84);
-  const dial = mat({ color: old ? 0x0c0e0c : 0x0e1211 });
+  const dial = old ? glow(0x123a2c) : mat({ color: 0x0e1211 });
   const needle = mat({ color: old ? 0x5a3a20 : 0xc8742c });
   for (const dx of [-0.1, 0.1]) {
     const d = put(g, new THREE.Mesh(new THREE.CircleGeometry(0.055, 12), dial), 0.42 + dx, 0.84, 0.792);
@@ -221,8 +227,8 @@ function interior(g, { old, W, trimMat, chrome }) {
     put(g, box(0.47, 0.012, 0.12, stitch), sx, 0.87, -0.215).rotation.x = -0.18;          // the seam between
     for (const px of [-0.07, 0.07]) put(g, box(0.014, 0.08, 0.014, chrome), sx + px, 1.18, -0.29);
     put(g, box(0.26, 0.15, 0.09, fabric), sx, 1.26, -0.3);
-    const belt = put(g, box(0.035, 0.72, 0.008, mat({ color: 0x15161a })), sx + Math.sign(sx) * 0.16, 0.92, -0.13);
-    belt.rotation.z = Math.sign(sx) * 0.42;
+    put(g, box(0.012, 0.62, 0.035, mat({ color: 0x15161a })), Math.sign(sx) * (inner - 0.035), 0.92, -0.12);
+    put(g, box(0.03, 0.05, 0.02, chrome), Math.sign(sx) * (inner - 0.04), 1.2, -0.12);
   }
   // the back: a bench, a back with two seats' worth of seams, three headrests
   put(g, box(1.48, 0.14, 0.5, fabric), 0, 0.5, -0.95);
@@ -248,13 +254,12 @@ function interior(g, { old, W, trimMat, chrome }) {
   put(g, box(0.02, 0.06, 0.02, trimMat), 0, 1.29, 0.56);
   put(g, box(0.2, 0.06, 0.03, trimMat), 0, 1.24, 0.55);
   if (old) {
-    // everything the water reached is darker; a split seat; the headliner hanging; weed on the dash; the air freshener
+    // everything the river reached is stained darker; a split seat; the headliner torn; weed on the dash; the air freshener
     const stain = mat({ color: 0x14130e });
     for (const s of [-1, 1]) put(g, box(0.033, 0.2, 2.5, stain), s * (inner - 0.002), 0.55, -0.2);
     put(g, box(0.12, 0.26, 0.012, mat({ color: 0x6b6150 })), 0.47, 0.99, -0.19).rotation.x = -0.18;
-    const flap = put(g, box(0.62, 0.012, 0.5, roofLining), 0.12, 1.24, -0.85);
-    flap.rotation.x = 0.4;
-    flap.rotation.z = 0.08;
+    const flap = put(g, box(0.3, 0.01, 0.2, roofLining), 0.38, 1.29, -0.82);
+    flap.rotation.x = 0.3;
     const weed = mat({ color: 0x2c3a1e });
     for (let i = 0; i < 5; i++) put(g, box(0.02, 0.012, 0.18 + Math.random() * 0.2, weed), -0.5 + i * 0.25, 0.9, 1.02).rotation.y = (Math.random() - 0.5) * 1.2;
     put(g, box(0.004, 0.12, 0.004, mat({ color: 0x0c0c0c })), 0, 1.17, 0.55);
@@ -273,7 +278,7 @@ export function createTraffic(scene, sfx) {
   const tmp = new THREE.Vector3();
   // two shared lights (a fixed number, so nothing recompiles when cars come and go):
   // one inside the nearest car with its dome light on, one thrown ahead of the nearest headlights
-  const domeShared = new THREE.PointLight(0xfff2c8, 0, 3.6, 1.5);
+  const domeShared = new THREE.PointLight(0xfff2c8, 0, 4.2, 1.5);
   const headShared = new THREE.PointLight(0xffe8c0, 0, 24, 1.4);
   scene.add(domeShared, headShared);
 
@@ -409,7 +414,7 @@ export function createTraffic(scene, sfx) {
       c.domeOn = () => {
         c.dome.visible = true;
         c.driver.visible = false;                        // there's nobody at the wheel
-        c.woman.root.visible = true;                     // ...and her, sitting in water up to her waist
+        c.woman.root.visible = true;                     // ...and her, soaked, in the passenger seat
         c.woman.watch(cameraRef);                        // turning to look at you
         if (c.flooded) c.flooded.visible = true;
       };
@@ -487,8 +492,8 @@ export function createTraffic(scene, sfx) {
         if (c.beam.visible && rel > -5 && (!headCar || rel < headCar.d - busD)) headCar = c;
       }
       // (the river car's light is brighter and sick green, so you see exactly what's in it)
-      domeShared.intensity = domeCar ? (domeCar.mode === "tail" ? 6 : 2.6) : 0;
-      domeShared.color.set(domeCar && domeCar.mode === "tail" ? 0xb8e8c8 : 0xfff2c8);
+      domeShared.intensity = domeCar ? (domeCar.mode === "tail" ? 10 : 2.6) : 0;
+      domeShared.color.set(domeCar && domeCar.mode === "tail" ? 0xd6e6d4 : 0xfff2c8);
       if (domeCar) domeShared.position.copy(domeCar.g.localToWorld(tmp.set(0, 1.22, -0.35)));
       headShared.intensity = headCar ? 22 * (headCar.beam.children[0].scale.x / 1.1) : 0;
       if (headCar) headShared.position.copy(headCar.g.localToWorld(tmp.set(0, 1.4, 7)));
