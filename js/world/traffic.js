@@ -103,22 +103,7 @@ function carModel({ old = false } = {}) {
     wheel.add(new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.22, 14).rotateZ(Math.PI / 2), dark));
     put(wheel, new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 12).rotateZ(Math.PI / 2), chrome), sx * 0.115, 0, 0);
   }
-  // inside: the dash, the wheel, the seats (with headrests), the mirror
-  put(g, box(1.6, 0.2, 0.42, trimMat), 0, 0.76, 0.95);
-  put(g, box(1.6, 0.05, 0.5, mat({ color: 0x1e2024 })), 0, 0.88, 1.05);
-  const wheelRim = put(g, new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.018, 6, 18), trimMat), 0.42, 0.92, 0.62);
-  wheelRim.rotation.x = -0.45;
-  put(g, box(0.04, 0.04, 0.3, trimMat), 0.42, 0.84, 0.76).rotation.x = 0.7;               // the column
-  const seatMat = mat({ color: old ? 0x2a2620 : 0x2a2c31 });
-  for (const sx of [0.42, -0.42]) {
-    put(g, box(0.5, 0.14, 0.5, seatMat), sx, 0.5, 0.05);
-    const back = put(g, box(0.5, 0.6, 0.12, seatMat), sx, 0.82, -0.22);
-    back.rotation.x = -0.18;
-    put(g, box(0.26, 0.16, 0.1, seatMat), sx, 1.2, -0.3);                                 // headrests
-  }
-  put(g, box(1.5, 0.14, 0.5, seatMat), 0, 0.5, -0.95);                                    // the back seat
-  put(g, box(1.5, 0.56, 0.12, seatMat), 0, 0.8, -1.22).rotation.x = -0.2;
-  put(g, box(0.2, 0.06, 0.03, trimMat), 0, 1.24, 0.55);                                   // rear-view mirror
+  const wheelRim = interior(g, { old, W, trimMat, chrome });
   const hazardMat = glow(0xffa32a);
   const hazards = [];
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) hazards.push(put(g, box(0.1, 0.07, 0.05, hazardMat), sx * 0.86, 0.72, sz * 2.24));
@@ -152,7 +137,7 @@ function carModel({ old = false } = {}) {
   pool.rotation.x = -Math.PI / 2;
   put(g, pool, 0, 0.04, 7.5);
   // the inside: dome light, a driver, a back-seat passenger, an opening driver's door
-  const dome = put(g, box(0.3, 0.03, 0.2, glow(0xfff2c8)), 0, 1.34, -0.2);
+  const dome = put(g, box(0.3, 0.03, 0.2, glow(0xfff2c8)), 0, 1.305, -0.2);
   const figureMat = mat({ color: 0x15161a });
   const driver = put(g, new THREE.Group(), 0.42, 0, 0.05);                // the driver sits on the car's left
   put(driver, box(0.44, 0.42, 0.24, figureMat), 0, 0.8, -0.05);
@@ -169,6 +154,114 @@ function carModel({ old = false } = {}) {
   put(doorPivot, box(0.06, 0.5, 1.05, paint), 0, 0.62, -0.52);
   doorPivot.visible = false;
   return { g, heads, headOn, headOff, hazards, beam, pool, dome, driver, driverHead, passenger, paleHead, figureMat, doorPivot, flooded, wheelRim };
+}
+
+// The inside of a '90s sedan, seen through its windows: a carpeted floor and the transmission tunnel, a dash with a
+// hooded cluster, vents, a radio and a glovebox, a three-spoke wheel, a console with the gear lever and handbrake,
+// shaped front seats (bolsters, headrests on posts, a seat belt), a bench in the back, door cards with armrests and
+// window cranks, a headliner and sun visors, a mirror. The river car's is ruined: everything up to the waterline
+// darker and stained, a seat split open, the headliner hanging down, weed on the dash, a pine-tree air freshener.
+// Returns the steering wheel (it turns by itself on some cars).
+function interior(g, { old, W, trimMat, chrome }) {
+  const vinyl = mat({ color: old ? 0x2f2a21 : 0x3d3c40 });
+  const fabric = mat({ color: old ? 0x352f25 : 0x34363e });
+  const fabricDark = mat({ color: old ? 0x221e17 : 0x2a2c33 });
+  const carpet = mat({ color: old ? 0x1a1813 : 0x16171b });
+  const roofLining = mat({ color: old ? 0x5e584a : 0x8e8a80 });
+  const stitch = mat({ color: old ? 0x1a1712 : 0x23252b });
+  const inner = W - 0.09;
+  put(g, box(inner * 2, 0.04, 2.7, carpet), 0, 0.36, -0.2);                               // floor
+  put(g, box(0.24, 0.13, 1.5, carpet), 0, 0.43, 0.3);                                     // the tunnel
+  // the dash: the body, a top raked up to the windshield, the cluster's hood over the wheel
+  put(g, box(inner * 2, 0.22, 0.38, vinyl), 0, 0.74, 0.99);
+  put(g, box(inner * 2, 0.04, 0.44, vinyl), 0, 0.875, 1.04).rotation.x = -0.12;
+  put(g, box(0.48, 0.08, 0.17, vinyl), 0.42, 0.9, 0.84);
+  const dial = mat({ color: old ? 0x0c0e0c : 0x0e1211 });
+  const needle = mat({ color: old ? 0x5a3a20 : 0xc8742c });
+  for (const dx of [-0.1, 0.1]) {
+    const d = put(g, new THREE.Mesh(new THREE.CircleGeometry(0.055, 12), dial), 0.42 + dx, 0.84, 0.792);
+    d.rotation.y = Math.PI;
+    put(g, box(0.004, 0.045, 0.004, needle), 0.42 + dx, 0.85, 0.79).rotation.z = dx * 6;
+  }
+  put(g, box(0.3, 0.26, 0.05, trimMat), 0, 0.68, 0.79);                                   // center stack
+  put(g, box(0.18, 0.035, 0.01, old ? mat({ color: 0x0a0c0a }) : glow(0x2f7a4c)), 0, 0.75, 0.763);   // the radio
+  for (const vx of [-0.62, -0.12, 0.12, 0.62]) {
+    for (let i = 0; i < 3; i++) put(g, box(0.13, 0.008, 0.01, mat({ color: 0x07080a })), vx, 0.79 + i * 0.016, 0.795);
+  }
+  put(g, box(0.42, 0.006, 0.01, stitch), -0.42, 0.7, 0.796);                               // the glovebox
+  put(g, box(0.05, 0.02, 0.01, chrome), -0.42, 0.67, 0.797);
+  // the wheel: a rim, three spokes and a hub, on its column
+  const wheelRim = put(g, new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.018, 6, 18), trimMat), 0.42, 0.92, 0.62);
+  wheelRim.rotation.x = -0.45;
+  for (const a of [0, 2.3, -2.3]) {
+    const sp = put(wheelRim, box(0.02, 0.15, 0.012, trimMat), Math.sin(a) * 0.08, -Math.cos(a) * 0.08, 0);
+    sp.rotation.z = a;
+  }
+  put(wheelRim, new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.04, 10).rotateX(Math.PI / 2), trimMat), 0, 0, 0.005);
+  put(g, box(0.05, 0.05, 0.3, trimMat), 0.42, 0.84, 0.76).rotation.x = 0.7;               // the column
+  // the console: gear lever, handbrake
+  put(g, box(0.2, 0.12, 0.6, trimMat), 0, 0.53, 0.3);
+  const lever = put(g, box(0.022, 0.2, 0.022, trimMat), 0, 0.66, 0.46);
+  lever.rotation.x = -0.2;
+  put(g, box(0.05, 0.05, 0.05, old ? mat({ color: 0x3a3428 }) : mat({ color: 0x1c1d20 })), 0, 0.76, 0.48);
+  put(g, box(0.04, 0.035, 0.24, trimMat), 0, 0.62, 0.08).rotation.x = 0.25;
+  // front seats: a cushion with a lip, bolsters, a two-part back, headrests on posts, a seat belt
+  for (const sx of [0.42, -0.42]) {
+    put(g, box(0.48, 0.12, 0.48, fabric), sx, 0.51, 0.05);
+    put(g, box(0.48, 0.07, 0.08, fabric), sx, 0.49, 0.31);
+    for (const b of [-1, 1]) put(g, box(0.06, 0.1, 0.46, fabricDark), sx + b * 0.23, 0.58, 0.05);
+    const backL = put(g, box(0.48, 0.32, 0.12, fabric), sx, 0.73, -0.19);
+    backL.rotation.x = -0.18;
+    const backU = put(g, box(0.46, 0.32, 0.11, fabric), sx, 1.0, -0.245);
+    backU.rotation.x = -0.18;
+    for (const b of [-1, 1]) {
+      const bol = put(g, box(0.06, 0.56, 0.11, fabricDark), sx + b * 0.23, 0.86, -0.2);
+      bol.rotation.x = -0.18;
+    }
+    put(g, box(0.47, 0.012, 0.12, stitch), sx, 0.87, -0.215).rotation.x = -0.18;          // the seam between
+    for (const px of [-0.07, 0.07]) put(g, box(0.014, 0.08, 0.014, chrome), sx + px, 1.18, -0.29);
+    put(g, box(0.26, 0.15, 0.09, fabric), sx, 1.26, -0.3);
+    const belt = put(g, box(0.035, 0.72, 0.008, mat({ color: 0x15161a })), sx + Math.sign(sx) * 0.16, 0.92, -0.13);
+    belt.rotation.z = Math.sign(sx) * 0.42;
+  }
+  // the back: a bench, a back with two seats' worth of seams, three headrests
+  put(g, box(1.48, 0.14, 0.5, fabric), 0, 0.5, -0.95);
+  put(g, box(1.48, 0.07, 0.08, fabric), 0, 0.48, -0.68);
+  const bench = put(g, box(1.48, 0.56, 0.12, fabric), 0, 0.8, -1.22);
+  bench.rotation.x = -0.2;
+  for (const s of [-0.25, 0.25]) put(g, box(0.012, 0.54, 0.125, stitch), s, 0.8, -1.215).rotation.x = -0.2;
+  for (const hx of [-0.5, 0, 0.5]) put(g, box(0.24, 0.13, 0.08, fabric), hx, 1.13, -1.31);
+  // the doors from inside: a vinyl card, armrests, a pull handle, the window crank, a pocket
+  for (const s of [-1, 1]) {
+    put(g, box(0.03, 0.44, 2.5, vinyl), s * inner, 0.65, -0.2);
+    for (const z of [0.3, -0.75]) {
+      put(g, box(0.07, 0.045, 0.42, vinyl), s * (inner - 0.04), 0.7, z);
+      put(g, box(0.012, 0.03, 0.09, chrome), s * (inner - 0.018), 0.8, z + 0.12);
+      const crank = put(g, box(0.012, 0.07, 0.016, chrome), s * (inner - 0.02), 0.6, z - 0.08);
+      crank.rotation.x = 0.6;
+      put(g, box(0.02, 0.1, 0.36, mat({ color: 0x0d0e10 })), s * (inner - 0.018), 0.48, z);
+    }
+  }
+  // overhead: the headliner, sun visors, the mirror
+  put(g, box(inner * 2, 0.02, 1.42, roofLining), 0, 1.33, -0.17);
+  for (const vx of [0.42, -0.42]) put(g, box(0.36, 0.022, 0.16, roofLining), vx, 1.305, 0.46).rotation.x = 0.28;
+  put(g, box(0.02, 0.06, 0.02, trimMat), 0, 1.29, 0.56);
+  put(g, box(0.2, 0.06, 0.03, trimMat), 0, 1.24, 0.55);
+  if (old) {
+    // everything the water reached is darker; a split seat; the headliner hanging; weed on the dash; the air freshener
+    const stain = mat({ color: 0x14130e });
+    for (const s of [-1, 1]) put(g, box(0.033, 0.2, 2.5, stain), s * (inner - 0.002), 0.55, -0.2);
+    put(g, box(0.12, 0.26, 0.012, mat({ color: 0x6b6150 })), 0.47, 0.99, -0.19).rotation.x = -0.18;
+    const flap = put(g, box(0.62, 0.012, 0.5, roofLining), 0.12, 1.24, -0.85);
+    flap.rotation.x = 0.4;
+    flap.rotation.z = 0.08;
+    const weed = mat({ color: 0x2c3a1e });
+    for (let i = 0; i < 5; i++) put(g, box(0.02, 0.012, 0.18 + Math.random() * 0.2, weed), -0.5 + i * 0.25, 0.9, 1.02).rotation.y = (Math.random() - 0.5) * 1.2;
+    put(g, box(0.004, 0.12, 0.004, mat({ color: 0x0c0c0c })), 0, 1.17, 0.55);
+    const tree = put(g, box(0.05, 0.07, 0.004, mat({ color: 0x3d5a2a })), 0, 1.09, 0.55);
+    tree.rotation.z = 0.15;
+  }
+  return wheelRim;
 }
 
 export function createTraffic(scene, sfx) {
@@ -286,6 +379,7 @@ export function createTraffic(scene, sfx) {
       return () => scene.remove(m.g);
     },
     get count() { return cars.length; },
+    get cars() { return cars; },
     // scripted scenes can ask for an empty road for a while
     hold(seconds) { hold = Math.max(hold, seconds); },
     clear() { while (cars.length) remove(cars[0]); timer = 10; hold = 0; },

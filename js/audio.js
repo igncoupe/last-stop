@@ -326,6 +326,28 @@ const SFX = {
     out(noise(t, dur, "bandpass", 2200, 0.7), 0.35, t, 0.1, dur - 0.1, 0.3);
     out(tone(t, dur, "sine", 48, 38), 0.5, t, 0.3, dur - 0.3, 0.2);
   },
+  // something huge hitting the water: the body blow, the weight of the water thrown up, spray hissing down, and the
+  // gulp as it goes in
+  plunge(t) {
+    out(tone(t, 1.4, "sine", 64, 22), 1.5, t, 0.002, 1.3, 0.6);
+    out(noise(t, 0.25, "lowpass", 500), 1.4, t, 0.002, 0.22, 0.5);
+    out(noise(t + 0.02, 2.2, "lowpass", 1400), 0.9, t + 0.02, 0.02, 2.1, 0.6);
+    const hiss = noise(t + 0.25, 2.6, "highpass", 2600);
+    out(hiss, 0.35, t + 0.25, 0.3, 2.3, 0.5);
+    const gulp = noise(t + 0.15, 0.9, "bandpass", 420, 4);
+    gulp.frequency.setValueAtTime(520, t + 0.15);
+    gulp.frequency.exponentialRampToValueAtTime(130, t + 1.0);
+    out(gulp, 0.7, t + 0.15, 0.05, 0.8, 0.4);
+  },
+  // the bus's frame dragging over a concrete edge: a grinding shriek of metal, crackling
+  scrape(t, dur = 0.9) {
+    const n = noise(t, dur, "bandpass", 1900, 6);
+    n.frequency.setValueAtTime(2300, t);
+    n.frequency.linearRampToValueAtTime(1500, t + dur);
+    out(n, 0.5, t, 0.01, dur, 0.3);
+    out(tone(t, dur, "square", 210, 160), 0.06, t, 0.01, dur, 0.2);
+    for (let tt = t; tt < t + dur; tt += 0.03 + Math.random() * 0.05) out(noise(tt, 0.02, "highpass", 3500), 0.18, tt, 0.001, 0.02);
+  },
   // a gasp: dragging in air, after none
   gasp(t) {
     const n = noise(t, 0.75, "bandpass", 700, 1.6);

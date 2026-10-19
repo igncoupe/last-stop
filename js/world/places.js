@@ -6,6 +6,7 @@ import { tex } from "../core/textures.js";
 import { radialTexture } from "./city.js";
 import { buildHospital } from "./hospital.js";
 import { waterMaterial } from "./water.js";
+import { makeSplash } from "./splash.js";
 
 const put = (parent, mesh, x, y, z) => {
   mesh.position.set(x, y, z);
@@ -68,15 +69,21 @@ function buildBridge(scene) {
     scene.add(l);
     bridgeLights.push(l);
   }
+  // the river surface, in the world, and what's thrown up when something goes into it
+  const waterY = -6;
+  const splash = makeSplash(scene, waterY);
   return {
     group: g,
     start: new THREE.Vector3(X + 2.3, 0, 4),
     edge: 268,          // where the deck ends
     origin: X,
     water,
+    waterY,
+    splash,
     lights: bridgeLights,
-    update() {
+    update(dt = 0) {
       for (const l of bridgeLights) l.intensity = g.visible ? l.userData.base : 0;
+      splash.update(dt);
     },
   };
 }

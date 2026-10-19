@@ -33,6 +33,21 @@ export function seatPan(a, b, t) {
   dy = Math.atan2(Math.sin(dy), Math.cos(dy));
   C.seatLook(A.yaw + dy * t, lerp(A.pitch, B.pitch, t));
 }
+// a seat camera that glides: each frame it eases toward wherever it's told to look (never snaps)
+export function glider(rate = 2.4) {
+  let cur = null;
+  return (target, dt = 1 / 60, extra = { yaw: 0, pitch: 0 }) => {
+    const T = target.isVector3 ? aimAt(target) : target;
+    if (!cur) cur = { ...T };
+    const k = 1 - Math.exp(-rate * dt);
+    let dy = T.yaw - cur.yaw;
+    dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    cur.yaw += dy * k;
+    cur.pitch += (T.pitch - cur.pitch) * k;
+    C.seatLook(cur.yaw + extra.yaw, cur.pitch + extra.pitch);
+    return cur;
+  };
+}
 // a little handheld drift, so a held shot breathes
 export function breathe(t, amt = 0.006) {
   return { yaw: Math.sin(t * 0.9) * amt + Math.sin(t * 2.3) * amt * 0.4, pitch: Math.sin(t * 1.3) * amt * 0.6 };

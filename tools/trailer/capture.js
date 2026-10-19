@@ -8,8 +8,16 @@ const L = () => window.__lastStop;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function save(path, body) {
-  const r = await fetch("/__save?path=" + encodeURIComponent(path), { method: "POST", body });
-  if (!r.ok) throw new Error("save failed: " + path);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const r = await fetch("/__save?path=" + encodeURIComponent(path), { method: "POST", body });
+      if (r.ok) return;
+      throw new Error("status " + r.status);
+    } catch (e) {
+      if (attempt >= 4) throw new Error("save failed: " + path + " (" + e.message + ")");
+      await sleep(150 * (attempt + 1));
+    }
+  }
 }
 
 // the story so far (the playtester's transcript)
@@ -85,26 +93,83 @@ function ellipse(c, w, h, cx, cy, stops) {
 }
 
 // ---------- recording
+// what the page draws over the game right now (the server lays it over each frame)
+function overlayState() {
+  const st = { fade: 0, white: 0, uw: 0, drown: 0 };
+  const uw = document.querySelector(".underwater");
+  if (uw && uw.classList.contains("on")) {
+    st.uw = Number(getComputedStyle(uw).opacity) || 0;
+    st.drown = Number(getComputedStyle(uw, "::before").opacity) || 0;
+  }
+  const fade = document.getElementById("fade");
+  st.fade = Number(getComputedStyle(fade).opacity) || 0;
+  st.white = fade.classList.contains("white") ? 1 : 0;
+  return st;
+}
+// the picture on the canvas right now, raw, straight from the GPU, to the server (which makes the PNG)
+function grab(path) {
+  const r = L().renderer;
+  const gl = r.getContext();
+  const w = gl.drawingBufferWidth;
+  const h = gl.drawingBufferHeight;
+  const px = new Uint8Array(w * h * 4);
+  gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  const o = overlayState();
+  const q = `path=${encodeURIComponent(path)}&w=${w}&h=${h}&fade=${o.fade}&white=${o.white}&uw=${o.uw}&drown=${o.drown}`;
+  return post(`/__frame?${q}`, px);
+}
+async function post(url, body) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, { method: "POST", body });
+      if (res.ok) return;
+      throw new Error("status " + res.status);
+    } catch (e) {
+      if (attempt >= 4) throw new Error("save failed: " + url.slice(0, 80) + " (" + e.message + ")");
+      await sleep(150 * (attempt + 1));
+    }
+  }
+}
 // `frames` exact steps of the game, each saved as shot/0000.png ... (each(t, i) runs before every step)
-export async function shoot(shot, frames, { fps = 30, each = null, from = 0 } = {}) {
+// extra: a second camera filmed on the very same frames: { name, place(t, cam) } (place sets its position and aim)
+export async function shoot(shot, frames, { fps = window.__fps || 60, each = null, from = 0, extra = null } = {}) {
   window.__manual = true;
   const view = L().renderer.domElement;
-  const out = document.createElement("canvas");
-  out.width = view.width;
-  out.height = view.height;
-  const c = out.getContext("2d");
   const pending = [];
+  let cam2 = null;
+  if (extra) {
+    const main = L().camera;
+    cam2 = new main.constructor(main.fov, main.aspect, main.near, main.far);
+  }
   for (let i = from; i < from + frames; i++) {
     if (each) each(i / fps, i);
     window.__tick(1 / fps);
-    c.drawImage(view, 0, 0);
-    overlays(c, out.width, out.height);
-    const blob = await new Promise((r) => out.toBlob(r, "image/png"));
-    pending.push(save(`${shot}/${String(i).padStart(4, "0")}.png`, blob));
-    if (pending.length > 8) await pending.shift();
+    pending.push(grab(`${shot}/${String(i).padStart(4, "0")}.png`));
+    if (extra) {
+      extra.place(i / fps, cam2);
+      cam2.aspect = L().camera.aspect;
+      cam2.updateProjectionMatrix();
+      L().renderer.render(L().scene, cam2);
+      pending.push(grab(`${extra.name}/${String(i).padStart(4, "0")}.png`));
+    }
+    if (pending.length > 12) await pending.shift();
   }
   await Promise.all(pending);
-  return { shot, frames: from + frames, size: [out.width, out.height] };
+  return { shot, frames: from + frames, size: [view.width, view.height] };
+}
+// step the game on without filming, until done() (or max steps). It yields between steps, so the story's own
+// awaits keep moving (a plain loop would stall every line and wait until it ends).
+export async function advance(done, { max = 3000, fps = window.__fps || 60, each = null } = {}) {
+  window.__manual = true;
+  let n = 0;
+  while (n < max && !done()) {
+    if (each) each(n / fps, n);
+    window.__tick(1 / fps);
+    n++;
+    await null;
+    if (n % 120 === 0) await new Promise((r) => setTimeout(r, 0));
+  }
+  return n;
 }
 // let the game run on by itself again
 export function release() { window.__manual = false; }

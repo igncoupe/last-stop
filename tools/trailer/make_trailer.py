@@ -2,8 +2,9 @@
 
   python tools/trailer/make_trailer.py RAW_DIR OUT.mp4 [--preview SECONDS_FROM SECONDS_TO] [--frames DIR]
 
-RAW_DIR holds one folder of PNG frames per shot (960x540, 30 fps), audio/*.wav (48 kHz) and text/*.png (1920x1080
-overlays). Out comes 1920x1080, 30 fps, H.264 (High, BT.709) + AAC 48 kHz stereo, faststart: what Steam asks for.
+RAW_DIR holds one folder of PNG frames per shot (960x540, 60 fps), audio/*.wav (48 kHz) and text/*.png (1920x1080
+overlays). Out comes 1920x1080, 60 fps, H.264 (High, BT.709) + AAC 48 kHz stereo, faststart: what Steam asks for.
+No jumpscares in it: the scares are the game's to show you.
 """
 import argparse
 import math
@@ -14,145 +15,160 @@ import numpy as np
 import soundfile as sf
 from PIL import Image
 
-FPS = 30
 W, H = 1920, 1080
 SR = 48000
 
 # ---------------------------------------------------------------- the cut
-# (start, length, what, options). What: a shot's name (frames from `src`), "black", or a card (text over black).
-# Times are seconds on the trailer.
-CUT = [
-    (0.00, 2.00, "black", {}),
-    (2.00, 4.15, "s01_storm_ext", {"src": 4, "fin": 0.8}),
-    (6.15, 2.25, "black", {"text": "card_route9", "tin": 0.35, "tout": 0.4}),
-    (8.40, 4.80, "n1_oldman", {"src": 0, "fin": 0.3}),
-    (13.20, 4.20, "n_display", {"src": 0}),
-    (17.40, 2.60, "black", {"text": "card_stop", "tin": 0.3, "tout": 0.35}),
-    (20.00, 3.20, "n2_shelter_close", {"src": 20, "fin": 0.4}),
-    (23.20, 2.80, "n2_lena_door", {"src": 70}),
-    (26.00, 3.00, "s_fog", {"src": 110}),
-    (29.00, 2.60, "s_honk", {"src": 430}),
-    (31.60, 2.80, "s_honk", {"src": 560}),
-    (34.40, 0.50, "s_honk", {"src": 776, "flash": 2, "shake": 14}),
-    (34.90, 0.40, "black", {}),
-    (35.30, 2.00, "n3_teodor_bed", {"src": 0, "fin": 0.25}),
-    (37.30, 3.00, "n3_window_fog", {"src": 225}),
-    (40.30, 1.50, "n1_windshield", {"src": 18, "hit": 41.10}),
-    (41.80, 2.80, "s_board", {"src": 250}),
-    (44.60, 4.00, "s_mom_behind3", {"src": 40}),
-    (48.60, 2.40, "s_bridge_ext", {"src": 230}),
-    (51.00, 0.90, "black", {}),
-    (51.90, 2.40, "s_edge_ext", {"src": 60}),
-    (54.30, 2.00, "s_plunge", {"src": 138, "hit": 54.70}),
-    (56.30, 1.50, "s_flood_in", {"src": 30}),
-    (57.80, 1.20, "s_doors", {"src": 10}),
-    (59.00, 3.00, "s_turn", {"src": 20}),
-    (62.00, 1.30, "s_turn", {"src": 160}),
-    (63.30, 1.00, "s_turn", {"src": 228}),
-    (64.30, 0.80, "s_turn", {"src": 270}),
-    (65.10, 0.70, "s_turn", {"src": 296}),
-    (65.80, 0.40, "s_turn", {"src": 318, "flash": 2, "shake": 18}),
-    (66.20, 2.20, "black", {}),
-    (68.40, 3.20, "n5_fourteen", {"src": 40, "fin": 0.8, "fout": 0.6}),
-    (71.60, 5.40, "black", {"text": "title", "tin": 1.2}),
-    (77.00, 4.00, "black", {}),
-]
-END = 81.0
-# words on screen: (from, to, png); cards are in CUT
-OVERLAYS = [
-    (2.60, 5.70, "s_rhee_evening"),
-    (8.80, 13.50, "s_rhee_rules"),
-    (13.50, 19.60, "s_you_display"),
-    (20.60, 26.00, "s_mara_ride"),
-    (29.20, 32.00, "s_you_fu"),
-    (31.55, 34.40, "s_you_nobody2"),
-    (35.60, 37.10, "s_old_late"),
-    (41.60, 46.20, "s_you_doors2"),
-    (46.60, 47.90, "s_lena_grew"),
-    (48.00, 48.65, "s_you_mom"),
-    (48.90, 50.95, "s_rhee_eleven"),
-    (51.05, 53.00, "s_rhee_make"),
-    (53.00, 55.20, "s_rhee_faster"),
-    (56.30, 58.10, "s_you_ohshit"),
-    (58.10, 60.80, "s_you_comeon"),
-    (63.30, 65.10, "s_voices_stay"),
-    (67.30, 68.90, "s_lena_hi"),
-    (69.50, 71.50, "card_stopfor"),
-    (73.80, 77.00, "wishlist"),
-    (77.30, 80.80, "s_rhee_tomorrow"),
-]
-FADE_TEXT = {"card_stopfor": 0.4, "wishlist": 0.6}
+FPS = 60
+END = 122.5
 
-# sound: (at, wav, gain dB, options). Options: cut=(from, to) seconds in the file (snapped to the quiet between
-# words), fin/fout fades, loop=length to fill (crossfaded), bus="vo"|"music"|"amb"|"sfx"
-SOUND = [
-    (0.30, "amb_rain", -3, {"loop": 21.0, "fin": 1.8, "fout": 1.5, "bus": "amb"}),
-    (1.55, "sfx_static", -9, {"cut": (0.1, 1.2), "bus": "sfx"}),
-    (2.20, "amb_rain_engine", -4, {"cut": (2.0, 7.0), "fin": 1.2, "fout": 1.3, "bus": "amb"}),
-    (2.60, "vo_018b35f7", 0, {"cut": (0.0, 3.35), "bus": "vo"}),
-    (6.15, "sfx_bang", -7, {"bus": "sfx"}),
-    (6.15, "mood_uneasy", -3, {"loop": 14.0, "fin": 0.8, "fout": 1.6, "bus": "music"}),
-    (8.80, "vo_2383af51", 0, {"cut": (3.30, 8.19), "bus": "vo"}),
-    (13.25, "sfx_static", -11, {"cut": (0.1, 0.7), "bus": "sfx"}),
-    (13.50, "vo_3e6533b0", 0, {"bus": "vo"}),
-    (17.40, "sfx_bang", -9, {"bus": "sfx"}),
-    (19.20, "mood_dread", -2, {"loop": 29.4, "fin": 2.0, "fout": 0.4, "bus": "music"}),
-    (20.00, "amb_rain", -7, {"loop": 14.4, "fin": 0.8, "fout": 0.3, "bus": "amb"}),
-    (20.60, "vo_97309180", 0, {"bus": "vo"}),
-    (26.20, "sfx_squeak", -5, {"bus": "sfx"}),
-    (28.90, "sfx_horn", -5, {"cut": (0.1, 1.5), "bus": "sfx"}),
-    (29.20, "vo_83a0fb23", 0, {"bus": "vo"}),
-    (31.45, "vo_e9e244bf", 0, {"cut": (1.85, 4.77), "bus": "vo"}),
-    (34.40, "sfx_sting", 0, {"bus": "sfx"}),
-    (34.40, "sfx_scream", -1, {"cut": (0.0, 0.55), "fout": 0.05, "bus": "sfx"}),
-    (34.40, "sfx_slam", -2, {"bus": "sfx"}),
-    (35.30, "sfx_beeps", -10, {"cut": (0.1, 2.2), "bus": "sfx"}),
-    (35.60, "vo_c8b7b688", 0, {"bus": "vo"}),
-    (37.35, "sfx_squeak", -7, {"cut": (0.1, 3.0), "bus": "sfx"}),
-    (38.55, "sfx_rise", -4, {"bus": "sfx"}),
-    (40.35, "sfx_shriek", -6, {"cut": (0.1, 1.2), "bus": "sfx"}),
-    (41.10, "sfx_slam", 0, {"bus": "sfx"}),
-    (41.12, "sfx_crack", -4, {"bus": "sfx"}),
-    (41.60, "vo_0cfa0f8e", 0, {"cut": (0.0, 4.55), "bus": "vo"}),
-    (41.80, "sfx_door", -9, {"bus": "sfx"}),
-    (46.60, "vo_4518468c", 0, {"bus": "vo"}),
-    (48.00, "vo_9298e7e3", 0, {"bus": "vo"}),
-    (48.40, "sfx_rise", -6, {"cut": (0.0, 3.0), "bus": "sfx"}),
-    (48.60, "mood_terror", -3, {"loop": 17.6, "fin": 0.6, "fout": 0.05, "bus": "music"}),
-    (48.60, "amb_rain", -6, {"loop": 2.4, "fin": 0.2, "fout": 0.2, "bus": "amb"}),
-    (48.90, "vo_ce82045a", 0, {"bus": "vo"}),
-    (51.00, "sfx_sting", 0, {"bus": "sfx"}),
-    (51.00, "sfx_slam", 0, {"bus": "sfx"}),
-    (51.05, "vo_e5be74f8", 2, {"bus": "vo"}),
-    (53.00, "vo_8937e20f", 0, {"cut": (0.0, 2.35), "bus": "vo"}),
-    (54.70, "sfx_splash", 0, {"bus": "sfx"}),
-    (54.85, "sfx_gush", -2, {"bus": "sfx"}),
-    (56.30, "amb_underwater", 0, {"loop": 9.9, "fin": 0.3, "fout": 0.05, "bus": "amb"}),
-    (56.30, "vo_c8838305", 0, {"cut": (0.0, 1.95), "bus": "vo"}),
-    (57.95, "sfx_bang", -2, {"bus": "sfx"}),
-    (58.10, "vo_2b0a3f5c", 0, {"cut": (0.0, 2.95), "bus": "vo"}),
-    (58.55, "sfx_bang", -2, {"bus": "sfx"}),
-    (59.10, "sfx_heartbeat", -3, {"bus": "sfx"}),
-    (60.15, "sfx_knock", -4, {"bus": "sfx"}),
-    (60.70, "sfx_sting", -1, {"bus": "sfx"}),
-    (60.70, "sfx_moan", 0, {"cut": (1.0, 6.5), "bus": "sfx"}),
-    (62.00, "sfx_lightsout", 0, {"bus": "sfx"}),
-    (62.00, "sfx_bubbles", -4, {"bus": "sfx"}),
-    (63.30, "vo_4f1ccf4b", 2, {"bus": "vo"}),
-    (64.30, "sfx_lightsout", 0, {"bus": "sfx"}),
-    (65.80, "sfx_sting", 1, {"bus": "sfx"}),
-    (65.80, "sfx_scream", 0, {"cut": (0.0, 0.45), "fout": 0.04, "bus": "sfx"}),
-    (65.80, "sfx_slam", 0, {"bus": "sfx"}),
-    (67.30, "vo_6d286338", 0, {"bus": "vo"}),
-    (68.40, "mood_grief", 1, {"loop": 9.0, "fin": 1.6, "fout": 2.0, "bus": "music"}),
-    (68.40, "amb_rain", -8, {"loop": 12.6, "fin": 1.5, "fout": 1.0, "bus": "amb"}),
-    (71.60, "sfx_thunder", 2, {"bus": "sfx"}),
-    (71.60, "sfx_slam", -3, {"bus": "sfx"}),
-    (77.30, "vo_755b438a", 0, {"bus": "vo"}),
-    (80.75, "sfx_static", -8, {"cut": (0.1, 0.35), "bus": "sfx"}),
+# shots: (start, end, what, options). what: a shot's folder of frames, or "black". Options: src (first frame),
+# fin/fout (fade from/to whatever is under it, in seconds), text/tin/tout (a card's words, and their fades).
+# Shots that overlap are mixed: the later one fades in over the earlier (a crossfade); a gap is black.
+CUT = [
+    (1.6, 6.0, "s_storm_ext", {"src": 0, "fin": 1.2, "fout": 0.7}),
+    (6.2, 8.8, "black", {"text": "card_route9", "tin": 0.5, "tout": 0.6}),
+    (9.0, 14.3, "n1_oldman", {"src": 0, "fin": 0.7}),
+    (13.9, 18.9, "n_display", {"src": 0, "fin": 0.4, "fout": 0.6}),
+    (19.3, 22.0, "black", {"text": "card_stop", "tin": 0.5, "tout": 0.6}),
+    (22.2, 27.7, "n2_shelter_close", {"src": 0, "fin": 0.9}),
+    (27.2, 32.2, "n2_lena_door", {"src": 0, "fin": 0.5, "fout": 0.6}),
+    (32.8, 38.2, "s_fog", {"src": 150, "fin": 0.6}),
+    (37.8, 43.9, "s_honk2", {"src": 760, "fin": 0.5}),
+    (43.6, 48.2, "s_honk2_close", {"src": 1112, "fin": 0.3, "fout": 0.9}),
+    (48.8, 52.9, "n3_teodor_bed", {"src": 0, "fin": 0.8}),
+    (52.4, 58.6, "n3_window_fog", {"src": 300, "fin": 0.5, "fout": 0.6}),
+    (59.0, 62.4, "s_board", {"src": 20, "fin": 0.6}),
+    (62.0, 66.5, "s_board", {"src": 440, "fin": 0.4}),
+    (66.1, 75.4, "s_mom_behind", {"src": 20, "fin": 0.5, "fout": 0.5}),
+    (75.6, 82.6, "s_bridge_ext", {"src": 300, "fin": 0.3, "lift": 1.35}),
+    (82.3, 88.3, "s_plunge", {"src": 30, "fin": 0.3, "lift": 1.5}),
+    (88.0, 92.5, "s_flood_in", {"src": 0, "fin": 0.4}),
+    (92.2, 95.7, "s_doors", {"src": 0, "fin": 0.3}),
+    (95.4, 104.88, "s_turn", {"src": 20, "fin": 0.4}),
+    (107.6, 111.6, "n5_fourteen", {"src": 0, "fin": 1.2, "fout": 0.9}),
+    (111.8, 117.8, "black", {"text": "title", "tin": 1.2}),
 ]
-# everything goes quiet (a hard cut to silence after a scare): (from, to)
-SILENCE = [(34.90, 35.30), (66.20, 67.20)]
+
+# words on screen: (from, to, png in text/). Subtitles start when the voice does and stay a beat after.
+OVERLAYS = [
+    (2.30, 7.90, "s_rhee_evening_full"),
+    (9.30, 14.20, "s_rhee_rules"),
+    (14.40, 20.70, "s_you_display"),
+    (22.60, 27.70, "s_mara_ride"),
+    (28.10, 31.80, "s_lena_met"),
+    (32.20, 33.70, "s_voices_came"),
+    (39.22, 42.30, "s_you_fu"),
+    (43.90, 48.20, "s_you_nobody"),
+    (50.00, 51.50, "s_old_late"),
+    (53.00, 58.60, "s_old_radio"),
+    (59.80, 65.10, "s_you_doors"),
+    (71.20, 72.50, "s_lena_grew"),
+    (73.50, 74.60, "s_you_mom"),
+    (75.90, 79.00, "s_rhee_eleven"),
+    (79.50, 82.30, "s_rhee_make"),
+    (82.50, 84.80, "s_rhee_faster"),
+    (88.40, 93.10, "s_you_coming3"),
+    (93.40, 96.70, "s_you_comeon2"),
+    (102.70, 104.60, "s_voices_stay"),
+    (106.40, 107.90, "s_lena_hi"),
+    (108.80, 111.40, "card_stopfor"),
+    (114.00, 117.80, "wishlist"),
+    (118.20, 121.70, "s_rhee_tomorrow"),
+]
+FADE_TEXT = {"card_stopfor": 0.5, "wishlist": 0.6}
+
+# sound: (at, wav in audio/, gain dB, options). A voice line's `at` is when the voice starts (silence before it is
+# trimmed). Options: cut=(from, to) seconds into the file (always in the quiet between words), fin/fout fades,
+# loop=seconds to fill (crossfaded), bus = vo | music | amb | sfx
+V = {"bus": "vo"}
+SOUND = [
+    # the street, the storm, the first night
+    (0.30, "amb_rain", -3, {"loop": 21.0, "fin": 2.0, "fout": 1.5, "bus": "amb"}),
+    (1.40, "sfx_static", -9, {"cut": (0.1, 1.2)}),
+    (2.20, "amb_rain_engine", -4, {"cut": (2.0, 8.0), "fin": 1.5, "fout": 1.5, "bus": "amb"}),
+    (2.30, "vo_018b35f7", 0, V),
+    (6.20, "sfx_bang", -10, {}),
+    (6.20, "mood_uneasy", -3, {"loop": 15.5, "fin": 1.5, "fout": 2.5, "bus": "music"}),
+    (9.30, "vo_2383af51", 0, {"cut": (3.1, 8.19), "bus": "vo"}),
+    (13.95, "sfx_static", -12, {"cut": (0.1, 0.7)}),
+    (14.40, "vo_3e6533b0", 0, V),
+    (19.30, "sfx_bang", -10, {}),
+    # the shelter, Mom at the doors, the fog
+    (20.50, "mood_dread", -2, {"loop": 55.2, "fin": 2.5, "fout": 0.6, "bus": "music"}),
+    (22.00, "amb_rain", -7, {"loop": 16.0, "fin": 0.8, "fout": 0.6, "bus": "amb"}),
+    (22.60, "vo_97309180", 0, V),
+    (28.10, "vo_07c2370f", 0, V),
+    (29.50, "sfx_whisper", -6, {}),
+    (32.20, "vo_6fd90922", 0, V),
+    (33.30, "sfx_squeak", -5, {}),
+    (35.50, "sfx_squeak", -9, {"cut": (0.1, 2.5)}),
+    # the car
+    (37.80, "amb_rain_engine", -6, {"cut": (2.0, 8.5), "fin": 0.4, "fout": 0.4, "bus": "amb"}),
+    (37.95, "sfx_horn", -5, {"cut": (0.1, 1.5)}),
+    (39.22, "vo_83a0fb23", 0, V),
+    (43.60, "sfx_rise", -7, {}),
+    (43.90, "vo_e9e244bf", 0, V),
+    # St. Agnes, 4B
+    (48.90, "sfx_beeps", -11, {"cut": (0.1, 4.0)}),
+    (50.00, "vo_c8b7b688", 0, V),
+    (52.60, "sfx_squeak", -8, {"cut": (0.1, 3.0)}),
+    (53.00, "vo_e19a942e", 0, V),
+    (55.30, "sfx_squeak", -10, {"cut": (0.1, 2.0)}),
+    # they get on; Mom
+    (59.00, "sfx_door", -9, {}),
+    (59.80, "vo_0cfa0f8e", 0, V),
+    (66.00, "amb_rain", -13, {"loop": 9.4, "fin": 1.0, "fout": 0.5, "bus": "amb"}),
+    (66.20, "sfx_breath", -8, {}),
+    (67.40, "sfx_heartbeat", -11, {}),
+    (66.80, "sfx_drip", -6, {}),
+    (68.60, "sfx_drip", -8, {}),
+    (71.20, "vo_4518468c", 0, V),
+    (73.50, "vo_9298e7e3", 0, V),
+    (73.70, "sfx_rise", -5, {"cut": (0.0, 3.0)}),
+    # the bridge
+    (75.60, "mood_terror", -3, {"loop": 29.3, "fin": 0.6, "fout": 0.05, "bus": "music"}),
+    (75.60, "amb_rain", -6, {"loop": 7.0, "fin": 0.2, "fout": 0.6, "bus": "amb"}),
+    (75.90, "vo_ce82045a", 0, V),
+    (79.50, "sfx_sting", -2, {}),
+    (79.50, "sfx_slam", -4, {}),
+    (79.50, "vo_e5be74f8", 2, V),
+    (82.30, "sfx_ignition", -6, {}),
+    (82.50, "vo_8937e20f", 0, {"cut": (0.0, 2.2), "bus": "vo"}),
+    (83.75, "sfx_scrape", -2, {}),
+    (83.75, "sfx_bang", -5, {}),
+    (84.30, "sfx_plunge", 0, {}),
+    (84.30, "sfx_slam", -5, {}),
+    (84.60, "sfx_gush", -4, {}),
+    (85.10, "sfx_splash", -7, {}),
+    # under
+    (88.00, "amb_underwater", 0, {"loop": 16.9, "fin": 0.4, "fout": 0.05, "bus": "amb"}),
+    (88.00, "sfx_gush", -3, {}),
+    (88.40, "vo_c8838305", 0, {"cut": (0.0, 5.2), "bus": "vo"}),
+    (92.70, "sfx_bang", -2, {}),
+    (93.00, "sfx_heartbeat", -4, {}),
+    (93.30, "sfx_bang", -2, {}),
+    (93.40, "vo_2b0a3f5c", 0, {"cut": (0.0, 3.73), "bus": "vo"}),
+    (93.90, "sfx_bang", -2, {}),
+    (95.30, "sfx_knock", -4, {}),
+    (97.50, "sfx_sting", -6, {}),
+    (97.50, "sfx_moan", 0, {"cut": (1.0, 6.5)}),
+    (101.15, "sfx_lightsout", 0, {}),
+    (101.15, "sfx_bubbles", -4, {}),
+    (102.48, "sfx_click", -4, {}),
+    (102.70, "vo_4f1ccf4b", 2, V),
+    (104.55, "sfx_lightsout", 0, {}),
+    # after
+    (106.40, "vo_6d286338", 0, V),
+    (107.40, "mood_grief", 1, {"loop": 9.5, "fin": 1.8, "fout": 2.5, "bus": "music"}),
+    (107.40, "amb_rain", -8, {"loop": 12.0, "fin": 1.5, "fout": 1.0, "bus": "amb"}),
+    (111.80, "sfx_thunder", 2, {}),
+    (111.80, "sfx_slam", -3, {}),
+    (118.20, "vo_755b438a", 0, V),
+    (121.90, "sfx_static", -8, {"cut": (0.1, 0.35)}),
+]
+# everything goes quiet, all at once: (from, to)
+SILENCE = [(104.88, 106.0)]
 
 
 # ---------------------------------------------------------------- picture
@@ -167,9 +183,10 @@ VIG = vignette()
 RNG = np.random.default_rng(1994)
 
 
-def grade(img):
-    """The look: a little darker, crushed shadows with a cold cast, slightly drained color."""
-    x = img.astype(np.float32) / 255.0
+def grade(img, lift=1.0):
+    """The look: a little darker, crushed shadows with a cold cast, slightly drained color. lift brightens a shot that's
+    too dark to read first (night exteriors)."""
+    x = np.clip(img.astype(np.float32) / 255.0 * lift, 0, 1)
     lum = (x[..., :1] * 0.2126 + x[..., 1:2] * 0.7152 + x[..., 2:] * 0.0722)
     x = lum + (x - lum) * 0.82                                   # less saturated
     x = np.clip(x, 0, 1) ** 1.12                                 # darker mids
@@ -230,26 +247,22 @@ def fade_k(t, start, length, fin, fout):
 
 
 def picture(t, fr):
-    seg = next((s for s in CUT if s[0] <= t < s[0] + s[1]), None)
     frame = np.zeros((H, W, 3), np.float32)
-    if seg:
-        start, length, what, o = seg
-        if what != "black":
-            i = o.get("src", 0) + int(round((t - start) * FPS))
-            img = grade(fr.shot(what, i))
-            img = up(img)
-            sh = o.get("shake", 0)
-            if sh:
-                amp = sh * max(0.0, 1 - (t - start) / length)
-                img = np.roll(img, (int(RNG.integers(-amp, amp + 1)), int(RNG.integers(-amp, amp + 1))), axis=(0, 1))
-            frame = img * fade_k(t, start, length, o.get("fin", 0), o.get("fout", 0))
-            if o.get("flash") and (t - start) * FPS < o["flash"]:
-                frame = frame * 0.3 + 0.75
+    for start, end, what, o in CUT:
+        if not start <= t < end:
+            continue
+        k = fade_k(t, start, end - start, o.get("fin", 0), o.get("fout", 0))
+        if what == "black":
+            layer = np.zeros_like(frame)
+        else:
+            i = o.get("src", 0) + int((t - start) * FPS + 0.5)
+            layer = up(grade(fr.shot(what, i), o.get("lift", 1.0)))
+        frame = frame * (1 - k) + layer * k
         if o.get("text"):
-            put(frame, fr.overlay(o["text"]), fade_k(t, start, length, o.get("tin", 0), o.get("tout", 0)))
+            put(frame, fr.overlay(o["text"]), fade_k(t, start, end - start, o.get("tin", 0), o.get("tout", 0)))
     for a, b, name in OVERLAYS:
         if a <= t < b:
-            f = FADE_TEXT.get(name, 0.08)
+            f = FADE_TEXT.get(name, 0.15)
             put(frame, fr.overlay(name), fade_k(t, a, b - a, f, f))
     # grain over everything (cards too): fine, a little stronger in the dark
     g = GRAIN[int(t * FPS) % len(GRAIN)]
@@ -320,12 +333,12 @@ def mix(raw):
         x = read(raw, name)
         if "cut" in o:
             a, b = o["cut"]
-            x = x[snap(x, a):snap(x, b)] if name.startswith("vo_") else x[int(a * SR):int(b * SR)]
-        elif name.startswith(("vo_", "sfx_")):
+            x = x[snap(x, a, 0.05):snap(x, b, 0.05)] if name.startswith("vo_") else x[int(a * SR):int(b * SR)]
+        if name.startswith(("vo_", "sfx_")):
             x = trim_silence(x)
         if "loop" in o:
             x = looped(x, o["loop"])
-        x = x * env(len(x), o.get("fin", 0.004), o.get("fout", 0.03 if name.startswith("vo_") else 0.02))[:, None]
+        x = x * env(len(x), o.get("fin", 0.004), o.get("fout", 0.08 if name.startswith("vo_") else 0.03))[:, None]
         x = x * 10 ** (gain / 20)
         i = int(at * SR)
         j = min(n, i + len(x))
@@ -406,8 +419,8 @@ def main():
     out = av.open(args.out, "w", options={"movflags": "+faststart"})
     vs = out.add_stream("libx264", rate=FPS)
     vs.width, vs.height, vs.pix_fmt = W, H, "yuv420p"
-    vs.options = {"crf": "18", "maxrate": "16M", "bufsize": "32M", "preset": "slow", "profile": "high", "tune": "film",
-                  "x264-params": "colorprim=bt709:transfer=bt709:colormatrix=bt709:keyint=60"}
+    vs.options = {"crf": "18", "maxrate": "22M", "bufsize": "44M", "preset": "slow", "profile": "high", "tune": "film",
+                  "x264-params": "colorprim=bt709:transfer=bt709:colormatrix=bt709:keyint=120"}
     aus = out.add_stream("aac", rate=SR, layout="stereo")
     aus.bit_rate = 256000
     nf = int(round((t1 - t0) * FPS))
@@ -418,7 +431,7 @@ def main():
         vf.pts = k
         for p in vs.encode(vf):
             out.mux(p)
-        if k % 150 == 0:
+        if k % 600 == 0:
             print(f"{t:6.1f}s", flush=True)
     for p in vs.encode():
         out.mux(p)

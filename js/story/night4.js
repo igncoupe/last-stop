@@ -303,15 +303,7 @@ async function bridge(g) {
     speed = 16;
     await g.say("rhee", "GOOD. GOOD DRIVER.");
     await g.say("lena", "No. No, no, no. Not you too.");
-    await g.frames((dt) => {
-      bus.position.z += speed * dt;
-      if (bus.position.z > edgeZ) {
-        bus.position.y -= dt * 9;
-        bus.rotation.x = Math.min(0.5, bus.rotation.x + dt * 0.6);
-      }
-      return bus.position.y < -5;
-    });
-    g.sfx("splash");
+    await plunge(g, edgeZ);
     await sink(g);
     f.obeyedN4 = true;
   }
@@ -438,15 +430,108 @@ async function payphones(g) {
   g.mood("uneasy");
 }
 
+// Off the end of the bridge, the way a twelve-ton bus really goes: the pedal floored from a standstill, the front
+// wheels dropping off the deck and the frame grinding over the broken edge, then, once its weight is past the edge,
+// the whole bus tipping over it nose first and falling, still moving forward. It hits the river nose-first and hard
+// (spray thrown up and ahead, a ring of foam), the back slaps down, and it floats for a moment, nose low, rocking,
+// before the water takes it.
+async function plunge(g, edge) {
+  const B = g.places.bridge;
+  const bus = g.bus.group;
+  const water = B.waterY;
+  const FRONT_AXLE = 3.9, REAR = -6.15, NOSE = 6.2, K2 = 13;       // bus space; K2: how hard it is to tip (radius of gyration²)
+  let z = bus.position.z, y = 0, p = 0, vz = 0, vy = 0, w = 0, t = 0;
+  let phase = "drive";
+  let hitT = 0, slapped = false;
+  const fwd = new THREE.Vector3(0, 0, 1);
+  g.sfx("ignition");
+  g.shake(0.6);
+  await g.frames((dt) => {
+    t += dt;
+    const y0 = y;
+    if (phase === "drive" || phase === "scrape") {
+      vz = Math.min(9, vz + dt * 3.6);                              // floored, from a crawl
+      if (phase === "scrape") vz *= 1 - dt * 0.15;
+      z += vz * dt;
+      if (phase === "drive" && z + FRONT_AXLE > edge) {
+        phase = "scrape";                                           // the front wheels go: the frame lands on the edge
+        g.sfx("scrape", 1.1);
+        g.sfx("bang");
+        g.shake(1.2);
+      }
+      if (phase === "scrape") {
+        // the nose sags as more of it hangs out over nothing; the frame rides on the edge
+        const sag = 0.07 * Math.min(1, (z + FRONT_AXLE - edge) / 1.5);
+        p += (sag - p) * Math.min(1, dt * 10);
+        y = (edge - z) * Math.tan(p);
+      }
+      if (z > edge) phase = "tip";
+    } else if (phase === "tip") {
+      // its weight is past the edge: it pivots over the concrete, nose going down faster and faster
+      w += (9.81 * (z - edge) / K2) * Math.cos(p) * dt;
+      p += w * dt;
+      z += vz * dt;
+      y = (edge - z) * Math.tan(p);                                // the floor stays on the edge as it turns
+      if (z + REAR * Math.cos(p) > edge) {                          // the back end clears it: falling free
+        phase = "fall";
+        vy = (y - y0) / Math.max(dt, 1e-3);
+      }
+    } else if (phase === "fall") {
+      vy -= 9.81 * dt;
+      y += vy * dt;
+      z += vz * dt;
+      w *= 1 - dt * 0.1;
+      p += w * dt;
+    }
+    if (phase === "tip" || phase === "fall") {
+      // (a slow roll off a high deck can put the nose in the river before the back has left the bridge)
+      const noseY = y + 0.3 * Math.cos(p) - NOSE * Math.sin(p);
+      if (noseY <= water) {
+        if (phase === "tip") vy = (y - y0) / Math.max(dt, 1e-3);
+        // in, nose first
+        phase = "water";
+        hitT = t;
+        const at = new THREE.Vector3(bus.position.x, water, z + NOSE * Math.cos(p));
+        B.splash.burst(at, { power: Math.min(1.3, 0.55 + Math.hypot(vz, vy) / 14), dir: fwd });
+        g.sfx("plunge");
+        g.sfx("slam");
+        g.shake(2.8);
+        vz *= 0.35;
+        vy *= 0.3;
+        w *= 1.3;                                                   // the nose digs in
+      }
+    } else if (phase === "water") {
+      // in the water: it bobs up to float, nose low, rocks back, and slows to a stop
+      const floatY = water - 1.05;
+      vy += ((floatY - y) * 7 - vy * 2.4) * dt;
+      y += vy * dt;
+      vz *= Math.max(0, 1 - dt * 2.2);
+      z += vz * dt;
+      w += ((0.3 - p) * 4.5 - w * 2.2) * dt;
+      p += w * dt;
+      if (!slapped && w < -0.2) {                                   // the back comes down hard
+        slapped = true;
+        B.splash.burst(new THREE.Vector3(bus.position.x, water, z + REAR * Math.cos(p) * 0.8), { power: 0.45, dir: fwd.clone().negate(), spread: 0.8 });
+        g.sfx("splash");
+      }
+    }
+    bus.position.y = y;
+    bus.position.z = z;
+    bus.rotation.x = p;
+    bus.rotation.z = phase === "water" ? Math.sin((t - hitT) * 1.7) * 0.025 * Math.exp(-(t - hitT) * 0.5) : 0;
+    g.drive.state.speed = vz;
+    return phase === "water" && t - hitT > 1.9;
+  });
+}
+
 // Over the edge, into the river. The glass cracks, the water comes in through everything, up over the seats, up
 // over your head. The lights die. The doors won't open. Your air is running out. And when you turn round, they're
 // not in their seats any more: they're right behind you, all of them, drifting in the aisle, their faces at yours.
 // Your mother's closest. She reaches for you. Then they all come at once, and there's nothing.
 async function sink(g) {
   const bus = g.bus;
-  g.shake(2.6);
-  g.sfx("crack");
-  g.sfx("slam");
+  g.shake(1.4);
+  g.sfx("crack");                                             // the windshield gives under the water's weight
   bus.setSmudge(2);
   g.interior("flicker");
   g.amb({ water: 1, engine: 0 });
@@ -460,13 +545,16 @@ async function sink(g) {
   bus.group.add(lamp);
   let lv = 0.05;
   let under = false;
+  let sinkV = 0;
   const hull = bus.group;
   const rising = g.frames((dt) => {
     lv = Math.min(5.8, lv + dt * (lv < 2 ? 1.1 : 0.8));
     bus.setWater(lv);
-    // ...and the bus goes down, nose first, under the river
-    hull.position.y = Math.max(-12, hull.position.y - dt * 1.7);
-    hull.rotation.x += (0.32 - hull.rotation.x) * Math.min(1, dt * 0.8);
+    // ...and the bus goes down, nose first, under the river: slowly at first, then faster as it fills
+    sinkV = Math.min(1.6, sinkV + dt * 0.55);
+    hull.position.y = Math.max(-12, hull.position.y - dt * sinkV);
+    hull.rotation.x += (0.34 - hull.rotation.x) * Math.min(1, dt * 0.5);
+    hull.rotation.z *= 1 - Math.min(1, dt * 0.8);
     if (!under && lv > 2.8) { under = true; g.underwater(true); g.sfx("bubbles", 3); }
     return lv >= 5.8;
   });
