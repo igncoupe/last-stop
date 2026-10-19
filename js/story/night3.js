@@ -432,8 +432,8 @@ async function ward(g) {
 
 // A car comes up behind with its high beams on and sits on your bumper, leaning on the horn. An old car, filthy,
 // rusted. It pulls out and comes up alongside, still honking. You flip them off. The horn stops, and the light comes
-// on inside it: nobody at the wheel, water to the seats, and a drowned woman in the passenger seat, turning to look
-// at you. You look away, back at the road. She's in the road. Then she's on the glass.
+// on inside it: nobody at the wheel. The shape you took for the driver is a drowned woman in the passenger seat,
+// and she turns, slowly, to look at you. You look away, back at the road. She's in the road. Then she's on the glass.
 async function honker(g) {
   const car = g.tailgater();                 // (it drives itself: up behind you, then beside your window)
   const done = () => car.gone || g.d > STOPS["Elm & 4th"] - 110;

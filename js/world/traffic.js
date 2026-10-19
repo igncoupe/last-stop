@@ -372,6 +372,10 @@ export function createTraffic(scene, sfx) {
       if (c.d - busD > 120) { remove(c); return; }
     }
     place(c);
+    if (c.domeT !== undefined && c.domeT < 0.36) {
+      c.domeT += dt;
+      c.dome.visible = c.domeT >= 0.36 || [1, 0, 0, 1, 0, 1, 1, 0, 1][Math.floor(c.domeT / 0.04)] === 1;
+    }
     if (c.dome.visible) c.wheelRim.rotation.z = Math.sin(c.t * 1.7) * 0.35;
   }
 
@@ -401,11 +405,16 @@ export function createTraffic(scene, sfx) {
       c.dome.visible = false;
       c.hazards.forEach((h) => { h.visible = false; });
       setHeadlights(c, true, 2.6);                       // high beams, straight into your mirror
-      // in the front passenger seat, in the dark: a drowned woman, her hair plastered to her face. You only
-      // see her when the light comes on.
+      // in the front passenger seat, the one by your window: a drowned woman, her hair plastered to her face.
+      // She's there the whole time, a still shape in the dark looking at the road, and you take her for the
+      // driver. Only when the light comes on do you see which seat she's in, and that the other one is empty.
       const woman = new Person(scene, "carwoman", { ghost: true });
       woman.sit(c.g, new THREE.Vector3(-0.42, 0.08, 0.05), 0);
-      woman.root.visible = false;
+      const road = new THREE.Object3D();
+      road.position.set(-0.42, 0.7, 3.2);                // the road ahead, a little down
+      c.g.add(road);
+      woman.watch(road);
+      woman.turnRate = 1.5;                              // when she turns her head, she takes her time
       c.woman = woman;
       scene.add(c.g);
       cars.push(c);
@@ -414,9 +423,8 @@ export function createTraffic(scene, sfx) {
       c.quiet = () => { c.hush = true; };
       c.domeOn = () => {
         c.dome.visible = true;
-        c.driver.visible = false;                        // (still nobody at the wheel)
-        c.woman.root.visible = true;                     // ...and her, soaked, in the passenger seat
-        c.woman.watch(cameraRef);                        // turning to look at you
+        c.domeT = 0;                                     // an old bulb: it stutters before it catches
+        c.woman.watch(cameraRef);                        // and she turns, slowly, to look at you
         if (c.flooded) c.flooded.visible = true;
       };
       c.window = () => c.g.localToWorld(new THREE.Vector3(-0.8, 1.15, 0));

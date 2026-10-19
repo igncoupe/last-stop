@@ -539,7 +539,7 @@ export class Person {
       const neckY = this.neck.position.y + this.body.position.y;
       const yaw = THREE.MathUtils.clamp(Math.atan2(local.x, local.z), -1.35, 1.35);
       const pitch = THREE.MathUtils.clamp(-Math.atan2(local.y - neckY - 0.15, Math.hypot(local.x, local.z)), -0.6, 0.5);
-      const k = Math.min(1, dt * (this.watching ? 6 : 4));
+      const k = Math.min(1, dt * (this.turnRate || (this.watching ? 6 : 4)));
       this.neck.rotation.order = "YXZ";
       this.neck.rotation.y += (yaw - this.neck.rotation.y) * k;
       this.neck.rotation.x += (pitch - this.neck.rotation.x) * k;
