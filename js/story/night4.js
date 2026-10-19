@@ -243,11 +243,21 @@ async function bridge(g) {
   await g.fade(1, 500);
   g.drive.detach(true);
   B.group.visible = true;
+  B.wreckage.visible = true;
   g.sky("void");
   bus.position.copy(B.start);
   bus.rotation.set(0, 0, 0);
   let speed = 13;
   await g.fade(0, 700);
+  // the storm, out over the river: in every flash, the bridge ahead, and where it just stops
+  let storming = true;
+  (async () => {
+    await g.wait(2600);
+    while (storming) {
+      g.flash();
+      await g.wait(3000 + Math.random() * 2400);
+    }
+  })();
   await g.think("The street's gone. The buildings are gone. The road is getting narrower.");
   // under the last good streetlight: the shadow, pointing the way onto the bridge
   g.shadeAt(new THREE.Vector3(B.origin + 4.1, 0.05, 170), "point", new THREE.Vector3(B.origin + 4.1, 0, 500));
@@ -275,6 +285,7 @@ async function bridge(g) {
   const rolling = roll(edgeZ - 6, 34, 1.2);
   await pointing;
   const c = await g.choose(options, { silent: true });
+  storming = false;
   const obey = c === options.length - 1;
   if (!obey) {
     f.brakedN4 = true;
@@ -287,7 +298,9 @@ async function bridge(g) {
     g.shake(2);
     await g.frames((dt) => true);
     speed = 0;
-    await g.wait(1200);
+    await g.wait(700);
+    g.flash();                                     // and in the flash: the drop, right under the front wheels
+    await g.wait(500);
     g.mood("dread");
     await g.think("It stopped. The front wheels are on the last slab of the bridge. Under me there's nothing. Just the river, waiting.");
     g.sfx("whisper");

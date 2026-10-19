@@ -51,6 +51,11 @@ scene.add(camera);
 const hemi = new THREE.HemisphereLight(0x4a5878, 0x0a0a0c, 0.35);
 const ambient = new THREE.AmbientLight(0x1c2030, 0.6);
 scene.add(hemi, ambient);
+// moonlight over the river, and the lightning's flash: one cold light from high up. It's always in the scene (at 0
+// when it's not needed), so turning it on never recompiles a shader.
+const skyLight = new THREE.DirectionalLight(0xc8d8ff, 0);
+skyLight.position.set(-40, 80, 30);
+scene.add(skyLight);
 scene.fog = new THREE.FogExp2(0x05070c, 0.03);
 scene.background = new THREE.Color(0x05070c);
 
@@ -58,25 +63,33 @@ const SKIES = {
   night: { fog: 0x05070c, density: 0.03, hemi: 0.35 },
   storm: { fog: 0x070a10, density: 0.042, hemi: 0.3 },
   dawn: { fog: 0x8a95a3, density: 0.014, hemi: 1.6 },
-  void: { fog: 0x05070b, density: 0.016, hemi: 0.38 },   // the bridge: dark, but you can see the road
+  void: { fog: 0x05070b, density: 0.016, hemi: 0.38, moon: 1.1 },   // the bridge: dark, but you can see the road
   hospital: { fog: 0x0b0d0c, density: 0.02, hemi: 0.4 },
   ward: { fog: 0x090c10, density: 0.024, hemi: 0.42 },   // 4 West: indoors, but the night outside the windows
   underwater: { fog: 0x03100e, density: 0.2, hemi: 0.12 },  // the river: green-black, you can't see past the glass
 };
 let hemiBase = 0.35;
+let moonBase = 0;
+const skyBase = new THREE.Color(0x05070c);
+const SKY_FLASH = new THREE.Color(0x46526a);       // the sky, for the instant the lightning lights it
 function setSky(name) {
   const k = SKIES[name] || SKIES.night;
   scene.fog.color.set(k.fog);
   scene.fog.density = k.density;
   scene.background.set(k.fog);
+  skyBase.set(k.fog);
   hemi.intensity = hemiBase = k.hemi;
+  skyLight.intensity = moonBase = k.moon || 0;
 }
-// a cold flash across the sky, not a white-out
-function lightning() {
-  hemi.intensity = 1.8;
-  setTimeout(() => { hemi.intensity = hemiBase; }, 70);
-  setTimeout(() => { hemi.intensity = 1.3; }, 150);
-  setTimeout(() => { hemi.intensity = hemiBase; }, 230);
+// a cold flash across the sky, not a white-out: a flash, a flicker, a second flash, and it dies away. On the game's
+// clock, so it pauses with the game.
+let flashT = -1;
+function lightning() { flashT = 0; }
+function flashLevel(t) {
+  if (t < 0.07) return 1;
+  if (t < 0.13) return 0.12;
+  if (t < 0.22) return 0.7;
+  return 0.35 * Math.max(0, 1 - (t - 0.22) / 0.35);
 }
 
 const city = buildCity(scene);
@@ -225,6 +238,16 @@ if (TEST) window.__tick = (dt) => tick(dt, true);
 
 function tick(dt, forceDraw = false) {
   if (paused) return;
+  if (flashT >= 0) {
+    flashT += dt;
+    const f = flashT > 0.6 ? 0 : flashLevel(flashT);
+    hemi.intensity = hemiBase + (1.9 - hemiBase) * f;
+    skyLight.intensity = moonBase + 4.5 * f;
+    // the sky lights up too (and the rain haze with it): everything stands out black against it
+    scene.background.lerpColors(skyBase, SKY_FLASH, f);
+    scene.fog.color.lerpColors(skyBase, SKY_FLASH, f * 0.6);
+    if (flashT > 0.6) flashT = -1;
+  }
   if (playing && input.hit("KeyF")) toggleDoors();
   // the horn. One time in twenty, it's not the horn you were expecting.
   if (playing && player.mode === "seat" && !player.state.locked && input.hit("KeyH")) {

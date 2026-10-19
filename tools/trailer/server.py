@@ -90,6 +90,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(204)
         self.end_headers()
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")            # always the files as they are now
+        super().end_headers()
+
     def log_message(self, *a):
         pass
 

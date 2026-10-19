@@ -267,6 +267,7 @@ async function endHome(g, crowd, deadAir) {
   const P = g.places.bridge;
   g.drive.detach(true);
   P.group.visible = true;
+  P.wreckage.visible = false;
   g.sky("void");
   g.bus.group.position.copy(P.start);
   g.bus.group.position.z = P.edge - 120;            // the last stretch of road, then the bridge
