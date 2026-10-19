@@ -326,6 +326,12 @@ canvas.addEventListener("click", () => { if (playing && !inMenu) input.lock(); }
 $("btn-resume").addEventListener("click", () => input.lock());
 $("btn-pause-settings").addEventListener("click", () => openSettings("screen-pause"));
 $("btn-quit").addEventListener("click", () => location.reload());
+// in the desktop app (desktop/), the game can quit, and fullscreen is the window's own (Esc doesn't drop out of it)
+const desktop = window.desktop || null;
+if (desktop) {
+  $("btn-exit").hidden = false;
+  $("btn-exit").addEventListener("click", () => desktop.quit());
+}
 
 /* ---------- the game ---------- */
 async function loadManifest() {
@@ -502,8 +508,9 @@ const range = (key, label, min, max, step, show, sub) => ({ key, label, sub, typ
 const toggle = (key, label, sub) => ({ key, label, sub, type: "toggle" });
 const fullscreen = {
   label: "Fullscreen", type: "toggle",
-  get: () => !!document.fullscreenElement,
+  get: () => (desktop ? desktop.isFullscreen() : !!document.fullscreenElement),
   set(on) {
+    if (desktop) { desktop.setFullscreen(on); return; }
     if (on === !!document.fullscreenElement) return;
     const p = on ? document.documentElement.requestFullscreen?.() : document.exitFullscreen?.();
     if (p && p.catch) p.catch(() => {});

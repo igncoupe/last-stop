@@ -1,0 +1,58 @@
+{
+  "name": "the-last-stop",
+  "productName": "The Last Stop",
+  "version": "1.0.0",
+  "description": "A first-person horror game about the last bus of the night.",
+  "author": "igncoupe",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "game": "node build-game.mjs",
+    "start": "node build-game.mjs && electron .",
+    "dist": "node build-game.mjs && electron-builder --win nsis --publish never",
+    "release": "node release.mjs"
+  },
+  "devDependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0",
+    "electron": "^44.9.0",
+    "electron-builder": "^26.15.3",
+    "three": "0.160.0"
+  },
+  "build": {
+    "appId": "com.igncoupe.thelaststop",
+    "productName": "The Last Stop",
+    "copyright": "igncoupe",
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "icon.ico",
+      "game/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "The Last Stop",
+      "uninstallDisplayName": "The Last Stop",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "The Last Stop Setup ${version}.${ext}"
+    },
+    "publish": null
+  }
+}

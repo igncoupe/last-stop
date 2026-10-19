@@ -81,6 +81,34 @@ New lines need a direction in `tools/el-direction.txt` too (or they get a simple
 
 Want real actors instead? Record a line and save it over its file in `voices/` (the file name is in `voices/manifest.json`).
 
+## The desktop app
+
+`desktop/` makes the game a Windows app (Electron): its own window, full screen (F11 or Alt+Enter, or Settings),
+a **Quit game** button on the title screen, and it plays offline (three.js and the fonts are inside it). Saves are in
+`%APPDATA%\The Last Stop`.
+
+```
+cd desktop
+npm install                 # once
+npm start                   # run it from the source
+npm run dist                # build the installer: dist/The Last Stop Setup <version>.exe
+```
+
+**Updates.** A new version is a GitHub release on this repo, with the installer attached. When the app starts, it
+asks the GitHub CLI (`gh`, signed in on that PC) for the latest release; if it's newer, it downloads it in the
+background and offers to restart and update (or installs it when you quit). Saves are kept. No password or key is
+stored in the app, so with the repo private, only a PC signed in to GitHub as a collaborator gets updates.
+
+```
+npm run release -- "what changed"     # bumps the version, builds, publishes the release
+```
+
+Then commit `desktop/package.json` (the new version number). `make-icon.py` draws `icon.ico` (needs Pillow).
+
+**Checking a build:** `LASTSTOP_SMOKE=<folder>` runs the app silently in a window, gets into Night 1, and leaves
+screenshots and the console log in that folder (with its own saves, never yours); add `LASTSTOP_UPDATE_TEST=0.9.0`
+to also check for (and download, but not install) an update as if it were that version.
+
 ## Testing tricks
 
 - Add `?night=3` to the URL and press New game to start on a later night.

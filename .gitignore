@@ -5,3 +5,6 @@ tools/voices-el.json
 tools/refs/el/previews/
 tools/refs/el/audition.html
 tools/__pycache__/
+desktop/node_modules/
+desktop/dist/
+desktop/game/
