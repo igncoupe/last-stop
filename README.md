@@ -85,3 +85,18 @@ Want real actors instead? Record a line and save it over its file in `voices/` (
 
 - Add `?night=3` to the URL and press New game to start on a later night.
 - **Automatic playtester:** `?test&fast=10&bot=kind` plays the whole game by itself at 10x speed, silently (add `&sound` to hear it) and reports errors, dead ends and the ending in `window.__botReport` (open the browser console). Strategies: `kind` (stops for everyone), `cold` (stops for no one), `deadair` (goes for the true ending), `random`.
+
+## Making the trailer
+
+The Steam trailer is cut from the game itself, in `tools/trailer/`:
+
+1. `python tools/trailer/server.py OUT_DIR` serves the game and saves what the capture sends it.
+2. Open a test run (`?test&fast=10&bot=...&night=N`) at a 1920x1080 window, then in the console
+   `const S = await import("/tools/trailer/shots.js")`. When the story gets to the moment, `S.C.shoot("name", frames, { each })`
+   takes over the clock and records exact 1/30 s steps as PNGs (`window.__manual` and `window.__tick(dt)` do the stepping),
+   while `each(t)` moves the camera (`S.aimAt`, `S.C.freeCam`, `S.C.place`).
+3. With `?test&sound`, `tools/trailer/sounds.js` records the ambience, the score's moods, the effects and the voice lines
+   through the game's own mix (Rhee stays on the radio). `S.C.subtitle` and `S.C.text` draw subtitles and cards in the
+   game's fonts.
+4. `python tools/trailer/make_trailer.py OUT_DIR "The Last Stop - Trailer.mp4"` cuts it: the edit, the grade, the mix, and a
+   1920x1080 30 fps H.264 + AAC file for Steam (needs PyAV, Pillow, NumPy, SciPy and soundfile).

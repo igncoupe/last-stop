@@ -43,6 +43,8 @@ function init() {
   master.connect(muffle);
   muffle.connect(limiter);
   limiter.connect(ctx.destination);
+  // test runs: where everything comes out, so it can be recorded (the trailer's sound is the game's own)
+  if (/[?&]test\b/.test(location.search)) window.__soundOut = { ctx, out: limiter };
   userVoice = bus(levels.voices);
   userMusic = bus(levels.music);
   userSfx = bus(levels.sfx);

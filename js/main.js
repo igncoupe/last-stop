@@ -217,6 +217,13 @@ function frame(now) {
   // in a test run, window.__fast changes the speed mid-run (0 freezes the game for a screenshot)
   const dt = Math.min(0.05, (now - last) / 1000) * (TEST && window.__fast != null ? window.__fast : FAST);
   last = now;
+  // ...and window.__manual hands the clock over to window.__tick(dt): one exact step at a time, for recording
+  if (TEST && window.__manual) return;
+  tick(dt);
+}
+if (TEST) window.__tick = (dt) => tick(dt, true);
+
+function tick(dt, forceDraw = false) {
   if (paused) return;
   if (playing && input.hit("KeyF")) toggleDoors();
   // the horn. One time in twenty, it's not the horn you were expecting.
@@ -257,7 +264,7 @@ function frame(now) {
   people.update(dt);
   director.update(dt);
   Sound.update(camera);
-  const draw = !TEST || FAST <= 1 || testFrame++ % 3 === 0;
+  const draw = forceDraw || !TEST || FAST <= 1 || testFrame++ % 3 === 0;
   // the main menu has its own picture: the game world isn't drawn behind it
   if (draw && !menuUp && player.mode === "seat") bus.renderMirror(renderer, scene);
   if (draw && !menuUp) renderer.render(scene, camera);
@@ -632,7 +639,7 @@ resetWorld(1);
 warmUp();
 nextFrame(frame);
 if (TEST) {
-  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input, horror, shade, places, traffic, world, self };
+  window.__lastStop = { g, drive, bus, player, props, director, camera, renderer, scene, input, horror, shade, places, traffic, world, self, Sound, ui };
   // ?bot=kind|cold|deadair|random: the automatic playtester plays the game
   if (params.get("bot")) {
     import("../tools/playtest.js").then((m) => {
