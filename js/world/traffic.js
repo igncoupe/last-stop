@@ -397,6 +397,7 @@ export function createTraffic(scene, sfx) {
       const c = { ...m, mode: "tail", phase: "approach", d: lastBusD - 32, lateral: LANE, speed: 0, t: 0, passed: true, honks: 0,
         honkT: 0.4, hush: false, gone: false, flash: 0 };
       c.passenger.visible = false;
+      c.driver.visible = false;                          // nobody at the wheel, ever: not even a shape in the dark
       c.dome.visible = false;
       c.hazards.forEach((h) => { h.visible = false; });
       setHeadlights(c, true, 2.6);                       // high beams, straight into your mirror
@@ -413,7 +414,7 @@ export function createTraffic(scene, sfx) {
       c.quiet = () => { c.hush = true; };
       c.domeOn = () => {
         c.dome.visible = true;
-        c.driver.visible = false;                        // there's nobody at the wheel
+        c.driver.visible = false;                        // (still nobody at the wheel)
         c.woman.root.visible = true;                     // ...and her, soaked, in the passenger seat
         c.woman.watch(cameraRef);                        // turning to look at you
         if (c.flooded) c.flooded.visible = true;
