@@ -409,7 +409,7 @@ export function createTraffic(scene, sfx) {
       // She's there the whole time, a still shape in the dark looking at the road, and you take her for the
       // driver. Only when the light comes on do you see which seat she's in, and that the other one is empty.
       const woman = new Person(scene, "carwoman", { ghost: true });
-      woman.sit(c.g, new THREE.Vector3(-0.42, 0.08, 0.05), 0);
+      woman.sit(c.g, new THREE.Vector3(-0.42, -0.05, 0.05), 0);   // low in the seat: sat up, her head went through the roof
       const road = new THREE.Object3D();
       road.position.set(-0.42, 0.7, 3.2);                // the road ahead, a little down
       c.g.add(road);

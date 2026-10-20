@@ -26,6 +26,9 @@ export const LOOKS = {
   ivy:     { height: 1.15, f: true, build: 0.9, shirt: 0xe0b42a, pants: 0x2c3b4d, skin: 0xbfc3c6, hair: 0x3a2a1a, hairStyle: "pigtails", hood: true, wet: true, child: true, buttons: 0xf2d24a },
   rosie:   { height: 1.7, f: true, build: 0.98, shirt: 0x3b2b2b, pants: 0x1f1d22, skin: 0xd6b096, hair: 0x5a3a22, hairStyle: "long", coat: 0x4a3434 },
   harold:  { height: 1.72, build: 0.9, shirt: 0x6b6f72, pants: 0x3a3d40, skin: 0xa9adb0, hair: 0x7a7a7a, hairStyle: "short", wet: true, cardigan: 0x5a5f62, headset: true, glasses: 0x1a1a1a },
+  // you, the driver, the way someone outside the bus would see you (the trailer's outside shots): the same work
+  // jacket, pants and hands as your own body in the driver's seat (selfBody.js)
+  driver:  { height: 1.78, build: 1.04, shirt: 0x1d2532, pants: 0x2a2c31, skin: 0x5b3c2a, hair: 0x0e0b09, hairStyle: "short" },
   // the woman in the car on your tail (night 3)
   carwoman: { height: 1.64, f: true, build: 0.9, shirt: 0x2a2c30, pants: 0x1c1e22, skin: 0x9aa5a8, hair: 0x0a0a0c, hairStyle: "long", wet: true, lips: 0x3a3a40 },
   // the rest of the fourteen look different every time (see variant()), these are the defaults
