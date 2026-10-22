@@ -228,16 +228,19 @@ function watchNorthgate(dt) {
 function frame(now) {
   nextFrame(frame);
   // in a test run, window.__fast changes the speed mid-run (0 freezes the game for a screenshot)
-  const dt = Math.min(0.05, (now - last) / 1000) * (TEST && window.__fast != null ? window.__fast : FAST);
+  // Do not discard time on ordinary slow frames (the old 50 ms cap made
+  // driving slow down below 20 FPS). Bound suspension recovery separately.
+  const dt = Math.min(0.25, Math.max(0, (now - last) / 1000)) * (TEST && window.__fast != null ? window.__fast : FAST);
   last = now;
   // ...and window.__manual hands the clock over to window.__tick(dt): one exact step at a time, for recording
   if (TEST && window.__manual) return;
-  tick(dt);
+  const steps = Math.max(1, Math.ceil(dt / 0.05));
+  for (let i = 0; i < steps; i++) tick(dt / steps, false, i === steps - 1);
 }
 if (TEST) window.__tick = (dt) => tick(dt, true);
 
-function tick(dt, forceDraw = false) {
-  if (paused) return;
+function tick(dt, forceDraw = false, renderFrame = true) {
+  if (paused) { input.endFrame(); return; }
   if (flashT >= 0) {
     flashT += dt;
     const f = flashT > 0.6 ? 0 : flashLevel(flashT);
@@ -287,7 +290,7 @@ function tick(dt, forceDraw = false) {
   people.update(dt);
   director.update(dt);
   Sound.update(camera);
-  const draw = forceDraw || !TEST || FAST <= 1 || testFrame++ % 3 === 0;
+  const draw = renderFrame && (forceDraw || !TEST || FAST <= 1 || testFrame++ % 3 === 0);
   // the main menu has its own picture: the game world isn't drawn behind it
   if (draw && !menuUp && player.mode === "seat") bus.renderMirror(renderer, scene);
   if (draw && !menuUp) renderer.render(scene, camera);
