@@ -401,7 +401,7 @@ export function createDirector(w) {
       return p;
     },
     // walk from where they are, up the steps, pay, and sit down
-    async board(key, seatName, speed = 1.4) {
+    async board(key, seatName, speed = 1.4, { smoothSeat = false } = {}) {
       s.waiting = `${key} boarding`;
       const p = actors.get(key);
       const outside = bus.group.localToWorld(bus.boardPath[0].clone());
@@ -418,7 +418,23 @@ export function createDirector(w) {
       Sound.sfx("coin");
       // the last step is up to the seat's own height (seats over the wheels sit on a platform)
       await p.walk([new THREE.Vector3(0, 0.45, seatPos.z + 0.4), new THREE.Vector3(seatPos.x * 0.6, seatPos.y, seatPos.z + 0.1)], { speed, parent: bus.group, ground: bus.groundAt });
-      p.sit(bus.group, seatPos, 0);
+      if (smoothSeat) {
+        await p.walk([seatPos], { speed, parent: bus.group, ground: bus.groundAt });
+        const parts = [p.root, p.body, ...p.hips, ...p.knees, ...p.arms];
+        const from = parts.map((o) => ({ pos: o.position.clone(), q: o.quaternion.clone() }));
+        p.sit(bus.group, seatPos, 0);
+        const to = parts.map((o) => ({ pos: o.position.clone(), q: o.quaternion.clone() }));
+        let t = 0;
+        await until((dt) => {
+          t = Math.min(1, t + dt / 0.45);
+          const k = t * t * (3 - 2 * t);
+          parts.forEach((o, i) => {
+            o.position.lerpVectors(from[i].pos, to[i].pos, k);
+            o.quaternion.slerpQuaternions(from[i].q, to[i].q, k);
+          });
+          return t === 1;
+        });
+      } else p.sit(bus.group, seatPos, 0);
     },
     // get off the bus and walk somewhere (a world position), then vanish
     async alight(key, to = null, { vanish = true, speed = 1.4 } = {}) {

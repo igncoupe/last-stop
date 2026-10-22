@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { ui } from "../core/ui.js";
 import { Sound } from "../audio.js";
+import { input } from "../core/input.js";
 
 const WALK_SPEED = 2.4;
 const RADIUS = 0.3;
@@ -26,7 +27,11 @@ export function createPlayer(camera, scene) {
     shake: 0,
   };
   const SMOOTH = 15;        // view smoothing: higher = snappier
-  const snapView = () => { s.viewYaw = s.yaw; s.viewPitch = s.pitch; };
+  const snapView = () => {
+    s.viewYaw = s.yaw; s.viewPitch = s.pitch;
+    s.look = null; s.locked = false;
+    input.endFrame();
+  };
   const ray = new THREE.Raycaster();
   const center = new THREE.Vector2(0, 0);
   let hovered = null;
@@ -69,6 +74,7 @@ export function createPlayer(camera, scene) {
     },
     // a fixed camera for cinematic shots (the player can't move or look)
     fixed(parent, pos, rot) {
+      input.endFrame();
       s.mode = "fixed";
       parent.add(camera);
       camera.position.copy(pos);
@@ -76,11 +82,12 @@ export function createPlayer(camera, scene) {
     },
     // cutscene: the player can't move or look; the camera turns toward `target`
     cutscene(target = null) {
+      input.endFrame();
       s.locked = true;
       s.look = target ? (typeof target === "function" ? target : () => target) : null;
       s.lookRelease = false;
     },
-    endCutscene() { s.locked = false; s.look = null; },
+    endCutscene() { s.locked = false; s.look = null; input.endFrame(); },
     // glide the view toward something (a point, or a function returning one).
     // It lets go once you're looking at it, or as soon as you move the mouse.
     lookAtSoon(target) {
@@ -96,11 +103,17 @@ export function createPlayer(camera, scene) {
       if (s.mode === "fixed") { ui.prompt(null); return; }
       const free = !s.locked;
       const base = s.mode;
+      if (base === "seat") {
+        // Scripts/test cameras may supply an equivalent signed Euler angle.
+        // Canonicalize BEFORE input, never after applying a mouse delta.
+        s.yaw = Math.PI + Math.atan2(Math.sin(s.yaw - Math.PI), Math.cos(s.yaw - Math.PI));
+        s.viewYaw = Math.PI + Math.atan2(Math.sin(s.viewYaw - Math.PI), Math.cos(s.viewYaw - Math.PI));
+      }
       if (free) {
         s.yaw -= input.dx * 0.0022;
         s.pitch -= input.dy * 0.0022;
         // moving the mouse yourself cancels an automatic pan
-        if (s.look && s.lookRelease && Math.abs(input.dx) + Math.abs(input.dy) > 3) s.look = null;
+        if (s.look && s.lookRelease && (input.dx !== 0 || input.dy !== 0)) s.look = null;
       }
       // a cutscene, a scare or a "check your mirror" can turn your view
       if (s.look) {
@@ -120,8 +133,8 @@ export function createPlayer(camera, scene) {
           let dy = wantYaw - s.yaw;
           dy = Math.atan2(Math.sin(dy), Math.cos(dy));
           const dp = wantPitch - s.pitch;
-          s.yaw += dy * Math.min(1, dt * 4);
-          s.pitch += dp * Math.min(1, dt * 4);
+          s.yaw += dy * (1 - Math.exp(-dt * 4));
+          s.pitch += dp * (1 - Math.exp(-dt * 4));
           if (s.lookRelease && Math.abs(dy) < 0.02 && Math.abs(dp) < 0.02) s.look = null;
         }
       }
@@ -147,7 +160,9 @@ export function createPlayer(camera, scene) {
         camera.position.set(s.pos.x, s.pos.y + Math.sin(s.bob) * 0.035, s.pos.z);
       } else if (base === "seat") {
         // yaw PI = facing the windshield; you can turn almost all the way round
-        const rel = THREE.MathUtils.clamp(Math.atan2(Math.sin(s.yaw - Math.PI), Math.cos(s.yaw - Math.PI)), -2.7, 2.7);
+        // Clamp the continuous angle. Wrapping first flips +PI to -PI when
+        // a rapid mouse movement crosses the rear limit, snapping to the other side.
+        const rel = THREE.MathUtils.clamp(s.yaw - Math.PI, -2.7, 2.7);
         s.yaw = Math.PI + rel;
         camera.position.copy(s.seatEye);
         // the old engine shakes the whole bus a little
@@ -158,7 +173,7 @@ export function createPlayer(camera, scene) {
       // view smoothing: the camera eases toward where you're aiming
       const k = 1 - Math.exp(-dt * SMOOTH);
       let dv = s.yaw - s.viewYaw;
-      dv = Math.atan2(Math.sin(dv), Math.cos(dv));
+      if (base !== "seat") dv = Math.atan2(Math.sin(dv), Math.cos(dv));
       s.viewYaw += dv * k;
       s.viewPitch += (s.pitch - s.viewPitch) * k;
       camera.rotation.set(s.viewPitch, s.viewYaw, 0, "YXZ");

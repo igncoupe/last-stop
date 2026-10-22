@@ -2,6 +2,7 @@
 // Kindness: brake at the bridge (+1), keep Daniel's present safe (+1)
 import * as THREE from "three";
 import { STOPS, route, LANE, CURB } from "../world/route.js";
+import { bridgeMotion } from "../game/bridgeMotion.js";
 import { makeGift } from "../world/depotProps.js";
 import { curb, curbAt, flagStop, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
 
@@ -181,35 +182,21 @@ export async function night4(g) {
   await g.until(() => g.d > md - 90);
   g.despawn("jun");
   g.despawn("mara");
-  // they're waiting under the shelter, close together, out of the rain that's only falling there
-  const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"], ["d11", "drowned", f.carmenRode ? "L3" : "R1"], ["d12", "drowned", "R2"]];
-  const under = [[-1.2, 6.9], [0.3, 7.5], [-0.3, 6.7], [1.3, 7.1], [-1.9, 7.6], [0.9, 6.6]];
-  walkers.forEach(([key, look], i) => g.spawn(key, look, { ghost: true, at: mysteryCurb(g, under[i][0], under[i][1]), yaw: route.heading(md) + Math.PI / 2 + (Math.random() - 0.5) * 0.5 }));
+  const walkers = spawnBoardingCrowd(g, md);
   await g.autoStop(md);
   g.lockDoors(true);
   g.setDoors(true);
   g.rain(true);
+  const boarding = boardQueue(g, walkers);
   await g.think("The doors opened by themselves. This time they don't wait for me. They're getting on.");
-  // the others are already sitting in the back. Nobody saw them get on.
-  // (Carmen, if she's aboard, is one of them: one fewer already sitting there)
-  const already = f.carmenRode ? ["R3", "L4", "R4", "L5", "R5", "L6", "B0"] : ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "B0"];
-  const theirLooks = ["eddie", "dorothy", "frank", "drowned", "marcus", "drowned", "drowned", f.carmenRode ? "drowned" : "carmen"];
-  already.forEach((seat, i) => { g.spawn(`d${i + 1}`, theirLooks[i], { ghost: true }); g.seat(`d${i + 1}`, seat); });
-  // one at a time, out from under the shelter and up the steps, each one waiting for the one ahead
-  const boarding = [];
-  for (const [key, , seat] of walkers) {
-    boarding.push(g.board(key, seat, 1.3));
-    await g.wait(2100);
-  }
-  await Promise.all(boarding);
+  await boarding;
   g.setDoors(false);
   g.sfx("drip");
   g.mood("dread");
   if (f.carmenRode) await g.think("The little girl in the yellow raincoat sat down in front of her mother. Her mother put a hand on her hood, and kept it there.");
   await g.think("Fourteen. They don't pay. They don't look at me. They sit, and they drip.");
-  g.bus.setWater(0.1);
+  const risingWater = riseCabinWater(g);
   await g.wait(1500);
-  g.bus.setWater(0.25);
   await g.think("Water. Around my shoes. Rising.");
   g.sfx("breath");
   await g.think("Someone sat down right behind me. I can feel cold coming off her, like an open freezer.");
@@ -226,6 +213,7 @@ export async function night4(g) {
   await g.think("I'm not. The clock says I'm not.");
   await g.say("rhee", "MAKE UP THE TIME.");
   g.mood("terror");
+  await risingWater;
   g.auto(14);
   g.shake(1);
   await g.think("The pedal's going down by itself. No. No, no, no. Shit.");
@@ -233,6 +221,66 @@ export async function night4(g) {
   await bridge(g);
   g.lockDoors(false);
   g.rain(false);
+}
+
+function riseCabinWater(g) {
+  let waterTime = 0;
+  return g.frames((dt) => {
+    waterTime = Math.min(5, waterTime + dt);
+    const t = waterTime / 5;
+    g.bus.setWater(0.25 * t * t * (3 - 2 * t));
+    return t >= 1;
+  });
+}
+
+function spawnBoardingCrowd(g, md) {
+  const f = g.flags;
+  // Everyone is present outside before the bus arrives. Carmen, if she rode
+  // earlier, is already one of the fourteen; never duplicate or teleport her.
+  const walkers = [["lena", "lena", "L0"], ["daniel", "daniel", "L1"], ["ivy", "ivy", "R0"], ["d0", "drowned", "L2"], ["d11", "drowned", f.carmenRode ? "L3" : "R1"], ["d12", "drowned", "R2"]];
+  const seats = f.carmenRode ? ["R3", "L4", "R4", "L5", "R5", "L6", "B0"] : ["L3", "R3", "L4", "R4", "L5", "R5", "L6", "B0"];
+  const looks = ["eddie", "dorothy", "frank", "drowned", "marcus", "drowned", "drowned", "carmen"];
+  seats.forEach((seat, i) => walkers.push([`d${i + 1}`, looks[i], seat]));
+  // Along the open curb side of the shelter, clear of its glass and bench.
+  walkers.forEach(([key, look], i) => g.spawn(key, look, {
+    ghost: true, at: mysteryCurb(g, -i * 1.15, 5.25 + (i % 3) * 0.12),
+    yaw: route.heading(md) + Math.PI / 2,
+  }));
+  return walkers;
+}
+
+// A shared route with physical headway: followers can advance while the person
+// ahead climbs the steps, but cannot overtake them at the door or in the aisle.
+async function boardQueue(g, walkers) {
+  const bus = g.bus.group;
+  const front = bus.localToWorld(new THREE.Vector3(-3.05, 0, 4.6));
+  const outside = bus.localToWorld(g.bus.boardPath[0].clone());
+  const entries = walkers.map(([key], i) => ({ p: g.actor(key), done: false, speed: 1.25 + (i % 3) * 0.03 }));
+  let finished = false;
+  const a = new THREE.Vector3(), b = new THREE.Vector3();
+  const spacing = g.frames((dt) => {
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      if (e.done || e.p.mode !== "walk") continue;
+      let speed = e.speed;
+      // Also check seated passengers only while they settle; once seated their
+      // window seats are outside the shared walking route.
+      for (let j = 0; j < i; j++) {
+        if (entries[j].done) continue;
+        const distance = e.p.root.getWorldPosition(a).distanceTo(entries[j].p.root.getWorldPosition(b));
+        speed = Math.min(speed, Math.max(0, (distance - 1.05) / Math.max(dt, 1e-4)));
+      }
+      e.p.speed = speed;
+    }
+    return finished;
+  });
+  await Promise.all(entries.map(async (e, i) => {
+    await e.p.walk([front, outside], { speed: e.speed, parent: e.p.scene });
+    await g.board(walkers[i][0], walkers[i][2], e.speed, { smoothSeat: true });
+    e.done = true;
+  }));
+  finished = true;
+  await spacing;
 }
 
 // the bus drives itself onto the broken Ashgrove bridge
@@ -247,7 +295,17 @@ async function bridge(g) {
   g.sky("void");
   bus.position.copy(B.start);
   bus.rotation.set(0, 0, 0);
-  let speed = 13;
+  const edgeZ = B.edge;
+  const motion = bridgeMotion(bus.position.z, 13, edgeZ);
+  g.drive.state.speed = motion.speed;
+  let driving = true;
+  const rolling = g.frames((dt) => {
+    if (!driving) return true;
+    motion.update(dt);
+    bus.position.z = motion.z;
+    g.drive.state.speed = motion.speed;
+    return false;
+  });
   await g.fade(0, 700);
   // the storm, out over the river: in every flash, the bridge ahead, and where it just stops
   let storming = true;
@@ -263,41 +321,32 @@ async function bridge(g) {
   g.shadeAt(new THREE.Vector3(B.origin + 4.1, 0.05, 170), "point", new THREE.Vector3(B.origin + 4.1, 0, 500));
   await g.say("rhee", "Faster. FASTER. The schedule always comes first.");
   g.sfx("heartbeat", 10, 120);
-  const edgeZ = B.edge;
   const pointing = (async () => {
     await g.until(() => bus.position.z > 112, 30000);
     await g.think("Under the last streetlight. The shadow. It's pointing at the bridge.");
     await g.until(() => bus.position.z > 178, 30000);
     g.shadeHide();
   })();
-  // roll toward the edge; slow to a crawl near it so there's time to choose
-  // full speed down the road; only the last stretch before the choice slows to a crawl
-  const roll = (until, slowFrom, minSpeed) => g.frames((dt) => {
-    const left = until - bus.position.z;
-    const want = left > slowFrom ? speed : Math.max(minSpeed, speed * (left / slowFrom));
-    bus.position.z += want * dt;
-    g.drive.state.speed = want;               // the dash shows what the bus is really doing
-    return bus.position.z >= until;
-  });
-  await roll(edgeZ - 40, 45, 3);
+  await g.until(() => bus.position.z >= edgeZ - 100);
   const options = ["[Stand on the brake]", "[Floor it. Do what he says]"];
   if (f.rheeTruth) options.splice(1, 0, "“You said that to him too.” [Brake, and don't let go]");
-  const rolling = roll(edgeZ - 6, 34, 1.2);
   await pointing;
   const c = await g.choose(options, { silent: true });
   storming = false;
   const obey = c === options.length - 1;
   if (!obey) {
+    motion.brake();
+    g.sfx("brake");
+    await g.until(() => motion.speed === 0);
+    driving = false;
+    await rolling;
     f.brakedN4 = true;
     g.kind();
     if (c === 1 && f.rheeTruth) {
       f.defiedRhee = true;
       await g.say("you", "You said that to him too.");
     }
-    g.sfx("brake");
     g.shake(2);
-    await g.frames((dt) => true);
-    speed = 0;
     await g.wait(700);
     g.flash();                                     // and in the flash: the drop, right under the front wheels
     await g.wait(500);
@@ -312,11 +361,19 @@ async function bridge(g) {
     g.hint(null);
     await g.faceScare("drowned", 0.5);
   } else {
+    // Change the running controller immediately, even while the voices play.
+    motion.mode = "floor";
+    const response = (async () => {
+      await g.say("rhee", "GOOD. GOOD DRIVER.");
+      await g.say("lena", "No. No, no, no. Not you too.");
+    })();
+    await g.until(() => bus.position.z >= edgeZ - 10);
+    driving = false;
+    // No await between owners: plunge inherits velocity and begins this frame.
+    const falling = plunge(g, edgeZ, motion.speed);
     await rolling;
-    speed = 16;
-    await g.say("rhee", "GOOD. GOOD DRIVER.");
-    await g.say("lena", "No. No, no, no. Not you too.");
-    await plunge(g, edgeZ);
+    await falling;
+    await response;
     await sink(g);
     f.obeyedN4 = true;
   }
@@ -443,17 +500,17 @@ async function payphones(g) {
   g.mood("uneasy");
 }
 
-// Off the end of the bridge, the way a twelve-ton bus really goes: the pedal floored from a standstill, the front
+// Off the end of the bridge, preserving the approach velocity: the front
 // wheels dropping off the deck and the frame grinding over the broken edge, then, once its weight is past the edge,
 // the whole bus tipping over it nose first and falling, still moving forward. It hits the river nose-first and hard
 // (spray thrown up and ahead, a ring of foam), the back slaps down, and it floats for a moment, nose low, rocking,
 // before the water takes it.
-async function plunge(g, edge) {
+async function plunge(g, edge, initialSpeed) {
   const B = g.places.bridge;
   const bus = g.bus.group;
   const water = B.waterY;
   const FRONT_AXLE = 3.9, REAR = -6.15, NOSE = 6.2, K2 = 13;       // bus space; K2: how hard it is to tip (radius of gyration²)
-  let z = bus.position.z, y = 0, p = 0, vz = 0, vy = 0, w = 0, t = 0;
+  let z = bus.position.z, y = 0, p = 0, vz = initialSpeed, vy = 0, w = 0, t = 0;
   let phase = "drive";
   let hitT = 0, slapped = false;
   const fwd = new THREE.Vector3(0, 0, 1);
@@ -463,7 +520,7 @@ async function plunge(g, edge) {
     t += dt;
     const y0 = y;
     if (phase === "drive" || phase === "scrape") {
-      vz = Math.min(9, vz + dt * 3.6);                              // floored, from a crawl
+      vz = Math.min(16, vz + dt * 3.6);                              // floored, from a crawl
       if (phase === "scrape") vz *= 1 - dt * 0.15;
       z += vz * dt;
       if (phase === "drive" && z + FRONT_AXLE > edge) {
@@ -538,9 +595,8 @@ async function plunge(g, edge) {
 }
 
 // Over the edge, into the river. The glass cracks, the water comes in through everything, up over the seats, up
-// over your head. The lights die. The doors won't open. Your air is running out. And when you turn round, they're
-// not in their seats any more: they're right behind you, all of them, drifting in the aisle, their faces at yours.
-// Your mother's closest. She reaches for you. Then they all come at once, and there's nothing.
+// over your head. The lights die. The doors won't open. Your air is running out.
+// Their voices stay with you as the cabin fades into darkness.
 async function sink(g) {
   const bus = g.bus;
   g.shake(1.4);
@@ -551,12 +607,7 @@ async function sink(g) {
   g.sfx("gush", 5);
   g.mood("terror");
   g.drive.state.speed = 0;
-  // the emergency lamp up over the windshield: soon the only thing lighting their faces (off for now; it's added
-  // here, in the crash, so the moment it comes on doesn't stutter)
-  const lamp = new THREE.PointLight(0x8fd6c4, 0, 8, 2);
-  lamp.position.set(0.35, 2.25, 5.6);
-  bus.group.add(lamp);
-  let lv = 0.05;
+  let lv = 0.25;
   let under = false;
   let sinkV = 0;
   const hull = bus.group;
@@ -593,111 +644,19 @@ async function sink(g) {
   gaveUp = true;
   g.hint(null);
   await g.think("Come on. Come on! They won't open. Fuck! I can't get out.");
-  // all of them, out of their seats. Floating in the aisle and over the seats behind you, filling the bus back
-  // into the dark, every face turned to yours. Your mother nearest, reaching for you.
-  const order = ["lena", "carmen", "daniel", "d0", "d11", "ivy", "d12", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8"];
-  // bus space: x, z, and how high their face is (yours is at 1.75, right in front of the windshield at z 4.8)
-  const spots = [[0.25, 3.1, 1.74], [-0.2, 3.3, 1.62], [0.0, 2.45, 1.86], [0.8, 2.95, 2.0], [-0.74, 2.9, 1.9],
-    [0.3, 1.85, 1.5], [0.82, 2.15, 2.06], [-0.8, 2.1, 1.96], [-0.2, 1.3, 1.92], [0.9, 1.35, 2.08], [-0.9, 1.25, 2.0],
-    [0.15, 0.55, 1.84], [0.9, 0.45, 2.04], [-0.9, 0.4, 1.96], [-0.05, -0.35, 1.9], [0.5, -1.0, 1.95]];
-  const v = new THREE.Vector3();
-  const eye = bus.group.worldToLocal(g.camera.getWorldPosition(new THREE.Vector3()));
-  const floating = order.map((k) => g.actor(k)).filter(Boolean).map((p, i) => {
-    p.stand();
-    bus.group.attach(p.root);
-    const [x, z, face] = spots[i] || [(Math.random() - 0.5) * 1.6, -1.2 - i * 0.3, 1.9];
-    // limp: knees bent, legs hanging, arms lifted and drifting, leaning toward you
-    const lean = i === 0 ? 0.08 : 0.1 + Math.random() * 0.14;
-    p.root.rotation.set(lean, 0, 0);
-    p.hips.forEach((h) => { h.rotation.x = -0.3 + Math.random() * 0.35; });
-    p.knees.forEach((n) => { n.rotation.x = 0.35 + Math.random() * 0.5; });
-    const arms = p.arms.map((a, j) => {
-      const r = [-0.45 - Math.random() * 0.5, (j ? -1 : 1) * (0.3 + Math.random() * 0.35)];
-      a.rotation.set(r[0], 0, r[1]);
-      return r;
-    });
-    // how high to float them so the face ends up where it should (the little ones lower down)
-    p.root.position.set(x, 0, z);
-    p.root.updateMatrixWorld(true);
-    const headY = bus.group.worldToLocal(p.head.getWorldPosition(v)).y;
-    const base = (p.look.child ? Math.min(face, 1.5) : face) - headY;
-    p.root.position.y = base;
-    p.watch(g.camera);
-    p.slack(true);
-    // when they come for you, they come straight at your eyes (so wherever they are on screen, they just get
-    // bigger). Your mother comes right up to your face; the rest close in behind her, never nearer than 3/4 m.
-    p.root.updateMatrixWorld(true);
-    const toEye = eye.clone().sub(bus.group.worldToLocal(p.head.getWorldPosition(v)));
-    const len = toEye.length();
-    const most = i === 0 ? Math.max(0, 1 - 0.42 / len) : Math.max(0, Math.min(0.45, 1 - 0.75 / len));
-    return { p, from: p.root.position.clone(), toEye, most, arms, k: Math.random() * 6 };
-  });
+  // Keep the passengers in their established seats. The old floating crowd
+  // teleported them through the cabin and lunged their rigid models at the eye.
+  // Preserve the story and voices as an atmospheric drowning sequence.
   const mom = g.actor("lena");
-  if (mom) mom.reachOut(true);                       // reaching for you
-  let t = 0;
-  let closer = 0;
-  let sinking = true;
-  const drift = g.frames((dt) => {
-    t += dt;
-    // the lamp follows the bus's lights: steady-ish when it's dim, stuttering, or dead
-    const mode = bus.interiorMode;
-    lamp.intensity = mode === "dim" ? (Math.random() < 0.04 ? 0.6 : 3.2) : mode === "flicker" ? (Math.random() < 0.5 ? 0.4 : 3.2) : 0;
-    for (const f of floating) {
-      const r = f.p.root;
-      r.position.copy(f.from).addScaledVector(f.toEye, f.most * closer);
-      r.position.y += Math.sin(t * 0.9 + f.k) * 0.05;
-      r.position.z += Math.sin(t * 0.6 + f.k) * 0.03;
-      r.rotation.z = Math.sin(t * 0.7 + f.k) * 0.06;
-      f.p.arms.forEach((a, j) => {
-        if (j === 1 && f.p.reaching) return;
-        a.rotation.x = f.arms[j][0] + Math.sin(t * 0.8 + f.k + j) * 0.12;
-        a.rotation.z = f.arms[j][1] + Math.sin(t * 0.5 + f.k * 2 + j) * 0.08;
-      });
-    }
-    return !sinking;
-  });
-  const behind = () => bus.group.localToWorld(new THREE.Vector3(0.3, 1.75, 3.2));
-  const facing = () => g.lookingBack() || g.gazing(behind(), 32);
-  g.sfx("knock", 2);                                 // something behind your seat
-  await g.wait(900);
-  g.hint("Turn around");
-  await g.until(facing, 8000);
-  if (!facing()) { g.look(behind); await g.until(facing, 3000); }   // you turn round anyway
-  g.hint(null);
-  g.sfx("sting");
-  g.sfx("moan", 7);
-  g.shake(0.8);
-  await g.wait(1500);
+  if (mom) g.look(() => mom.head.getWorldPosition(new THREE.Vector3()));
   await g.think("Mom.");
-  await g.wait(500);
-  // the emergency light dies. In the dark there's just their eyes, all of them, coming closer.
-  // When the light comes back, they're right there.
-  const blackout = async (to, ms) => {
-    g.interior("off");
-    g.sfx("lightsout");
-    g.sfx("bubbles", ms / 1000);
-    floating.forEach((f) => f.p.eyeshine(true));
-    const from = closer;
-    let e = 0;
-    await g.frames((dt) => { e = Math.min(1, e + dt * 1000 / ms); closer = from + (to - from) * e * e; return e >= 1; });
-    floating.forEach((f) => f.p.eyeshine(false));
-    g.interior("dim");
-    g.sfx("click");
-  };
-  await blackout(0.5, 1300);
+  g.sfx("groan", 4);
   await g.say("voices", "Stay with us.");
-  await g.wait(400);
-  await blackout(1, 800);
-  await g.wait(250);
-  await g.scare("face");
   // and then there's nothing at all
-  sinking = false;
-  await drift;
-  g.fade(1, 60);
+  await g.fade(1, 900);
   g.silence(true);
   g.drowning(false);
   await g.wait(200);
-  lamp.removeFromParent();
   await g.wait(1600);
   g.silence(false);
   g.sfx("gasp");
