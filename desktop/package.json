@@ -1,7 +1,7 @@
 {
   "name": "the-last-stop",
   "productName": "The Last Stop",
-  "version": "1.0.0",
+  "version": "0.11.0",
   "description": "A first-person horror game about the last bus of the night.",
   "author": "igncoupe",
   "private": true,
