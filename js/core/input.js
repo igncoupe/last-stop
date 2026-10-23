@@ -11,7 +11,6 @@ export const input = {
   onLockChange: null,
 
   init(canvas) {
-    if (this.canvas) return; // one listener set for the lifetime of the game
     this.canvas = canvas;
     addEventListener("keydown", (e) => {
       if (e.repeat) return;
@@ -20,16 +19,14 @@ export const input = {
       if (["Space", "ArrowUp", "ArrowDown"].includes(e.code)) e.preventDefault();
     });
     addEventListener("keyup", (e) => this.keys.delete(e.code));
-    addEventListener("blur", () => { this.keys.clear(); this.endFrame(); });
+    addEventListener("blur", () => this.keys.clear());
     addEventListener("mousemove", (e) => {
-      if (!this.locked || document.pointerLockElement !== this.canvas) return;
-      if (!Number.isFinite(e.movementX) || !Number.isFinite(e.movementY)) return;
+      if (!this.locked) return;
       this.dx += e.movementX * this.sensitivity;
       this.dy += e.movementY * this.sensitivity * (this.invertY ? -1 : 1);
     });
     document.addEventListener("pointerlockchange", () => {
       this.locked = document.pointerLockElement === canvas;
-      this.endFrame(); // never carry a delta across a lock/pause boundary
       if (!this.locked) this.keys.clear();
       if (this.onLockChange) this.onLockChange(this.locked);
     });
