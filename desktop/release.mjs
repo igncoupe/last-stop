@@ -22,11 +22,12 @@ if (!same) {
   pkg.version = v.join(".");
   fs.writeFileSync(pkgFile, JSON.stringify(pkg, null, 2) + "\n");
 }
-const run = (cmd, a) => execFileSync(cmd, a, { cwd: here, stdio: "inherit", shell: process.platform === "win32" });
+// no shell in between: the installer's name and the notes have spaces in them
+const run = (cmd, a) => execFileSync(cmd, a, { cwd: here, stdio: "inherit" });
 
 console.log(`The Last Stop ${pkg.version}`);
-run("node", ["build-game.mjs"]);
-run("npx", ["electron-builder", "--win", "nsis", "--publish", "never"]);
+run(process.execPath, ["build-game.mjs"]);
+run(process.execPath, [path.join(here, "node_modules", "electron-builder", "cli.js"), "--win", "nsis", "--publish", "never"]);
 const exe = path.join(here, "dist", `The Last Stop Setup ${pkg.version}.exe`);
 if (!fs.existsSync(exe)) throw new Error("no installer at " + exe);
 run("gh", ["release", "create", `v${pkg.version}`, exe, "--repo", REPO, "--title", `The Last Stop ${pkg.version}`, "--notes", notes]);
