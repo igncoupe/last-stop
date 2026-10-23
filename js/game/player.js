@@ -86,6 +86,7 @@ export function createPlayer(camera, scene) {
     lookAtSoon(target) {
       s.look = target ? (typeof target === "function" ? target : () => target) : null;
       s.lookRelease = true;
+      s.lookFight = 0;
     },
     shake(amount) { s.shake = Math.max(s.shake, amount); },
     setColliders(list) { s.colliders = list; },
@@ -99,8 +100,12 @@ export function createPlayer(camera, scene) {
       if (free) {
         s.yaw -= input.dx * 0.0022;
         s.pitch -= input.dy * 0.0022;
-        // moving the mouse yourself cancels an automatic pan
-        if (s.look && s.lookRelease && Math.abs(input.dx) + Math.abs(input.dy) > 3) s.look = null;
+        // moving the mouse yourself cancels an automatic pan: any real movement, however slow (it adds up), so the
+        // pan never drags the view one way while you're turning it another
+        if (s.look && s.lookRelease) {
+          s.lookFight = (s.lookFight || 0) + Math.abs(input.dx) + Math.abs(input.dy);
+          if (s.lookFight > 8) s.look = null;
+        }
       }
       // a cutscene, a scare or a "check your mirror" can turn your view
       if (s.look) {
@@ -120,8 +125,9 @@ export function createPlayer(camera, scene) {
           let dy = wantYaw - s.yaw;
           dy = Math.atan2(Math.sin(dy), Math.cos(dy));
           const dp = wantPitch - s.pitch;
-          s.yaw += dy * Math.min(1, dt * 4);
-          s.pitch += dp * Math.min(1, dt * 4);
+          const pan = 1 - Math.exp(-dt * 4);       // the same glide at any frame rate
+          s.yaw += dy * pan;
+          s.pitch += dp * pan;
           if (s.lookRelease && Math.abs(dy) < 0.02 && Math.abs(dp) < 0.02) s.look = null;
         }
       }
@@ -146,8 +152,17 @@ export function createPlayer(camera, scene) {
         }
         camera.position.set(s.pos.x, s.pos.y + Math.sin(s.bob) * 0.035, s.pos.z);
       } else if (base === "seat") {
-        // yaw PI = facing the windshield; you can turn almost all the way round
-        const rel = THREE.MathUtils.clamp(Math.atan2(Math.sin(s.yaw - Math.PI), Math.cos(s.yaw - Math.PI)), -2.7, 2.7);
+        // yaw PI = facing the windshield; you can turn almost all the way round. The angle is clamped as it is:
+        // wrapping it first turned a look just past straight behind you into the opposite limit, and the view
+        // snapped across to your other shoulder.
+        let rel = s.yaw - Math.PI;
+        if (Math.abs(rel) > Math.PI + 0.6) {
+          // set from outside to an equivalent angle a turn away: bring it (and the view with it) back round
+          const wrapped = Math.atan2(Math.sin(rel), Math.cos(rel));
+          s.viewYaw += wrapped - rel;
+          rel = wrapped;
+        }
+        rel = THREE.MathUtils.clamp(rel, -2.7, 2.7);
         s.yaw = Math.PI + rel;
         camera.position.copy(s.seatEye);
         // the old engine shakes the whole bus a little
@@ -158,7 +173,9 @@ export function createPlayer(camera, scene) {
       // view smoothing: the camera eases toward where you're aiming
       const k = 1 - Math.exp(-dt * SMOOTH);
       let dv = s.yaw - s.viewYaw;
-      dv = Math.atan2(Math.sin(dv), Math.cos(dv));
+      // (in the seat both angles stay on one side of the turn, so never take the short way round through the back
+      // of your head; on foot you can spin freely, so do)
+      if (base !== "seat") dv = Math.atan2(Math.sin(dv), Math.cos(dv));
       s.viewYaw += dv * k;
       s.viewPitch += (s.pitch - s.viewPitch) * k;
       camera.rotation.set(s.viewPitch, s.viewYaw, 0, "YXZ");

@@ -557,6 +557,19 @@ export function createDirector(w) {
       player.lookAtSoon(a ? a.root.localToWorld(new THREE.Vector3(0, a.look.height - 0.15, 0)) : null);
     },
     cutscene(on, target = null) { on ? player.cutscene(target) : player.endCutscene(); },
+    // the jolt that goes with a scare the story stages itself (the drowned coming for you): the sting, the scream,
+    // the flash and the shake every jumpscare has. False if jumpscares are turned off (play the scene without it).
+    scareHit({ scream = 1.6, shake = 2.4 } = {}) {
+      if (!settings.scares) return false;
+      bus.setInterior("flicker");
+      Sound.sfx("sting");
+      Sound.sfx("scream", scream);
+      Sound.sfx("bubbles", 1.2);
+      player.shake(shake);
+      document.body.classList.add("scare-flash");
+      setTimeout(() => document.body.classList.remove("scare-flash"), 110);
+      return true;
+    },
     // a real jumpscare, in the world: "face" lunges at you, "hands" slam the
     // glass, "eyes" open in the dark first. The bus lights stutter with it.
     async scare(kind = "face") {

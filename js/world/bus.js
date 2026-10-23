@@ -716,7 +716,14 @@ export function buildBus(scene) {
       return box;
     },
     // 0 = dry, 1 = up to the seats
-    setWater(level) { waterIn.visible = level > 0; waterIn.position.y = 0.48 + level * 0.45; },
+    // (water coming in starts as a film on the floor: it only darkens to its full murk over the first few centimetres)
+    setWater(level) {
+      state.water = level;
+      waterIn.visible = level > 0;
+      waterIn.position.y = 0.48 + level * 0.45;
+      waterIn.material.uniforms.uOpacity.value = 0.88 * Math.min(1, 0.25 + level / 0.12);
+    },
+    get water() { return state.water || 0; },
     update(dt, info) {
       // doors swing
       const target = state.doorsOpen ? 1 : 0;
