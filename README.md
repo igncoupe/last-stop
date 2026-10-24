@@ -32,7 +32,7 @@ Be careful who you stop for. Be more careful who you don't.
 
 ## How it's built
 
-Plain HTML and JavaScript with [three.js](https://threejs.org) loaded from a CDN. No build step. Every model, texture and sound is generated in code; the only files are the voice lines.
+Plain HTML and JavaScript with [three.js](https://threejs.org) loaded from a CDN. No build step. Every model and texture is generated in code, and so are the music and most of the sound; the only files are the voice lines and a few recorded effects (`sfx/`: one for each jumpscare, the payphone bell, the hospital door).
 
 ```
 index.html             the page
@@ -45,7 +45,8 @@ js/audio.js            generated music + sound effects, and the voice player
 js/story/cast.js       every character: subtitle color, voice effect, AI voice
 js/story/night1-5.js   the story, one file per night
 voices/                one MP3 per line, plus manifest.json
-tools/                 scripts that make the voices
+sfx/                   the recorded effects
+tools/                 scripts that make the voices and the effects
 ```
 
 ## Editing the story
@@ -66,6 +67,8 @@ Lines in `g.say`, `g.think` and `g.choose` must be plain `"double-quoted"` strin
 ## Making the voices
 
 Voices created with [ElevenLabs](https://elevenlabs.io). Every character has a new voice designed from a written description (ElevenLabs Voice Design; none of them is a copy of anyone real), and every line is spoken with Eleven v4. Each line also has a performance direction in `tools/el-direction.txt`, written scene by scene from inside the character at that moment (`[terrified] [whispers]`, `[crying] [proud]`...), so the feeling changes as the story does. Teodor plays at 1.5x speed. The driver is a Black man from the city, designed with an easy African American accent (`design you`, candidate 0). Characters swear when a moment earns it. Ivy's three lines are recorded with Boson AI's Higgs Audio ([Higgs TTS 3](https://huggingface.co/bosonai/higgs-tts-3-4b)), because ElevenLabs doesn't make children's voices.
+
+The recorded effects in `sfx/` were made with ElevenLabs sound generation (on a paid plan, which licenses them for commercial use), from the descriptions in `tools/sfx-elevenlabs.json`: `python tools/make_sfx_elevenlabs.py` makes any that are missing, `--redo NAME` makes one again. If one fails to load, the game plays a synthesized sound in its place.
 
 Every take is checked before it's kept: Whisper has to hear the words in the script, and a speaker-match check (SpeechBrain ECAPA) has to agree it's the same character. Takes that fail are recorded again. The API key is read from `~/.elevenlabs_key`, a file you make yourself; it never goes in this repo. After changing any lines:
 

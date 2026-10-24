@@ -420,6 +420,15 @@ export class Person {
     this.bag.position.set(0, this.leg + 0.2, 0.26);
     this.bag.rotation.set(0, 0, 0);
   }
+  // keep walking to wherever to() says, every frame (a point in the parent's space), no faster than `speed`, facing
+  // face() (a point) if it's given, else the way they're going: for walking something along with them, like a door
+  // they're shutting. null stops them where they are.
+  follow(to, { speed = 1.2, face = null } = {}) {
+    this.stand();
+    this.following = to ? { to, face } : null;
+    this.speed = speed;
+    if (to) this.mode = "follow";
+  }
   // stop right where they are; whatever was waiting for them to arrive keeps waiting
   halt() {
     this.path = [];
@@ -501,6 +510,29 @@ export class Person {
         if (this.bag && this.bag.parent !== this.body) this.bag.rotation.x = Math.sin(this.walkT - 0.6) * 0.35;
         this.body.position.y = Math.abs(Math.cos(this.walkT)) * 0.03;
       }
+    }
+    if (this.mode === "follow" && this.following) {
+      const p = this.root.position;
+      const target = this.following.to();
+      const dx = target.x - p.x;
+      const dz = target.z - p.z;
+      const dist = Math.hypot(dx, dz);
+      const step = Math.min(dist, this.speed * dt);
+      if (dist > 1e-4) { p.x += (dx / dist) * step; p.z += (dz / dist) * step; }
+      const f = this.following.face && this.following.face();
+      const want = f ? Math.atan2(f.x - p.x, f.z - p.z) : dist > 0.01 ? Math.atan2(dx, dz) : this.root.rotation.y;
+      const diff = Math.atan2(Math.sin(want - this.root.rotation.y), Math.cos(want - this.root.rotation.y));
+      this.root.rotation.y += diff * Math.min(1, dt * 8);
+      // stepping while they move (forward or back), standing still when they don't
+      const pace = step / Math.max(dt, 1e-4);
+      this.walkT += dt * pace * 4.2;
+      const s = Math.sin(this.walkT) * Math.min(1, pace / 0.35);
+      this.hips[0].rotation.x = s * 0.5;
+      this.hips[1].rotation.x = -s * 0.5;
+      this.knees[0].rotation.x = Math.max(0, -s) * 0.6;
+      this.knees[1].rotation.x = Math.max(0, s) * 0.6;
+      if (!this.look.gift && !this.reaching) this.arms[0].rotation.x = -s * 0.4;
+      this.body.position.y = Math.abs(Math.cos(this.walkT)) * 0.03 * Math.min(1, pace / 0.35);
     }
     // the cap coming off: arm up to the head (lift), then down to the chest, holding it
     if (this.capAnim) {

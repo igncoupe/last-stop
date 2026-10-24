@@ -11,7 +11,7 @@ const mod = (p) => path.join(here, "node_modules", p);
 
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(path.join(out, "vendor", "fonts"), { recursive: true });
-for (const p of ["index.html", "css", "js", "voices"]) fs.cpSync(path.join(root, p), path.join(out, p), { recursive: true });
+for (const p of ["index.html", "css", "js", "voices", "sfx"]) fs.cpSync(path.join(root, p), path.join(out, p), { recursive: true });
 
 // three.js, the same version the web game uses
 const html0 = fs.readFileSync(path.join(out, "index.html"), "utf8");

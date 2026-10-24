@@ -94,18 +94,23 @@ export function buildCity(scene) {
   ground.position.set(600, -0.15, 800);
   group.add(ground);
 
-  group.add(ribbon(-10, L + 20, -ROAD_HALF, ROAD_HALF, roadY, mat({ map: tex.asphalt() }), [5, 5], 2));
+  const roadMat = mat({ map: tex.asphalt() });
+  group.add(ribbon(-10, L + 20, -ROAD_HALF, ROAD_HALF, roadY, roadMat, [5, 5], 2));
   // where the road sinks at Canal Row, the sidewalks don't: a concrete edge drops from the curb down to the road
   const curbFace = mat({ map: tex.concrete(), color: 0x8a8a86, side: THREE.DoubleSide });
   for (const side of [1, -1]) group.add(dropWall(DIP.from - 2, DIP.to + 2, side * ROAD_HALF, 0.15, curbFace));
   const walk = mat({ map: tex.sidewalk() });
   group.add(ribbon(-10, L + 20, ROAD_HALF, CURB, 0.15, walk, [2, 2]));
   group.add(ribbon(-10, L + 20, -CURB, -ROAD_HALF, 0.15, walk, [2, 2]));
+  // (the street itself: everything built so far. The rest, buildings, lamps and trees, is scenery: see dissolve)
+  const street = new Set(group.children);
 
   // dashed center line
   const dashes = [];
   for (let d = 0; d < L; d += 9) if (!nearCorner(d, 22)) dashes.push(d);
-  const dash = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, 0.02, 3), decal(glow(0xb59a52)), dashes.length);
+  const dashGeo = new THREE.BoxGeometry(0.15, 0.02, 3);
+  const dashMat = decal(glow(0xb59a52));
+  const dash = new THREE.InstancedMesh(dashGeo, dashMat, dashes.length);
   const m4 = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   dashes.forEach((d, i) => {
@@ -114,6 +119,7 @@ export function buildCity(scene) {
     dash.setMatrixAt(i, m4);
   });
   group.add(dash);
+  street.add(dash);
 
   // buildings
   const sideMats = [0, 1, 2, 3, 4].map((s) => mat({ map: tex.building(s), emissiveMap: tex.windows(s), emissive: 0xffffff }));
@@ -317,13 +323,21 @@ export function buildCity(scene) {
       (rand() < 0.35 ? pine : bareTree)(pos);
     }
   }
+  const treeSets = [];
   for (const [geo, material, list] of [[trunkGeo, barkMat, trunks], [branchGeo, barkMat, branches], [pineGeo, needleMat, cones]]) {
     if (!list.length) continue;
     const im = new THREE.InstancedMesh(geo, material, list.length);
     list.forEach((m, i) => im.setMatrixAt(i, m));
     im.frustumCulled = false;          // the instances span the whole map
     group.add(im);
+    treeSets.push({ im, list, at: list.map((m) => new THREE.Vector3().setFromMatrixPosition(m)), gone: new Uint8Array(list.length) });
   }
+  // the scenery (everything that isn't the street), each piece with where it is and how big
+  const scenery = group.children.filter((o) => !street.has(o) && !o.isInstancedMesh).map((o) => {
+    const b = new THREE.Box3().setFromObject(o);
+    return { o, c: b.getCenter(new THREE.Vector3()), r: b.getSize(new THREE.Vector3()).length() / 2 };
+  });
+  const ZERO = new THREE.Matrix4().makeScale(0, 0, 0);
 
   const lights = [];
   for (let i = 0; i < 6; i++) {
@@ -359,6 +373,79 @@ export function buildCity(scene) {
       }
       lamp.out = out;
       paint(lamp);
+    },
+    // The city falling away into the fog: every building, streetlight and tree farther than `range` from `focus`
+    // goes (and stays gone, wherever you go after: it only ever takes more). Only the street is left. null brings it
+    // all back.
+    dissolve(focus, range) {
+      if (!focus) {
+        scenery.forEach((s) => { s.o.visible = true; });
+        for (const t of treeSets) { t.list.forEach((m, i) => t.im.setMatrixAt(i, m)); t.gone.fill(0); t.im.instanceMatrix.needsUpdate = true; }
+        return;
+      }
+      for (const s of scenery) if (s.o.visible && s.c.distanceTo(focus) - s.r > range) s.o.visible = false;
+      for (const t of treeSets) {
+        let changed = false;
+        t.at.forEach((p, i) => { if (!t.gone[i] && p.distanceTo(focus) > range + 4) { t.gone[i] = 1; t.im.setMatrixAt(i, ZERO); changed = true; } });
+        if (changed) t.im.instanceMatrix.needsUpdate = true;
+      }
+    },
+    // A copy of the street from d0 to d1 (the road, its sidewalks, the line down the middle, and the ground under
+    // it, laid out exactly as they are here, down to the vertices and the texture's place on them), and of whatever
+    // is still standing beside it (as far out as `reach`): to put somewhere else. In the city's own coordinates; move
+    // it with its matrix. Its scenery is in userData.scenery ({ o, c, r }, as dissolve has them).
+    streetCopy(d0, d1, reach = 70) {
+      const copy = new THREE.Group();
+      const nearStretch = (p, r) => {
+        for (let dd = d0; dd <= d1 + 0.01; dd += 4) if (route.point(dd, tmpP).setY(p.y).distanceTo(p) - r < reach) return true;
+        return false;
+      };
+      const kept = [];
+      for (const sc of scenery) {
+        if (!sc.o.visible || !nearStretch(sc.c, sc.r)) continue;
+        const o = sc.o.clone();
+        copy.add(o);
+        kept.push({ o, c: sc.c, r: sc.r });
+      }
+      for (const t of treeSets) {
+        const keep = t.list.filter((m, i) => !t.gone[i] && nearStretch(t.at[i], 4));
+        if (!keep.length) continue;
+        const im = new THREE.InstancedMesh(t.im.geometry, t.im.material, keep.length);
+        keep.forEach((m, i) => im.setMatrixAt(i, m));
+        im.frustumCulled = false;
+        copy.add(im);
+      }
+      const snap = (d, step) => -10 + Math.ceil((d + 10) / step - 1e-6) * step;     // (on the same steps as the real thing)
+      copy.add(ribbon(snap(d0, 2), d1, -ROAD_HALF, ROAD_HALF, roadY, roadMat, [5, 5], 2));
+      copy.add(ribbon(snap(d0, 3), d1, ROAD_HALF, CURB, 0.15, walk, [2, 2]));
+      copy.add(ribbon(snap(d0, 3), d1, -CURB, -ROAD_HALF, 0.15, walk, [2, 2]));
+      const here = dashes.filter((d) => d >= d0 && d <= d1);
+      if (here.length) {
+        const dm = new THREE.InstancedMesh(dashGeo, dashMat, here.length);
+        here.forEach((d, i) => {
+          q.setFromAxisAngle(route.up, route.heading(d));
+          m4.compose(route.at(d, 0, 0.02 + roadY(d)), q, new THREE.Vector3(1, 1, 1));
+          dm.setMatrixAt(i, m4);
+        });
+        copy.add(dm);
+      }
+      // the ground: the same 40 m squares of the same big plane, wherever they come near this stretch
+      const a = route.at(d0, 0, 0), b = route.at(d1, 0, 0);
+      const pad = 70, cell = 40;
+      const x0 = Math.floor((Math.min(a.x, b.x) - pad + 1400) / cell) * cell - 1400, x1 = Math.ceil((Math.max(a.x, b.x) + pad + 1400) / cell) * cell - 1400;
+      const z0 = Math.floor((Math.min(a.z, b.z) - pad - 2800) / cell) * cell + 2800, z1 = Math.ceil((Math.max(a.z, b.z) + pad - 2800) / cell) * cell + 2800;
+      const patch = new THREE.PlaneGeometry(x1 - x0, z1 - z0, Math.round((x1 - x0) / cell), Math.round((z1 - z0) / cell));
+      const uv = patch.attributes.uv, pos = patch.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i) + (x0 + x1) / 2, z = -pos.getY(i) + (z0 + z1) / 2;
+        uv.setXY(i, (x + 1400) / 4000, (2800 - z) / 4000);
+      }
+      const patchMesh = new THREE.Mesh(patch, groundMat);
+      patchMesh.rotation.x = -Math.PI / 2;
+      patchMesh.position.set((x0 + x1) / 2, -0.15, (z0 + z1) / 2);
+      copy.add(patchMesh);
+      copy.userData = { roadMat, walkMat: walk, groundMat, dashGeo, dashMat, scenery: kept };
+      return copy;
     },
     // every light back to normal (a new night)
     clearOuts() { for (const lamp of lamps) if (lamp.out) { lamp.out = false; paint(lamp); } },

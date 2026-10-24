@@ -278,8 +278,9 @@ export async function night1(g) {
       await g.doors(false, 14000, "Close the doors  [F]");
       g.spawn("daniel", "daniel", { at: g.bus.group.localToWorld(g.bus.boardPath[0].clone()), yaw: route.heading(STOPS["Canal Row"]) + Math.PI / 2 });
       g.setDoors(true);
-      g.sfx("bang");
-      await g.scare("face");
+      g.shake(0.8);
+      // his hand slams the door; a beat; then he's in your face, screaming with the water in his throat
+      await g.scare("face", { look: "daniel", sound: "daniel_door", lead: 1.1, at: () => g.bus.group.localToWorld(new THREE.Vector3(-1.2, 1.4, 4.6)) });
       await g.say("daniel", "Ashgrove, please.");
       await g.say("you", "This bus doesn't go to Ashgrove.");
       await g.wait(900);
@@ -310,8 +311,7 @@ export async function night1(g) {
     // drove past: someone was waiting after all
     g.spawn("daniel", "daniel", { at: curb("Canal Row", 2), yaw: route.heading(STOPS["Canal Row"]) + Math.PI / 2 });
     await g.until(() => g.d > STOPS["Canal Row"] + 4, 20000);
-    await g.scare("face");
-    g.sfx("bang");
+    await g.scare("face", { look: "daniel", sound: "daniel_window" });
     await g.think("A face, pressed against my window. On the inside.");
     g.vanish("daniel");
     await g.say("rhee", "Watch the road, driver. You're drifting.");

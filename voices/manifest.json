@@ -4972,5 +4972,21 @@
   "1c91ed6b": "0169e63c",
   "c517b983": "0c86de28",
   "ebd5d600": "01f096b8"
+ },
+ "fx": {
+  "breath_behind": "eb65d714",
+  "carwoman_glass": "f375c8ed",
+  "daniel_door": "ac1bf52b",
+  "daniel_rise": "8495fb1e",
+  "daniel_window": "c6c5f21f",
+  "door_hands": "ab8d2f78",
+  "door_latch": "63e40077",
+  "mirror_creep": "687092bd",
+  "mirror_drowned": "533fad5b",
+  "payphone_ring": "ebf46020",
+  "shade_roof": "13980b77",
+  "shade_window": "c005647c",
+  "underwater_scream": "06c1bd05",
+  "window_hands": "a6a74107"
  }
 }

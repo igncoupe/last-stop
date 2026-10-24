@@ -67,12 +67,14 @@ const SKIES = {
   hospital: { fog: 0x0b0d0c, density: 0.02, hemi: 0.4 },
   ward: { fog: 0x090c10, density: 0.024, hemi: 0.42 },   // 4 West: indoors, but the night outside the windows
   underwater: { fog: 0x03100e, density: 0.2, hemi: 0.12 },  // the river: green-black, you can't see past the glass
+  fogwall: { fog: 0x1c2229, density: 0.09, hemi: 0.4 },      // the last night, on the way to the bridge: nothing past 25 m
 };
 let hemiBase = 0.35;
 let moonBase = 0;
 const skyBase = new THREE.Color(0x05070c);
 const SKY_FLASH = new THREE.Color(0x46526a);       // the sky, for the instant the lightning lights it
 function setSky(name) {
+  skyBlend = null;
   const k = SKIES[name] || SKIES.night;
   scene.fog.color.set(k.fog);
   scene.fog.density = k.density;
@@ -80,6 +82,30 @@ function setSky(name) {
   skyBase.set(k.fog);
   hemi.intensity = hemiBase = k.hemi;
   skyLight.intensity = moonBase = k.moon || 0;
+}
+// ...or the sky changing into another over `seconds` (on the game's clock): the fog coming down, or lifting
+let skyBlend = null;
+function blendSky(name, seconds) {
+  const k = SKIES[name] || SKIES.night;
+  skyBlend = { t: 0, seconds, from: { fog: skyBase.clone(), density: scene.fog.density, hemi: hemiBase, moon: moonBase }, to: { ...k, fog: new THREE.Color(k.fog), moon: k.moon || 0 } };
+}
+function stepSky(dt) {
+  if (!skyBlend) return;
+  const b = skyBlend;
+  b.t = Math.min(1, b.t + dt / b.seconds);
+  const e = b.t * b.t * (3 - 2 * b.t);
+  skyBase.lerpColors(b.from.fog, b.to.fog, e);
+  // (fog thickens the way it looks like it does: evenly in how far you can see, not in the raw density)
+  scene.fog.density = 1 / THREE.MathUtils.lerp(1 / b.from.density, 1 / b.to.density, e);
+  hemiBase = THREE.MathUtils.lerp(b.from.hemi, b.to.hemi, e);
+  moonBase = THREE.MathUtils.lerp(b.from.moon, b.to.moon, e);
+  if (flashT < 0) {
+    scene.background.copy(skyBase);
+    scene.fog.color.copy(skyBase);
+    hemi.intensity = hemiBase;
+    skyLight.intensity = moonBase;
+  }
+  if (b.t >= 1) skyBlend = null;
 }
 // a cold flash across the sky, not a white-out: a flash, a flicker, a second flash, and it dies away. On the game's
 // clock, so it pauses with the game.
@@ -108,8 +134,8 @@ const DEFAULTS = {
 const settings = Object.assign({ ...DEFAULTS, warned: false }, store.get(SETTINGS) || {});
 const horror = createHorror(camera);
 const shade = createShade(scene);
-const traffic = createTraffic(scene, (name, ...args) => Sound.sfx(name, ...args));
-const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, lightning, input, horror, shade, traffic };
+const traffic = createTraffic(scene, (name, ...args) => Sound.sfx(name, ...args), (kind, at, dur) => Sound.horn(kind, { at, dur }));
+const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, blendSky, lightning, input, horror, shade, traffic };
 const director = createDirector(world);
 const self = createSelfBody(scene, bus, player, camera);
 world.self = self;
@@ -162,6 +188,8 @@ const focus = new THREE.Vector3();
 // is a world point inside the bus? (so rain doesn't fall through the roof)
 const busInverse = new THREE.Matrix4();
 const tmpV = new THREE.Vector3();
+let busHorn = null;                 // the horn, while H is held
+const hornAt = new THREE.Vector3();
 const insideBus = (x, y, z) => {
   tmpV.set(x, y, z).applyMatrix4(busInverse);
   return Math.abs(tmpV.x) < 1.4 && tmpV.y > -0.2 && tmpV.y < 3.3 && Math.abs(tmpV.z) < 6.3;
@@ -238,6 +266,7 @@ if (TEST) window.__tick = (dt) => tick(dt, true);
 
 function tick(dt, forceDraw = false) {
   if (paused) return;
+  stepSky(dt);
   if (flashT >= 0) {
     flashT += dt;
     const f = flashT > 0.6 ? 0 : flashLevel(flashT);
@@ -249,11 +278,14 @@ function tick(dt, forceDraw = false) {
     if (flashT > 0.6) flashT = -1;
   }
   if (playing && input.hit("KeyF")) toggleDoors();
-  // the horn. One time in twenty, it's not the horn you were expecting.
-  if (playing && player.mode === "seat" && !player.state.locked && input.hit("KeyH")) {
-    if (Math.random() < 0.05) Sound.sfx("clownhorn"); else Sound.sfx("bushorn");
-    g.honked = performance.now();
-  }
+  // the horn: it sounds for as long as you hold H down (out at the front of the bus, so from the seat it's through the
+  // glass), and stops when you let go
+  if (playing && player.mode === "seat" && !player.state.locked && input.down("KeyH")) {
+    if (!busHorn) {
+      busHorn = Sound.horn("bus", { at: () => bus.group.localToWorld(hornAt.set(0, 0.75, 6.25)), outside: 1900 });
+      g.honked = performance.now();
+    }
+  } else if (busHorn) { busHorn.stop(); busHorn = null; }
   player.state.vibration = drive.speed / 14;
   file.update(dt, input);
   player.update(dt, input);
@@ -279,6 +311,7 @@ function tick(dt, forceDraw = false) {
   city.update(focus, dt);
   props.depot.update(dt, clockMinutes());
   busInverse.copy(bus.group.matrixWorld).invert();
+  Sound.setInside(insideBus(focus.x, focus.y, focus.z));
   props.rain.update(dt, focus, (x, y, z) => insideBus(x, y, z) || places.hospital.inside(x, y, z));
   updateWater(dt, { camera, lights: lightsOnWater(), rain: props.rain.on });
   props.mystery.update(dt);
@@ -315,6 +348,7 @@ input.init(canvas);
 let inMenu = false;
 function setPaused(on) {
   paused = on;
+  if (on && busHorn) { busHorn.stop(); busHorn = null; }
   $("screen-pause").hidden = !on;
   Sound.setMuted(on || settings.muted);
 }
@@ -468,7 +502,7 @@ async function begin(startNight, saved) {
   menuArt.stop();
   ui.loading("Loading voices…");
   manifest = await loadManifest();
-  if (manifest) Sound.setVersions(manifest.versions);
+  if (manifest) Sound.setVersions(manifest.versions, manifest.fx);
   ui.loading(null);
   play(startNight, saved);
 }

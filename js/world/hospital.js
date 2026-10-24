@@ -385,8 +385,11 @@ export function buildHospital(scene) {
   const outGaps = [[doorZ(18.4) - DOOR_W / 2, doorZ(18.4) + DOOR_W / 2], [doorZ(34) - DOOR_W / 2, doorZ(34) + DOOR_W / 2]];
   wallZ(CORR_OUT + WALL_T / 2, Z0, Z1, -1, { gaps: outGaps });
   const NAMES = { "4B": "VARGA, T.", "4D": "HOLLIS, R.", "4F": "ADEYEMI, O.", "4H": "PRZYBYL, A." };
+  const OPEN_4B = 1.45;
+  let door4B = null;
   for (const [n, zc] of ROOMS) {
-    door(CORR_OUT, doorZ(zc), -1, { open: n === "4B" ? 1.45 : n === "4E" ? 0.55 : 0, label: n, name: NAMES[n], hinge: n === "4B" ? 1 : -1 });
+    const pivot = door(CORR_OUT, doorZ(zc), -1, { open: n === "4B" ? OPEN_4B : n === "4E" ? 0.55 : 0, label: n, name: NAMES[n], hinge: n === "4B" ? 1 : -1 });
+    if (n === "4B") door4B = pivot;
   }
 
   // inside: the elevators, two service doors, the nurses' station, the staff lounge, more rooms
@@ -907,6 +910,26 @@ export function buildHospital(scene) {
   const toWorld = (x, y, z) => g.localToWorld(new THREE.Vector3(x, y, z));
   const inv = g.matrixWorld.clone().invert();
   const tmp = new THREE.Vector3();
+  // ---- Room 4B's door, which Mara shuts behind you. It's hinged at the corridor wall and stands open into the room,
+  // against the side wall. Shutting it, the swing is fenced off while it moves (so it never passes through you), and
+  // once it's shut the doorway is: no squeezing past, no getting it open again. All undone when you leave the floor.
+  const hingeAt = door4B.position.clone();
+  const leaf4B = colliders[solids.indexOf(door4B.children[0])];
+  const LEAF = DOOR_W - 0.02;
+  const zone = (x0, x1, z0, z1) => new THREE.Box3().setFromPoints([toWorld(x0, 0, z0), toWorld(x1, DOOR_H, z0), toWorld(x0, 0, z1), toWorld(x1, DOOR_H, z1)]);
+  const swingBox = zone(CORR_OUT, hingeAt.x + LEAF + 0.1, hingeAt.z - LEAF - 0.1, hingeAt.z + 0.1);
+  const swingClear = swingBox.clone().expandByScalar(0.35);         // (you, beside it, would be in its way)
+  const shutBox = zone(CORR_OUT - 0.12, CORR_OUT + 0.22, hingeAt.z - LEAF - 0.1, hingeAt.z + 0.1);
+  const without = (b) => { const i = colliders.indexOf(b); if (i >= 0) colliders.splice(i, 1); };
+  function setDoor(k) { door4B.rotation.y = -OPEN_4B * k; }
+  // where the door's free edge is, k of the way open (1 as it stands, 0 shut), in the hospital's own space; along:
+  // from the hinge to that edge; ahead: the way it moves as it shuts (both flat, unit length)
+  function doorEdge(k) {
+    const r = -OPEN_4B * k;
+    const along = V(-Math.sin(r), 0, -Math.cos(r));
+    return { edge: hingeAt.clone().addScaledVector(along, LEAF), along, ahead: V(-Math.cos(r), 0, Math.sin(r)) };
+  }
+  function openDoor() { setDoor(1); without(swingBox); without(shutBox); if (!colliders.includes(leaf4B)) colliders.push(leaf4B); }
   // forward down the corridor, for the player's yaw (walking faces -z of the camera)
   const fwd = toWorld(0, 0, 1).sub(toWorld(0, 0, 0));
   const spawnYaw = Math.atan2(-fwd.x, -fwd.z);
@@ -994,8 +1017,36 @@ export function buildHospital(scene) {
     windowOutside: toWorld(0.04, 1.6, WZ),
     // where along the road it is (you look up at it from the middle of the street, opposite)
     windowD: D0 + WZ,
+    // ---- Room 4B's door (see above)
+    door4B: {
+      set: setDoor,
+      // where somebody shutting it stands to hold it, k of the way open (world): pulling it off the wall (in front of
+      // it, `side` 1) or pushing it home (behind it, `side` -1); and the end of it, for stepping round it
+      holdAt(k, side) { const e = doorEdge(k); return toWorld(...e.edge.addScaledVector(e.ahead, 0.45 * side).addScaledVector(e.along, -0.1).toArray()); },
+      round(k) { const e = doorEdge(k); return toWorld(...e.edge.addScaledVector(e.along, 0.55).toArray()); },
+      handle(k) { const e = doorEdge(k); return toWorld(...e.edge.addScaledVector(e.along, -0.08).setY(1.0).toArray()); },
+      // the middle of the doorway, at head height (for where the latch sound comes from)
+      middle: toWorld(CORR_OUT, 1.1, hingeAt.z - LEAF / 2),
+      // is somebody (a world point) in the room and out of the door's way?
+      clear(p) {
+        tmp.copy(p).applyMatrix4(inv);
+        return tmp.x > RX0 + 0.25 && !swingClear.containsPoint(p);
+      },
+      // ...if not, somewhere in the room just past it to step to
+      aside: toWorld(CORR_OUT + 1.2, 1.7, hingeAt.z - LEAF - 0.8),
+      // "swing": it's moving, keep out of its way; "shut": the doorway's closed; "open": as it was
+      lock(state) {
+        without(leaf4B);
+        without(swingBox);
+        without(shutBox);
+        if (state === "swing") colliders.push(swingBox);
+        else if (state === "shut") colliders.push(shutBox);
+        else openDoor();
+      },
+    },
     setActive(on) {
       active = on;
+      openDoor();                                   // (every visit starts with it open, as it always stands)
       inside.visible = on;
       lights.forEach((l, i) => { l.intensity = on ? LIGHT_ON[i] : 0; });
       soundT = 3;

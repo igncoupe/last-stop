@@ -1,0 +1,59 @@
+{
+ "_note": "Recorded-sounding effects made with ElevenLabs sound generation (Creator plan: licensed for commercial use). name: [seconds, prompt]. make_sfx_elevenlabs.py writes sfx/<name>.mp3 and skips ones that exist.",
+ "daniel_door": [
+  2.2,
+  "Sudden horror jumpscare up close: a hand slams hard against a metal bus door and the door rattles, and a man's choking, gargling scream bursts out right at the listener, wet with water in his throat. No music."
+ ],
+ "daniel_window": [
+  2.6,
+  "Very close: a wet face and two wet palms slap hard against a glass window, a long rubbery squeak of skin dragging on the glass, then a low drowned gurgling moan through the glass. Horror, no music."
+ ],
+ "breath_behind": [
+  3.6,
+  "Slow, wet, rattling breathing right behind the listener's ear, close and intimate: a long ragged inhale, a gurgling exhale with water in the throat, then another. Quiet room, horror, no music."
+ ],
+ "daniel_rise": [
+  1.8,
+  "A drowned man lunges out of the dark right at the listener: a sudden hoarse rattling scream exhaled through water, a splash of water, very close. Horror jumpscare, no music."
+ ],
+ "door_hands": [
+  3.0,
+  "Many wet hands slam frantically on a bus's folding glass doors and metal frame, glass and metal rattling, the pounding getting more desperate, a muffled groan outside. Horror, no music."
+ ],
+ "window_hands": [
+  3.0,
+  "Dozens of small hands slap rapidly on bus windows all around, in the rain, wet glass squeaking, frantic and close, no voices. Horror, no music."
+ ],
+ "carwoman_glass": [
+  2.0,
+  "A body hits a car windshield with a heavy thud and the glass cracks, and a woman's shrill, distorted scream right against the glass. Horror jumpscare, very close, no music."
+ ],
+ "mirror_creep": [
+  1.8,
+  "A sudden distorted woman's shriek bursting out of silence, with bubbling water and a deep sub-bass hit underneath. Horror jumpscare, close, no music."
+ ],
+ "mirror_drowned": [
+  1.8,
+  "Out of silence, a drowned man's choked, guttural roar right in the listener's face, water spraying, a deep impact. Horror jumpscare, no music."
+ ],
+ "shade_roof": [
+  2.4,
+  "A heavy thud lands on a metal vehicle roof, the metal dents and groans, then a creature's inhuman screech slides down over the windshield. Horror jumpscare, no music."
+ ],
+ "shade_window": [
+  2.8,
+  "A heavy body slams against a glass window right next to the listener's head, then fingernails scrape slowly down the glass with a long squeal and an inhuman hiss. Horror, close, no music."
+ ],
+ "underwater_scream": [
+  2.0,
+  "Underwater, very close: a woman screams with her mouth full of water, muffled and distorted, a burst of bubbles and rushing water. Horror, no music."
+ ],
+ "payphone_ring": [
+  2.6,
+  "An old American payphone ringing: a loud electric bell, its clapper hammering two small steel bells very fast in one continuous metallic trill that lasts a full two seconds without stopping, then the bell rings out and goes quiet. One ring only. Recorded close, dry, no background, no music."
+ ],
+ "door_latch": [
+  1.6,
+  "A heavy wooden hospital room door swings shut and the steel latch clicks into place, in a quiet empty room. No music."
+ ]
+}

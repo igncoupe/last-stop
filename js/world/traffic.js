@@ -269,7 +269,9 @@ function interior(g, { old, W, trimMat, chrome }) {
   return wheelRim;
 }
 
-export function createTraffic(scene, sfx) {
+// sfx(name, ...args) plays an effect; horn(kind, at, seconds) sounds a horn that comes from `at` (a function giving
+// where it is) and returns something with stop()
+export function createTraffic(scene, sfx, horn) {
   const VOID = new THREE.MeshBasicMaterial({ color: 0x000000, fog: false });
   const cars = [];
   let timer = 12;
@@ -325,7 +327,13 @@ export function createTraffic(scene, sfx) {
     // facing the other way down the road (the one on your tail goes your way)
     c.g.rotation.set(0, route.heading(c.d) + (c.mode === "tail" ? 0 : Math.PI), 0);
   }
+  // a car's horn sounds from its front bumper, wherever the car goes; a new honk cuts off the one before
+  function honkFrom(c, seconds, kind = "car") {
+    if (c.horn) c.horn.stop();
+    c.horn = horn(kind, () => c.g.localToWorld(new THREE.Vector3(0, 0.55, 2.05)), seconds);
+  }
   function remove(c) {
+    if (c.horn) c.horn.stop();
     if (c.g.userData.onRemove) c.g.userData.onRemove();
     scene.remove(c.g);
     c.g.traverse((o) => { if (o.isMesh && o.geometry) o.geometry.dispose(); });
@@ -347,7 +355,7 @@ export function createTraffic(scene, sfx) {
   function tail(c, dt, busD, speed) {
     const behind = busD - 9.8;                 // its nose just off your back bumper
     const beside = busD + 4.6;                 // its passenger window level with yours
-    const honk = (dur) => { sfx("horn", dur); c.honks++; };
+    const honk = (dur) => { honkFrom(c, dur, "old"); c.honks++; };
     if (c.phase === "approach") {
       c.d = Math.min(behind, c.d + (speed + 11) * dt);
       if (c.d >= behind - 0.05) { c.phase = "tail"; c.honkT = 0.2; }
@@ -420,7 +428,7 @@ export function createTraffic(scene, sfx) {
       cars.push(c);
       place(c);
       c.pass = () => { if (!c.gone) c.phase = "pass"; };
-      c.quiet = () => { c.hush = true; };
+      c.quiet = () => { c.hush = true; if (c.horn) c.horn.stop(); };
       c.domeOn = () => {
         c.dome.visible = true;
         c.domeT = 0;                                     // an old bulb: it stutters before it catches
@@ -460,19 +468,19 @@ export function createTraffic(scene, sfx) {
           c.lateral += (want - c.lateral) * Math.min(1, dt * (rel < 45 ? 5 : 1.2));
           c.flash -= dt;
           if (rel < 80 && rel > 12 && c.flash <= 0) { c.flash = 0.16; setHeadlights(c, !c.beam.visible, 2.2); }
-          if (rel < 75 && !c.honked) { c.honked = true; sfx("horn", 1.6); }
+          if (rel < 75 && !c.honked) { c.honked = true; honkFrom(c, 1.6); }
           if (rel < 45 && !c.screeched) { c.screeched = true; sfx("screech"); setHeadlights(c, true, 2.2); }
         }
         if (c.mode === "dark" && rel < 24 && !c.honked) {
           c.honked = true;
           setHeadlights(c, true, 2.6);
-          sfx("horn", 0.9);
+          honkFrom(c, 0.9);
           player.shake(0.6);
         }
         if (c.mode === "parked") {
           const blink = Math.floor(c.t * 1.6) % 2 === 0;
           c.hazards.forEach((h) => { h.visible = blink; });
-          if (rel < 4 && !c.honked) { c.honked = true; sfx("horn", 1.2); setHeadlights(c, true, 2); }
+          if (rel < 4 && !c.honked) { c.honked = true; honkFrom(c, 1.2); setHeadlights(c, true, 2); }
         }
         if (c.mode === "watcher" || c.mode === "shade") {
           // a head that turns to follow you

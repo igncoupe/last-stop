@@ -30,5 +30,8 @@ manifest.versions = {};
 for (const id of Object.values(manifest.nights).flat().concat((manifest.lines || []).map((l) => l.id))) {
   if (!manifest.versions[id] && fs.existsSync(path.join(root, "voices", `${id}.mp3`))) manifest.versions[id] = hash(`voices/${id}.mp3`);
 }
+// ...and the recorded effects the same way (sfx/<name>.mp3?v=<hash>)
+manifest.fx = {};
+for (const f of fs.readdirSync(path.join(root, "sfx")).filter((n) => n.endsWith(".mp3")).sort()) manifest.fx[f.slice(0, -4)] = hash(`sfx/${f}`);
 fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 1));
-console.log(`stamped ${modules.length} modules and ${Object.keys(manifest.versions).length} voice clips`);
+console.log(`stamped ${modules.length} modules, ${Object.keys(manifest.versions).length} voice clips and ${Object.keys(manifest.fx).length} effects`);

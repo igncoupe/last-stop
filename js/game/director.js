@@ -536,9 +536,21 @@ export function createDirector(w) {
       const pan = THREE.MathUtils.clamp(local.x / Math.max(1, dist), -1, 1) * 0.8;
       Sound.sfxAt(name, { gain: gain * (1 - dist / range) ** 1.4, pan, muffle: muffle ?? 600 + 3400 * (1 - dist / range) }, ...args);
     },
+    // a payphone's bell, one ring (about two seconds), from `at` out in the world; stop() silences it at once
+    ring(at) {
+      // (a bell cuts through glass: the bus's walls only take the edge off it)
+      const where = { at, outside: 2800, range: 160, ref: 12, gain: 1.5 };
+      return Sound.fx("payphone_ring", where) || Sound.sfxFrom("bellring", where, 2, 1.6);
+    },
     lamps(on) { w.city.setLampsOn(on); },
+    // the city itself (city.js), for a scene that does something to it
+    get city() { return w.city; },
+    // how thick the fog is right now (FogExp2 density)
+    get fogDensity() { return w.scene.fog.density; },
     // no other cars on the road for a while
     holdTraffic(seconds) { w.traffic.hold(seconds); },
+    // how many other cars there are on the road right now
+    get carsOnRoad() { return w.traffic.count; },
     // the car that comes up on your tail (traffic.js): no other cars while it's around
     tailgater() { w.traffic.hold(45); return w.traffic.tailgater(); },
     // your own hand, doing something other than holding the wheel ("bird")
@@ -549,7 +561,8 @@ export function createDirector(w) {
     rain(on) { props.rain.set(on); Sound.ambience({ rain: on ? 1 : 0 }); },
     flood(on, level) { props.flood.set(on, level); },
     storm(on) { storm = on; g.rain(on); stormT = 3; },
-    sky(preset) { w.setSky(preset); },
+    // the sky, the fog and the light: at once, or changing over `seconds`
+    sky(preset, seconds = 0) { if (seconds > 0) w.blendSky(preset, seconds); else w.setSky(preset); },
     shake(a = 1) { player.shake(a); },
     look(target) { player.lookAtSoon(target); },
     lookAtActor(key) {
@@ -557,22 +570,29 @@ export function createDirector(w) {
       player.lookAtSoon(a ? a.root.localToWorld(new THREE.Vector3(0, a.look.height - 0.15, 0)) : null);
     },
     cutscene(on, target = null) { on ? player.cutscene(target) : player.endCutscene(); },
-    // the jolt that goes with a scare the story stages itself (the drowned coming for you): the sting, the scream,
-    // the flash and the shake every jumpscare has. False if jumpscares are turned off (play the scene without it).
-    scareHit({ scream = 1.6, shake = 2.4 } = {}) {
+    // a recording, from `at` (a point in the world, or a function giving one) if it's given: see Sound.fx. Null if
+    // it isn't in.
+    fx(name, opts) { return Sound.fx(name, opts); },
+    // a jumpscare's own sound, loud, everything else dropping away under it (false if it isn't in: play another)
+    scareSound(name, opts = {}) { return !!Sound.fx(name, { loud: true, duck: 1.6, ...opts }); },
+    // The jolt that goes with a scare the story stages itself (the drowned coming for you): the sting, the scream
+    // (or `sound`, the recording made for it), the flash and the shake every jumpscare has. False if jumpscares are
+    // turned off (play the scene without it).
+    scareHit({ scream = 1.6, shake = 2.4, sound = null, close = false } = {}) {
       if (!settings.scares) return false;
-      bus.setInterior("flicker");
-      Sound.sfx("sting");
-      Sound.sfx("scream", scream);
+      scareSound(sound, () => { Sound.sfx("sting"); Sound.sfx("scream", scream); }, { close });
       Sound.sfx("bubbles", 1.2);
-      player.shake(shake);
-      document.body.classList.add("scare-flash");
-      setTimeout(() => document.body.classList.remove("scare-flash"), 110);
+      jolt(shake);
       return true;
     },
-    // a real jumpscare, in the world: "face" lunges at you, "hands" slam the
-    // glass, "eyes" open in the dark first. The bus lights stutter with it.
-    async scare(kind = "face") {
+    // A real jumpscare, in the world: "face" lunges at you, "hands" slam the glass, "eyes" open in the dark first,
+    // "rise" comes up from behind the seat, "drift" up out of the water. The bus lights stutter with it.
+    //   look:  whose face it is (horror.js: daniel, carwoman, drowned, drownedman)
+    //   sound: the recording that goes with it (sfx/), landing the moment it comes at you; null if the scene plays
+    //          its own. Without one (or until it's in), the old synthesized sting and scream.
+    //   at:    where the sound comes from (a point, or a function giving one), if not right in your face
+    //   lead:  start the sound this many seconds before it comes, for a sound with its own run-up
+    async scare(kind = "face", { look = "drowned", sound, at = null, lead = 0, gain = 1 } = {}) {
       s.waiting = "scare " + kind;
       if (!settings.scares) {
         Sound.sfx("heartbeat", 3, 96);
@@ -580,43 +600,49 @@ export function createDirector(w) {
         return;
       }
       const before = bus.interiorMode;
+      const LEGACY = {
+        face: () => { Sound.sfx("sting"); Sound.sfx("scream", 1.5); },
+        hands: () => { Sound.sfx("bang"); Sound.sfx("sting"); Sound.sfx("scream", 1.1); },
+        rise: () => { Sound.sfx("sting"); Sound.sfx("scream", 1.9); Sound.sfx("bubbles", 1.2); },
+      };
+      let heard = sound === null;
+      if (sound && lead) {
+        // (without the recording, a bang where its run-up would be)
+        if (scareSound(sound, null, { gain, at })) heard = true; else Sound.sfx("bang");
+        await g.wait(lead * 1000);
+      }
+      // the sound and the jolt, the moment it comes at you
+      const hit = () => {
+        if (!heard) scareSound(sound, LEGACY[kind === "drift" ? "rise" : kind] || LEGACY.face, { gain, at });
+        heard = true;
+        jolt(kind === "hands" ? 1.4 : kind === "rise" || kind === "drift" ? 2.6 : 2.2);
+      };
       if (kind === "drift" || kind === "rise") {
         // drift: something comes up out of the dark water toward you, slowly, hair floating... then it's on you
         // rise: you turn round, and it comes up from behind the seat, dripping... then it's on you
         Sound.sfx("rise", kind === "drift" ? 2.8 : 2);
         if (kind === "drift") Sound.sfx("bubbles", 2.6);
         else { Sound.sfx("drip"); setTimeout(() => Sound.sfx("drip"), 500); setTimeout(() => Sound.sfx("drip"), 1100); }
-        await w.horror.play(kind, {
-          onLunge: () => {
-            Sound.sfx("sting");
-            Sound.sfx("scream", 1.9);
-            Sound.sfx("bubbles", 1.2);
-            player.shake(2.6);
-            document.body.classList.add("scare-flash");
-            setTimeout(() => document.body.classList.remove("scare-flash"), 110);
-          },
-        });
+        await w.horror.play(kind, { look, onLunge: hit });
         return;
       }
       if (kind === "eyes") {
         bus.setInterior("off");
         Sound.sfx("breath");
         await g.wait(1350);
+      } else if (kind === "face") {
+        bus.setInterior("off");                   // a breath of dark, and a glimpse of it, before it comes
+      } else if (kind === "hands") {
+        Sound.sfx("knock", 1);                    // one knock first
+        await g.wait(600);
       }
-      bus.setInterior("flicker");
-      Sound.sfx(kind === "hands" ? "bang" : "sting");
-      if (kind === "hands") Sound.sfx("sting");
-      Sound.sfx("scream", kind === "hands" ? 1.1 : 1.5);
-      player.shake(kind === "hands" ? 1.4 : 2.2);
-      document.body.classList.add("scare-flash");
-      setTimeout(() => document.body.classList.remove("scare-flash"), 110);
-      const playing = w.horror.play(kind === "eyes" ? "face" : kind);
+      const playing = w.horror.play(kind === "eyes" ? "face" : kind, { look, onLunge: hit });
       await until(() => !w.horror.playing);
       await playing;
       bus.setInterior(before || "on");
     },
-    // kept for older scripts: same as a face scare
-    faceScare() { return g.scare("face"); },
+    // kept for older scripts: a face scare (whose face, and the rest as for scare())
+    faceScare(look = "drowned", opts = {}) { return g.scare("face", { look, ...(typeof opts === "object" ? opts : {}) }); },
     // was this key pressed just now (for a scene that wants to know what you tried)
     keyHit(code) { return w.input.hit(code); },
     // nothing at all: every sound cut, at once (or back)
@@ -660,6 +686,16 @@ export function createDirector(w) {
     sitInBus() { player.endCutscene(); player.sitIn(bus.group, bus.driverEye); player.setColliders([]); },
     fixedCamera(parent, pos, rot) { player.fixed(parent, pos, rot); },
     walkAt(pos, yaw, colliders = []) { player.walkAt(pos, yaw); player.setColliders(colliders); },
+    // on foot: ease you over to `pos` (a world point, at eye height) in `seconds`, as if someone steered you there
+    steerTo(pos, seconds = 0.8) {
+      const from = player.state.pos.clone();
+      let t = 0;
+      return until((dt) => {
+        t = Math.min(1, t + dt / seconds);
+        player.state.pos.lerpVectors(from, pos, t * t * (3 - 2 * t));
+        return t >= 1;
+      });
+    },
     places,
     props,
     bus,
@@ -827,9 +863,12 @@ export function createDirector(w) {
     const land = new THREE.Vector3(1.34, 0.32, 4.85);      // its feet; its body flat on the glass beside your face
     shade.standIn(bus.group, from, new THREE.Vector3(0.7, 1.7, 4.8), "crouch");
     player.lookAtSoon(() => bus.group.localToWorld(new THREE.Vector3(1.3, 1.9, 4.9)));   // your head snaps round to it
-    Sound.sfx("shriek");
+    // (its recording: the body hitting the glass by your head, then its nails, slowly, all the way down)
+    const rec = Sound.hasFx("shade_window");
+    if (!rec) Sound.sfx("shriek");
     await shade.leap(bus.group, land, 0.2, { from, arc: 0.5, out: 0, faceY: -Math.PI / 2 });
-    await hitGlass({ hold, crack: true, keepParked: true, smudge: false });
+    await hitGlass({ hold, crack: true, keepParked: true, smudge: false, sound: rec ? "shade_window" : undefined, slam: !rec,
+      at: () => bus.group.localToWorld(new THREE.Vector3(1.35, 1.8, 4.9)) });
     bus.setHands("ash");                                    // where it held on
   };
   // a flash of lightning over an empty road
@@ -910,20 +949,35 @@ export function createDirector(w) {
     shade.standIn(bus.group, roof, new THREE.Vector3(0.3, 3.25, 12), "crouch");
     // if you're not already looking out the front, you look up at it (a point on the glass, which travels with the bus)
     if (!g.gazing(bus.group.localToWorld(new THREE.Vector3(0.5, 1.8, 7)), 40)) player.lookAtSoon(() => bus.group.localToWorld(new THREE.Vector3(0.4, 1.75, 6.1)));
-    Sound.sfx("shriek");
+    // its weight shifting on the roof right over your head, the metal giving; a moment; then it comes down the glass
+    // screeching (its recording's screech starts 0.9 s in: it lands on it). Without the recording, just the shriek.
+    const heard = scareSound("shade_roof", null, { at: () => bus.group.localToWorld(new THREE.Vector3(0.3, 3.2, 5)) });
+    if (heard) { player.shake(0.7); await g.wait(650); } else Sound.sfx("shriek");
     await shade.leap(bus.group, bus.windshieldLanding, 0.24, { from: roof, arc: 0, out: 0.7 });
-    await hitGlass({ hold, crack: true, keepParked });
+    await hitGlass({ hold, crack: true, keepParked, sound: heard ? null : undefined });
   };
-  async function hitGlass({ hold, crack, keepParked, smudge = true }) {
-    Sound.sfx("slam");
-    if (crack) Sound.sfx("crack");
-    Sound.sfx("sting");
-    Sound.sfx("scream", 1.7);
-    player.shake(2.6);
+  // A jumpscare's sound: its own recording (sfx/), loud, the rest dropping away under it and a body blow under it;
+  // or, if that isn't in, `fallback` (the synthesized sound it used to have). True if the recording played.
+  function scareSound(name, fallback, { gain = 1, at = null, close = false, offset = 0 } = {}) {
+    if (name && Sound.fx(name, { gain, at, ref: 3, close, offset, loud: true, duck: 1.6 })) { Sound.sfx("thud"); return true; }
+    if (fallback) fallback();
+    return false;
+  }
+  // the lights stutter, the view jumps, the screen flashes
+  function jolt(shake) {
     bus.setInterior("flicker");
-    if (smudge) bus.setSmudge(crack ? 2 : 1);
+    player.shake(shake);
     document.body.classList.add("scare-flash");
     setTimeout(() => document.body.classList.remove("scare-flash"), 110);
+  }
+  // it hits the glass. sound: the recording that goes with it (null if it's already playing; without one, the sting
+  // and the scream); slam: the thump of it hitting (unless the recording has its own)
+  async function hitGlass({ hold, crack, keepParked, smudge = true, sound, slam = true, at = null }) {
+    if (sound !== null) scareSound(sound, () => { Sound.sfx("sting"); Sound.sfx("scream", 1.7); }, { at });
+    if (slam) Sound.sfx("slam");
+    if (crack) Sound.sfx("crack");
+    jolt(2.6);
+    if (smudge) bus.setSmudge(crack ? 2 : 1);
     const wasControl = drive.state.control;
     if (wasControl === "player") drive.park();       // you stand on the brake without meaning to
     Sound.sfx("brake");
@@ -970,7 +1024,7 @@ export function createDirector(w) {
   };
 
   // something walks up the aisle, a little closer every time you check the mirror
-  g.creepMirror = async (look = "drowned") => {
+  g.creepMirror = async (look = "drowned", sound = "mirror_creep") => {
     g.spawn("creep", look, { ghost: true, mirrorOnly: true });
     for (const seat of ["B1", "L7", "L4", "L1"]) {
       g.seat("creep", seat);
@@ -986,7 +1040,7 @@ export function createDirector(w) {
     g.despawn("creep");
     await g.wait(1600);
     await until(() => g.gazing(bus.group.localToWorld(new THREE.Vector3(0.7, 1.6, 12)), 35), 10000);
-    await g.faceScare(look, 0.6);
+    await g.scare("face", { look, sound });
   };
   // creepy things that just happen while you drive: whispers, footsteps in
   // the aisle, the stop bell on an empty bus, people on the sidewalk who

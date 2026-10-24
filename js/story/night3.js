@@ -269,7 +269,7 @@ export async function night3(g) {
     g.mood("terror");
     await g.wait(1600);
     g.bus.setHands("windows");
-    await g.scare("hands");
+    await g.scare("hands", { sound: "window_hands" });
     g.sfx("bang");
     g.sfx("knock", 8);
     g.shake(1.6);
@@ -377,7 +377,9 @@ async function ward(g) {
     g.actor("teodor").lookAt(H.win.getWorldPosition(new THREE.Vector3()));
   }
   await g.fade(0, 1000);
-  mara.walk(H.maraPath, { speed: 1.2 });
+  const led = mara.walk(H.maraPath, { speed: 1.2 });
+  // (once you're in, she shuts the door behind you: see shutTheDoor)
+  shutTheDoor(g, H, mara, led);
   await g.say("mara", "This way. Fourth floor smells like bleach and old flowers. You stop noticing.");
   g.hint("Go to Room 4B");
   g.navTo(H.navPoint);
@@ -419,15 +421,73 @@ async function ward(g) {
   await g.think("His hand let go. The monitor keeps counting. Slow.");
   await g.say("mara", "He's been waiting thirty years for somebody to stop.");
   await g.fade(1, 1200);
+  mara.follow(null);
   g.despawn("teodor4b");
   g.despawn("mara");
-  H.setActive(false);
+  H.setActive(false);                         // (and the door stands open again, the way it always does)
   if (g.actor("teodor")) { g.seat("teodor", "B3"); g.actor("teodor").lookAt(null); }
   g.sky("storm");
   g.storm(true);
   g.amb({ rain: 1, engine: 0.3, hum: 0 });
   g.sitInBus();
   await g.fade(0, 1000);
+}
+
+// Mara shuts the door of 4B behind you, once you're in and out of its way: she takes the edge of it and draws it off
+// the wall toward her, steps round it, and pushes it home, and the latch catches. Then it's shut, and you're staying
+// until this is over (the doorway's blocked; nothing gets it open). It runs alongside the scene: nobody waits for it,
+// and it never waits on anybody for long. (If you hang about in the doorway, she steers you in.)
+async function shutTheDoor(g, H, mara, led) {
+  const D = H.door4B;
+  const eye = () => g.camera.getWorldPosition(new THREE.Vector3());
+  const gone = () => !H.active || !g.actor("mara");
+  const near = (p, r = 0.06) => Math.hypot(mara.root.position.x - p.x, mara.root.position.z - p.z) < r;
+  await led;
+  let t = 0;
+  await g.frames((dt) => gone() || D.clear(eye()) || (t += dt) > 8);
+  if (gone()) return;
+  if (!D.clear(eye())) await g.steerTo(D.aside, 0.8);
+  D.lock("swing");
+  // her hand on the edge of it
+  mara.reachOut(true);
+  await Promise.race([mara.walk([D.holdAt(1, 1)], { speed: 1.1 }), g.wait(5000)]);
+  // swing it from k0 to k1 open in `secs`, her hand on it the whole way (side: in front of it, or behind)
+  let k = 1;
+  const swing = async (k0, k1, secs, side, onWay = null) => {
+    let u = 0;
+    mara.follow(() => D.holdAt(k, side), { speed: 1.6, face: () => D.handle(k) });
+    await g.frames((dt) => {
+      if (gone()) return true;
+      u = Math.min(1, u + dt / secs);
+      k = k0 + (k1 - k0) * u * u * (3 - 2 * u);
+      D.set(k);
+      if (onWay) onWay(k);
+      return u >= 1;
+    });
+  };
+  // ...and walk to `to` (a world point), facing the door, in no more than a few seconds
+  const step = async (to) => {
+    let w = 0;
+    mara.follow(() => to, { speed: 1.0, face: () => D.handle(k) });
+    await g.frames((dt) => gone() || near(to) || (w += dt) > 3);
+  };
+  await swing(1, 0.59, 1.1, 1);               // drawn off the wall toward her
+  if (gone()) return;
+  await step(D.round(0.59));                  // round the end of it
+  await step(D.holdAt(0.59, -1));
+  if (gone()) return;
+  let latched = false;
+  await swing(0.59, 0, 1.3, -1, (kk) => {     // and pushed home: the latch catches as it meets the frame
+    if (latched || kk > 0.07) return;
+    latched = true;
+    if (!g.fx("door_latch", { at: D.middle, ref: 2.5 })) { g.sfx("knock", 1); g.sfx("click"); }
+  });
+  if (gone()) return;
+  D.set(0);
+  D.lock("shut");
+  mara.follow(null);
+  mara.reachOut(false);
+  mara.walk([H.maraPath[H.maraPath.length - 1]], { speed: 1.0 });   // back to the foot of the bed
 }
 
 // A car comes up behind with its high beams on and sits on your bumper, leaning on the horn. An old car, filthy,
@@ -473,16 +533,19 @@ async function honker(g) {
   const her = g.spawn("roadwoman", "carwoman", { ghost: true, at: route.at(d0, LANE, roadY(d0)), yaw: route.heading(d0) + Math.PI });
   her.watch(g.camera);
   her.reachOut(true);
-  g.sfx("shriek");
+  // her scream, and the thud of her hitting the windshield right as she does (without the recording: a shriek, then
+  // the slam and the crack)
+  const heard = g.scareSound("carwoman_glass", { offset: 0.2 });
+  if (!heard) g.sfx("shriek");
   await g.wait(240);
   g.despawn("roadwoman");
-  g.sfx("slam");
-  g.sfx("crack");
+  if (heard) g.sfx("thud");
+  else { g.sfx("slam"); g.sfx("crack"); }
   g.bus.setSmudge(2);                        // her hands, and the crack where her head hit
   const wasDriving = g.drive.state.control === "player";
   if (wasDriving) g.park();                  // you stand on the brake without meaning to
   g.sfx("brake");
-  await g.scare("face");
+  await g.scare("face", { look: "carwoman", sound: heard ? null : undefined });
   if (wasDriving) g.release();
   g.mood("terror");
   // (said on the way to Elm: the stop never waits on these)

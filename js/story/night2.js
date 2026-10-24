@@ -303,13 +303,14 @@ export async function night2(g) {
       g.amb({ engine: 0 });
       g.mood("terror");
       await g.wait(1500);
-      g.sfx("breath");
+      // breathing, wet, right behind your seat (it moves round your head as you turn)
+      if (!g.fx("breath_behind", { at: () => g.bus.group.localToWorld(new THREE.Vector3(0.75, 1.45, 3.7)), ref: 1.2 })) g.sfx("breath");
       await g.wait(2200);
       await g.think("Something wet is touching the back of my neck.");
       // you turn round. Slowly. In the dark, right behind your seat
       g.look(() => g.bus.group.localToWorld(new THREE.Vector3(0.75, 1.5, 3.6)));
       await g.wait(1100);
-      await g.scare("rise");
+      await g.scare("rise", { look: "daniel", sound: "daniel_rise" });
       g.vanish("daniel");
       g.prop(f.gaveJacket ? "jacketFolded" : "puddle", { seat: "L0" });
       g.interior("on");
@@ -329,7 +330,7 @@ export async function night2(g) {
     await g.think("I'm not opening those doors.");
     await g.wait(1500);
     g.bus.setHands("door");
-    await g.scare("hands");
+    await g.scare("hands", { sound: "door_hands", at: () => g.bus.group.localToWorld(new THREE.Vector3(-1.2, 1.3, 4.6)) });
     g.sfx("bang");
     g.sfx("knock", 6);
     g.shake(1.5);

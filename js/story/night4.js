@@ -3,6 +3,7 @@
 import * as THREE from "three";
 import { STOPS, route, LANE, CURB } from "../world/route.js";
 import { makeGift } from "../world/depotProps.js";
+import { buildApproach, handOverOk } from "../world/approach.js";
 import { curb, curbAt, flagStop, mysteryCurb, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness } from "./common.js";
 
 export async function night4(g) {
@@ -228,31 +229,128 @@ export async function night4(g) {
   await g.think("I'm not. The clock says I'm not.");
   await g.say("rhee", "MAKE UP THE TIME.");
   g.mood("terror");
-  g.auto(14);
+  g.auto(RUNAWAY);
   g.shake(1);
+  const brakes = deadBrakes(g);
+  const road = toTheBridge(g, md);
   await g.think("The pedal's going down by itself. No. No, no, no. Shit.");
-  await g.wait(2500);
-  await bridge(g);
+  await bridge(g, road, brakes);
   g.lockDoors(false);
   g.rain(false);
 }
 
-// the bus drives itself onto the broken Ashgrove bridge
-async function bridge(g) {
-  const f = g.flags;
+// From MAKE UP THE TIME to the bridge, the bus drives itself, at one speed, all the way: m/s
+const RUNAWAY = 12;
+
+// ...and the brakes are gone. Stand on the pedal and it goes to the floor with nothing behind it; you hear it, and
+// nothing happens. (Until off(): the choice at the end of the bridge is the brake that works.)
+function deadBrakes(g) {
+  let on = true;
+  g.frames(() => {
+    if (!on) return true;
+    if (g.keyHit("KeyS") || g.keyHit("ArrowDown") || g.keyHit("Space")) { g.sfx("brakefail"); g.shake(0.3); }
+    return false;
+  });
+  return { off() { on = false; } };
+}
+
+// The last night's road out to the bridge: no cut, no fade, the bus driving itself the whole way. The streetlights go
+// out ahead of it, one after another; the fog comes down, and the city goes into it, until there's only the street in
+// the headlights. Somewhere in there, on a straight with nothing in sight, the street becomes a copy of itself laid
+// down at the bridge (approach.js), and the bus drives on: the sidewalks end, the road goes dark and narrow, bends
+// round to the left, and runs out onto the bridge road as the fog lifts off the river. Resolves, once it's there,
+// with the bridge's own motion (and cleanUp, for when it's all over).
+async function toTheBridge(g, md) {
   const B = g.places.bridge;
   const bus = g.bus.group;
-  await g.fade(1, 500);
+  const city = g.city;
+  const eye = () => g.camera.getWorldPosition(new THREE.Vector3());
+  const stops = [...Object.values(STOPS), md];
+  g.holdTraffic(600);
+  g.sky("fogwall", 7);
+  // the streetlights, out one at a time as you come up on them (and the ones you've passed, the same)
+  const lamps = g.streetlights.filter((l) => l.d > g.d - 90).sort((a, b) => a.d - b.d);
+  let lampT = 0;
+  let d = null;
+  let waited = 0;
+  await g.frames((dt) => {
+    waited += dt;
+    lampT -= dt;
+    const next = lamps.find((l) => !l.out && l.d < g.d + 70);
+    if (next && lampT <= 0) {
+      g.lampOut(next, true);
+      if (next.pos.distanceTo(eye()) < 45) g.sfxAt("lightsout", next.pos, { gain: 0.35, range: 60 });
+      lampT = 0.3;
+    }
+    // and everything farther off than you can see is gone, for good
+    city.dissolve(eye(), 2.6 / g.fogDensity);
+    // (and if the road never gives it a place, and it's running out of road, it goes in the dark: see below)
+    if (waited > 30 || g.d > route.length - 160) return true;
+    if (g.fogDensity < 0.085 || g.carsOnRoad || lamps.some((l) => !l.out && Math.abs(l.d - g.d) < 60)) return false;
+    if (!handOverOk(g.d, stops)) return false;
+    d = g.d;
+    return true;
+  });
+  // (the way it used to go: a moment of black, and it's there)
+  const blind = d === null;
+  if (blind) {
+    await g.fade(1, 500);
+    d = g.d;
+  }
+  // ---- the hand-over: in the same moment, the street at the bridge, and the bus on it
+  const ap = buildApproach(city, B, d);
+  B.group.parent.add(ap.group);
   g.drive.detach(true);
   B.group.visible = true;
   B.wreckage.visible = true;
-  g.sky("void");
-  bus.position.copy(B.start);
+  const turn = -Math.PI / 2 - route.heading(d);
+  bus.position.applyMatrix4(ap.toBridge);
+  bus.rotation.y += turn;
+  // ---- and on, at the same speed, along its way to the bridge road
+  let s = blind ? ap.path.bendFrom - 40 : 0;
+  if (blind) g.fade(0, 700);
+  let roll = 0;
+  let said = false, lifting = false;
+  const tmp = new THREE.Vector3();
+  await g.frames((dt) => {
+    s = Math.min(ap.path.length, s + RUNAWAY * dt);
+    const { pos, heading } = ap.path.at(s, tmp);
+    const ahead = ap.path.at(Math.min(ap.path.length, s + 6)).heading;
+    const turning = Math.atan2(Math.sin(ahead - heading), Math.cos(ahead - heading));
+    roll += (THREE.MathUtils.clamp(turning * RUNAWAY * 0.02, -0.04, 0.04) - roll) * Math.min(1, dt * 3);
+    bus.position.set(pos.x, 0, pos.z);
+    bus.rotation.set(0, heading, roll, "YXZ");
+    g.drive.state.speed = RUNAWAY;
+    g.drive.state.steer = turning;
+    // the bits of the city that came along go into the fog behind you, and stay gone
+    const e = eye(), far = 2.6 / g.fogDensity;
+    for (const sc of ap.scenery) if (sc.o.visible && sc.c.distanceTo(e) - sc.r > far) sc.o.visible = false;
+    if (!said && s > ap.path.bendFrom - 50) { said = true; g.think("The street's gone. The buildings are gone. The road is getting narrower."); }
+    // round the bend, the fog lifts off the river, and there's the bridge
+    if (!lifting && s > ap.path.bendFrom + 15) { lifting = true; g.sky("void", 9); }
+    return s >= ap.path.length;
+  });
+  // on the bridge road now: straight on, the same speed, onto the bridge
+  bus.position.set(B.start.x, 0, 0);
   bus.rotation.set(0, 0, 0);
+  g.drive.state.steer = 0;
+  const motion = bridgeMotion(g, { speed: RUNAWAY, stopZ: B.edge - 6 });
+  motion.cleanUp = () => {
+    ap.dispose();
+    city.dissolve(null);
+    city.clearOuts();
+  };
+  return motion;
+}
+
+// the bus drives itself onto the broken Ashgrove bridge (road: toTheBridge, on its way there; brakes: deadBrakes)
+async function bridge(g, road, brakes) {
+  const f = g.flags;
+  const B = g.places.bridge;
+  const bus = g.bus.group;
   const edgeZ = B.edge;
-  // it's already doing thirteen when the picture comes back: the bus never stopped, it's just somewhere else now
-  const motion = bridgeMotion(g, { speed: 13, stopZ: edgeZ - 6 });
-  await g.fade(0, 700);
+  // it never stopped: it's on the bridge road, doing what it's been doing all along
+  const motion = await road;
   // the storm, out over the river: in every flash, the bridge ahead, and where it just stops
   let storming = true;
   (async () => {
@@ -262,7 +360,6 @@ async function bridge(g) {
       await g.wait(3000 + Math.random() * 2400);
     }
   })();
-  await g.think("The street's gone. The buildings are gone. The road is getting narrower.");
   // under the last good streetlight: the shadow, pointing the way onto the bridge
   g.shadeAt(new THREE.Vector3(B.origin + 4.1, 0.05, 170), "point", new THREE.Vector3(B.origin + 4.1, 0, 500));
   await g.say("rhee", "Faster. FASTER. The schedule always comes first.");
@@ -278,6 +375,7 @@ async function bridge(g) {
   const options = ["[Stand on the brake]", "[Floor it. Do what he says]"];
   if (f.rheeTruth) options.splice(1, 0, "“You said that to him too.” [Brake, and don't let go]");
   await pointing;
+  brakes.off();
   const c = await g.choose(options, { silent: true });
   storming = false;
   const obey = c === options.length - 1;
@@ -305,7 +403,7 @@ async function bridge(g) {
     g.hint("Look in the mirror");
     await g.until(() => g.lookingAtMirror(), 12000);
     g.hint(null);
-    await g.faceScare("drowned", 0.5);
+    await g.scare("face", { look: "drownedman", sound: "mirror_drowned" });
   } else {
     // the pedal goes to the floor from whatever the bus is doing: no pause, no lurch, it just goes. (They say their
     // piece on the way over; nobody waits for anybody.)
@@ -322,6 +420,7 @@ async function bridge(g) {
   await g.fade(1, 900);
   g.underwater(false);
   B.group.visible = false;
+  motion.cleanUp();              // (the road out there gone, the city back as it was)
   g.sky("night");
   g.despawnAll();
   g.bus.setWater(0);
@@ -412,15 +511,22 @@ async function payphones(g) {
   if (first > 2300) return;                          // not enough road left before Northgate
   const at = [first, first + 96, first + 192].filter((d) => d < 2400);
   const phones = at.map((d) => g.prop("payphone", { at: route.at(d, CURB - 1.3, 0), yaw: route.heading(d) - Math.PI / 2 }));
-  const ringing = (i) => g.d > at[i] - 85 && g.d < at[i] + 12;
-  let t = 0;
+  const ringing = (i) => g.d > at[i] - 110;          // (and it keeps on, behind you, until they all stop)
+  // Each one rings the way a real one does: a ring, four seconds' quiet, another ring, from the moment you come in
+  // earshot of it. The bell is out there in its lot (louder as you come up on it, heard through the bus); a ring
+  // never starts on top of the last one, and when it's over they all stop dead.
+  const bellAt = phones.map((ph) => ph.localToWorld(new THREE.Vector3(0, 1.5, 0.3)));
+  const rings = [];
+  const next = phones.map(() => 0);
   let done = false;
   const bells = g.frames((dt) => {
-    t -= dt;
-    if (t <= 0) {
-      t = 3;
-      phones.forEach((ph, i) => { if (ringing(i)) g.sfxAt("ring", ph.localToWorld(new THREE.Vector3(0, 1.5, 0.3)), { gain: 0.9, range: 110 }); });
-    }
+    phones.forEach((_, i) => {
+      next[i] -= dt;
+      if (!ringing(i) || next[i] > 0) return;
+      next[i] = 6;
+      if (rings[i]) rings[i].stop(0.05);
+      rings[i] = g.ring(bellAt[i]);
+    });
     return done;
   });
   await g.until(() => g.d > at[0] - 80, 30000);
@@ -436,6 +542,7 @@ async function payphones(g) {
   }
   await g.until(() => g.d > at[at.length - 1] + 14, 30000);
   done = true;
+  rings.forEach((r) => r && r.stop(0.04));
   await bells;
   await g.think("And then they all stopped. At the same time.");
   g.mood("uneasy");
@@ -697,7 +804,7 @@ async function sink(g) {
   // and then she's on you: your mother comes the last of the way, mouth open, right into your face, and all of them
   // surge in behind her. Their own faces, coming the way they've been coming, never a stranger's popping out of
   // nowhere. (With jumpscares turned off, the light just goes.)
-  if (g.scareHit({ scream: 1.7, shake: 2.6 })) {
+  if (g.scareHit({ scream: 1.7, shake: 2.6, sound: "underwater_scream", close: true })) {
     // she comes to right in front of your face, whichever way you're looking (her face a hand's width from yours);
     // the rest come in behind her
     const mom = floating.find((f) => f.p === g.actor("lena"));
