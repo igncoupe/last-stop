@@ -628,6 +628,19 @@ export function createDirector(w) {
       player.lookAtSoon(a ? a.root.localToWorld(new THREE.Vector3(0, a.look.height - 0.15, 0)) : null);
     },
     cutscene(on, target = null) { on ? player.cutscene(target) : player.endCutscene(); },
+    // your eyes go to something: the view glides round to it and closes in a little (from whatever your field of
+    // view is), holds a moment, and it's all yours again
+    async focus(target, { zoom = 0.8, seconds = 1.2, hold = 1.0 } = {}) {
+      s.waiting = "focus";
+      player.cutscene(target);
+      w.fovOverride = camera.fov * zoom;
+      try {
+        await g.wait((seconds + hold) * 1000);
+      } finally {
+        w.fovOverride = null;
+        player.endCutscene();
+      }
+    },
     // a recording, from `at` (a point in the world, or a function giving one) if it's given: see Sound.fx. Null if
     // it isn't in.
     fx(name, opts) { return Sound.fx(name, opts); },

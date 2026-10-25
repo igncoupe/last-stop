@@ -86,7 +86,37 @@ export function buildBus(scene) {
   }
 
   // front: dashboard, windshield, destination sign
-  put(bus, box(2.5, 1.095, 0.08, shell), 0, 0.8275, 6);
+  // (the panel under the windshield is the engine hatch: hinged at the top, it lifts out and up)
+  put(bus, box(2.5, 0.545, 0.08, shell), 0, 0.5525, 6);
+  const hood = put(bus, new THREE.Group(), 0, 1.375, 6.0);
+  put(hood, box(2.5, 0.55, 0.08, shell), 0, -0.275, 0);
+  put(hood, box(0.3, 0.035, 0.03, mat({ color: 0x3a3c40 })), 0, -0.48, 0.05);      // the handle
+  // ...and behind it, only there while it's open: the engine bay
+  const bay = put(bus, new THREE.Group(), 0, 1.1, 5.8);
+  {
+    // (lit faintly from within, so it reads at night with nothing but the streetlights on it)
+    const m = (color, glowK = 0.35, extra = {}) => mat({ color, emissive: new THREE.Color(color).multiplyScalar(glowK), ...extra });
+    const dark = m(0x2a2c30, 0.25);
+    put(bay, box(2.42, 0.52, 0.02, dark), 0, 0, -0.16);                                // the back of the bay
+    put(bay, box(2.42, 0.02, 0.34, dark), 0, -0.26, 0);                                // its floor
+    put(bay, box(2.42, 0.02, 0.34, dark), 0, 0.26, 0);                                 // and roof
+    for (const sx of [-1, 1]) put(bay, box(0.02, 0.52, 0.34, dark), sx * 1.21, 0, 0);
+    put(bay, box(0.9, 0.42, 0.06, m(0x4a4e56)), -0.55, 0, -0.11);                     // the radiator
+    for (let i = 0; i < 8; i++) put(bay, box(0.86, 0.012, 0.01, m(0x8a8e94)), -0.55, -0.18 + i * 0.05, -0.075);
+    put(bay, box(0.34, 0.2, 0.18, m(0x3a3c42)), 0.42, -0.15, -0.04);                  // the battery
+    put(bay, box(0.05, 0.03, 0.05, m(0xc0392e, 0.5)), 0.32, -0.035, -0.04);
+    put(bay, box(0.05, 0.03, 0.05, m(0x202024)), 0.52, -0.035, -0.04);
+    put(bay, box(0.14, 0.16, 0.12, m(0xd8c888, 0.45, { transparent: true, opacity: 0.85 })), 0.85, 0.06, -0.06);   // coolant
+    put(bay, box(0.1, 0.12, 0.1, m(0x7a5aa0, 0.45)), 0.06, 0.1, -0.08);              // washer fluid
+    for (const [x, y] of [[-0.05, -0.08], [0.18, 0.02]]) {
+      put(bay, new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.012, 6, 16), m(0x26262a)), x, y, -0.1);   // belts
+    }
+  }
+  bay.visible = false;
+  // the little lamp under the hatch, that comes on as it opens (always there, only dark while it's shut)
+  const hoodLamp = new THREE.PointLight(0xffe2b0, 0, 2.2, 1.6);
+  hoodLamp.position.set(0, 1.32, 6.25);
+  bus.add(hoodLamp);
   put(bus, box(2.5, 1.5, 0.02, glassMat), 0, 2.1, 6);
   {
     const surround = mat({ color: 0x141517 });
@@ -171,8 +201,11 @@ export function buildBus(scene) {
   smudgeCanvas = smudgeCanvases[1]; drawSmudge(2);
   smudgeTexes.forEach((t) => { t.needsUpdate = true; });
   // the dash: full depth in front of the driver, a shallow shelf on the door side so the front door can fold
-  put(bus, box(1.42, 0.45, 0.535, trim), 0.49, 1.165, 5.7175);       // driver's side: x -0.22..1.2, z 5.45..5.985
-  put(bus, box(0.98, 0.45, 0.315, trim), -0.71, 1.165, 5.8275);      // door side: x -1.2..-0.22, z 5.67..5.985
+  // (the dash block is where the engine bay is: while the hatch is up, and you're outside looking in, it's not there)
+  const dashBlocks = [
+    put(bus, box(1.42, 0.45, 0.535, trim), 0.49, 1.165, 5.7175),       // driver's side: x -0.22..1.2, z 5.45..5.985
+    put(bus, box(0.98, 0.45, 0.315, trim), -0.71, 1.165, 5.8275),      // door side: x -1.2..-0.22, z 5.67..5.985
+  ];
   // Teodor's old driver's log, pushed up against the windshield at the end of the dash (js/game/file.js)
   const logbook = put(bus, new THREE.Group(), 1.11, 1.405, 5.57);          // (left of the binnacle, so you can see it)
   logbook.rotation.y = 0.2;
@@ -687,6 +720,9 @@ export function buildBus(scene) {
       drawRadio();
     },
     setVisor(down) { state.visorDown = down; },
+    // the engine hatch at the front (it swings up over a second or so)
+    setHood(open) { state.hoodOpen = open; },
+    get hoodAmount() { return state.hoodAmt || 0; },
     // the folded clipping tucked into the visor strap
     setClipping(on) { tucked.visible = on; },
     // 0 = clean glass, 1 = ash handprints, 2 = handprints and a crack
@@ -727,6 +763,17 @@ export function buildBus(scene) {
     },
     get water() { return state.water || 0; },
     update(dt, info) {
+      // the engine hatch
+      const hoodTo = state.hoodOpen ? 1 : 0;
+      state.hoodAmt = state.hoodAmt || 0;
+      if (state.hoodAmt !== hoodTo) {
+        state.hoodAmt += Math.sign(hoodTo - state.hoodAmt) * Math.min(Math.abs(hoodTo - state.hoodAmt), dt * 1.1);
+        const k = state.hoodAmt * state.hoodAmt * (3 - 2 * state.hoodAmt);
+        hood.rotation.x = -2.05 * k;               // (up past level, clear of the bay, propped)
+        bay.visible = state.hoodAmt > 0.003;
+        dashBlocks.forEach((b) => { b.visible = !bay.visible; });
+        hoodLamp.intensity = 2.6 * k;
+      }
       // doors swing
       const target = state.doorsOpen ? 1 : 0;
       state.doorAmt += Math.sign(target - state.doorAmt) * Math.min(Math.abs(target - state.doorAmt), dt * 2.2);

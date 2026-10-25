@@ -1,7 +1,7 @@
 // NIGHT 1 — "Your first run on Route 9."
 // Kindness: wait for Mara (+1), let Jun ride (+1), stop at Canal Row (+1)
 import * as THREE from "three";
-import { STOPS, route, CURB, roadY } from "../world/route.js";
+import { STOPS, route, CURB } from "../world/route.js";
 import { curb, curbAt, flagStop, clockIn, closeDoorsAndGo, openUp, endShift, rheeLateness, teodorGone } from "./common.js";
 
 export async function night1(g) {
@@ -204,25 +204,9 @@ export async function night1(g) {
   if (g.bus.doorsOpen) await closeDoorsAndGo(g);
   if (f.maraAboard && !g.drive.moving) await g.departed();
 
-  // ---------- the old request stop: something that isn't a passenger
+  // ---------- the old request stop, out of service: just the post, by the road
   await g.until(() => g.d > STOPS["St. Agnes"] + 25);
-  const rd = Math.max(g.d + 130, STOPS["St. Agnes"] + 150);
-  g.props.requestStop.place(rd);
-  g.shadeAt(g.props.requestStop.spot());
-  await g.until(() => g.d > rd - 95);
-  g.mood("dread");
-  await g.muse("There's someone at the old request stop. The one they took out of service years ago.");
-  await g.think("No. Not someone. It's like somebody cut the shape of a man out of the night.");
-  await g.say("rhee", "Don't slow down, driver. That stop isn't on the schedule.");
-  await g.until(() => g.d > rd - 12 || (g.drive.speed < 0.3 && g.d > rd - 70), 30000);
-  g.sfx("whisper");
-  g.props.requestStop.light(false);
-  g.sfx("lightsout");
-  g.shadeHide();
-  await g.wait(800);
-  g.props.requestStop.light(true);
-  await g.think("Its head turned to follow me. Then the light went out. And it was gone.");
-  if (f.eddieRode) await g.say("eddie", "You saw that too, right? Okay. Good. I thought it was the double shift.");
+  g.props.requestStop.place(Math.max(g.d + 130, STOPS["St. Agnes"] + 150));
   g.mood("uneasy");
 
   // ---------- Eddie gets off by the canal, where there's no stop either
@@ -236,8 +220,10 @@ export async function night1(g) {
       if (off && (await openUp(g, 12000))) {
         await g.say("eddie", "Thanks, man. Same time tomorrow. I'll bring you some pie.");
         await g.alight("eddie", null, { vanish: false });
-        // round the front of the bus, across the road, to the rail along the water
-        const walk = g.actor("eddie")?.walk([route.at(dropAt + 7, 1.2, roadY(dropAt + 7)), curbAt(dropAt + 11, -CURB + 0.8)], { speed: 1.6, parent: g.bus.group.parent });
+        // round the front of the bus, across the road, to the rail along the water: worked out from where the bus
+        // is standing (wherever you stopped it), so he never walks back along it or through it
+        const nose = (x, z) => g.bus.group.localToWorld(new THREE.Vector3(x, 0, z));
+        const walk = g.actor("eddie")?.walk([nose(-2.1, 7.4), nose(2.4, 7.9), curbAt(g.d + 13, -CURB + 0.8)], { speed: 1.6, parent: g.bus.group.parent });
         await g.wait(2600);
         await g.think("He walked across the road in front of the bus, toward the canal. Toward the water.");
         await walk;

@@ -115,9 +115,11 @@ export async function night4(g) {
   g.park();
   await dying;
   if (f.carmenRode) await g.say("carmen", "It does this. Right here. It did this that night too.");
-  await g.wait(1500);
+  await hoodCheck(g);
+  await g.wait(1200);
   await g.muse("A streetlight glare, right in my eyes.");
   g.hint("Pull down the sun visor");
+  await g.focus(() => g.bus.group.localToWorld(new THREE.Vector3(0.7, 2.66, 5.42)));
   await g.interact(g.bus.interactables[2], "Pull down the visor");
   g.visor(true);
   g.bus.setClipping(false);
@@ -237,6 +239,110 @@ export async function night4(g) {
   await bridge(g, road, brakes);
   g.lockDoors(false);
   g.rain(false);
+}
+
+// The engine's died: you get out, walk round to the front and lift the hatch. Nothing wrong with it. Then something
+// on the road behind you, wet footsteps coming up on your left, and when you turn, Daniel is right there. All of it
+// through your own eyes, and the seat (and the controls) are yours again after.
+async function hoodCheck(g) {
+  const bus = g.bus.group;
+  const cam = g.camera;
+  const L = (x, y, z) => new THREE.Vector3(x, y, z);
+  const UP = L(0, 1, 0);
+  const aim = (pos, at) => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().lookAt(pos, at, UP));
+  const ease = (t) => t * t * (3 - 2 * t);
+  // a walk for the camera: [where your eyes are, what they're on, seconds to get there], in the bus's own space
+  const move = (keys, bob = 0) => {
+    const at = new THREE.CatmullRomCurve3(keys.map((k) => k[0]));
+    const on = new THREE.CatmullRomCurve3(keys.map((k) => k[1]));
+    const total = keys.reduce((n, k) => n + k[2], 0);
+    let t = 0;
+    return g.frames((dt) => {
+      t = Math.min(total, t + dt);
+      const k = ease(t / total);
+      const p = at.getPointAt(k);
+      p.y += Math.sin(t * 8.5) * bob * Math.min(1, t * 2) * Math.min(1, (total - t) * 2);
+      cam.position.copy(p);
+      cam.quaternion.copy(aim(p, on.getPointAt(k)));
+      return t >= total;
+    });
+  };
+  const turn = (to, seconds, curve = ease) => {
+    const from = cam.quaternion.clone();
+    const q = aim(cam.position, to);
+    let t = 0;
+    return g.frames((dt) => {
+      t = Math.min(1, t + dt / seconds);
+      cam.quaternion.slerpQuaternions(from, q, curve(t));
+      return t >= 1;
+    });
+  };
+  const seat = g.bus.driverEye.clone();
+  try {
+    await g.muse("Dead. I'd better take a look.");
+    g.setDoors(true);
+    g.fixedCamera(bus, seat, new THREE.Euler(0, Math.PI, 0));
+    cam.quaternion.copy(aim(seat, L(0.7, 1.6, 9)));
+    await g.wait(500);
+    // up out of the seat, down the steps, out, and round to the front of the bus
+    await move([
+      [seat, L(0.7, 1.6, 9), 0],
+      [L(0.4, 2.05, 4.5), L(-2.5, 1.5, 4.7), 1.1],
+      [L(-0.45, 2.0, 4.6), L(-3, 1.2, 4.9), 0.9],
+      [L(-1.05, 1.85, 4.65), L(-3, 1.1, 5.6), 0.8],
+      [L(-2.2, 1.65, 5.0), L(-2.0, 1.4, 9), 1.0],
+      [L(-1.95, 1.65, 6.9), L(-0.4, 1.2, 8.4), 1.3],
+      [L(-0.45, 1.62, 7.65), L(-0.3, 1.0, 6.0), 1.4],
+    ], 0.018);
+    // the hatch: it lifts up and out
+    g.bus.setHood(true);
+    g.fx("hood_open", { at: bus.localToWorld(L(0, 1.2, 6.2)) });
+    await g.wait(1300);
+    // in close, under it, looking down at the engine
+    await move([[cam.position.clone(), L(-0.3, 1.0, 6.0), 0], [L(-0.3, 1.45, 7.05), L(-0.15, 1.02, 5.84), 1.2]]);
+    await g.wait(600);
+    await g.say("you", "I don't see anything wrong with the engine.");
+    // something behind you, on your left: wet steps on the road, coming closer
+    g.fx("wet_steps", { at: bus.localToWorld(L(-5.5, 0.3, 9.5)) });
+    await g.wait(2200);
+    await move([[cam.position.clone(), L(-0.15, 1.02, 5.84), 0], [L(-0.4, 1.62, 7.3), L(-0.3, 1.1, 6.0), 0.7]]);
+    await g.say("you", "What was that sound?");
+    // he's there before you look (and nowhere you could have seen him arrive)
+    const dan = g.spawn("daniel", "daniel", { at: bus.localToWorld(L(-1.9, 0, 8.35)) });
+    const eye = cam.getWorldPosition(new THREE.Vector3());
+    dan.root.rotation.y = Math.atan2(eye.x - dan.root.position.x, eye.z - dan.root.position.z);
+    dan.watch(cam);
+    await turn(L(-1.9, 1.62, 8.35), 0.22, (t) => 1 - (1 - t) ** 3);
+    g.scareSound("daniel_sting");
+    g.shake(0.9);
+    await g.wait(450);
+    await g.say("daniel", "Can I get a ride?");
+    await g.wait(500);
+    // the lights stutter, and in the dark he's gone
+    g.lamps(false);
+    g.interior("flicker");
+    g.sfx("lightsout");
+    await g.wait(260);
+    g.despawn("daniel");
+    await g.wait(420);
+    g.lamps(true);
+    g.interior("on");
+    await g.wait(700);
+    await g.muse("Nobody. Just a wet patch on the road, where he was standing.");
+    g.bus.setHood(false);
+    g.fx("hood_close", { at: bus.localToWorld(L(0, 1.2, 6.2)) });
+    await g.wait(900);
+    await g.fade(1, 500);
+  } finally {
+    // (whatever happened, you're back in your seat, doors shut, hatch down, the lights on)
+    g.despawn("daniel");
+    g.lamps(true);
+    g.interior("on");
+    g.bus.setHood(false);
+    g.setDoors(false);
+    g.sitInBus();
+  }
+  await g.fade(0, 700);
 }
 
 // From MAKE UP THE TIME to the bridge, the bus drives itself, at one speed, all the way: m/s

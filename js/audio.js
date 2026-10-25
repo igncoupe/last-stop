@@ -6,7 +6,7 @@ let master, musicBus, ambBus, sfxBus, voiceBus, reverb, noiseBuf, muffle;
 // (and a way out that skips the muffle: for something right in your face, which you hear even underwater)
 let near, nearSfx;
 // the scares go through their own limiter, so a scream on top of a thunderclap is loud, not distorted
-function limiter(into, threshold = -12) {
+function makeLimiter(into, threshold = -12) {
   const c = ctx.createDynamicsCompressor();
   c.threshold.value = threshold;
   c.knee.value = 6;
@@ -66,9 +66,9 @@ function init() {
   userMusic = bus(levels.music);
   userSfx = bus(levels.sfx);
   userHorror = bus(levels.horror);
-  horrorBus = limiter(userHorror);
+  horrorBus = makeLimiter(userHorror);
   nearSfx = bus(levels.horror, near);
-  nearSfx.limit = limiter(nearSfx);
+  nearSfx.limit = makeLimiter(nearSfx);
   musicBus = bus(0.55, userMusic);
   ambBus = bus(0.7, userSfx);
   sfxBus = bus(0.9, userSfx);

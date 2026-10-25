@@ -454,7 +454,8 @@ export function createTraffic(scene, sfx, horn) {
         if (timer <= 0) {
           timer = 14 + Math.random() * 16;
           const mode = pick(night);
-          if (okAt(busD + 165, route.length)) spawn(mode, busD);
+          // (none until the bus is well out of the depot: the road ends in there)
+          if (busD > 150 && okAt(busD + 165, route.length)) spawn(mode, busD);
         }
       }
       camera.getWorldPosition(cam);
@@ -498,7 +499,7 @@ export function createTraffic(scene, sfx, horn) {
         }
         c.d -= c.speed * dt;
         place(c);
-        if (rel < -45) remove(c);
+        if (rel < -45 || c.d < 48) remove(c);         // (and nothing drives on into the depot)
       }
       // move the shared lights to the cars that need them
       let domeCar = null, headCar = null;

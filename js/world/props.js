@@ -263,9 +263,10 @@ function buildDepot(scene, props) {
   };
   const walls = [
     add(0.4, 7, 52, 10.2, 3.5, -26), add(0.4, 7, 52, -10.2, 3.5, -26), add(20.8, 7, 0.4, 0, 3.5, -52.2),
-    add(8, 7, 0.4, 6, 3.5, 0), add(4, 7, 0.4, -8, 3.5, 0),
+    // the front, either side of the doorway: wide enough for the whole road (x -5 to 5) to run out through it
+    add(4.8, 7, 0.4, 7.8, 3.5, 0), add(4.8, 7, 0.4, -7.8, 3.5, 0),
   ];
-  add(8, 2, 0.4, -2, 6, 0);
+  add(10.8, 2, 0.4, 0, 6, 0);
   add(20.8, 0.3, 52.4, 0, 7.1, -26, mat({ color: 0x1a1b1e }));
   for (let z = -48; z < 0; z += 8) add(0.3, 0.08, 3, -2.3, 6.9, z, glow(0xe8f0ff));
   // dispatch office with a lit window

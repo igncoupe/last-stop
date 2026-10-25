@@ -33,6 +33,10 @@ export async function night5(g) {
     await g.board("marcus", "L2", 1.5);
     await g.think("He paid with a token. They stopped making tokens before I was born.");
     await g.say("marcus", "Sorry, sir. I'm Marcus. I'm a little nervous. I'm going to ask her tonight. I've had the ring a month.");
+    const reply = await g.choose(["“Congratulations.”", "“Where are you meeting her?”"]);
+    if (reply === 0) await g.say("marcus", "Don't say that yet, sir. She hasn't said yes. I practiced it in the bathroom mirror about forty times.");
+    else await g.say("marcus", "Out at Ashgrove. At the stop. She waits for the last bus every night, so I don't walk home in the dark.");
+    await g.say("marcus", "You'll tell me when we're close? I don't want to miss it.");
   } else {
     await g.say("marcus", "Right. Course not, sir. Not anymore.");
     marcus.walk([new THREE.Vector3(-4.9, 0, -6)], { speed: 1.2 }).then(() => g.vanish("marcus"));
@@ -126,6 +130,9 @@ export async function night5(g) {
     const look = ["lena", "daniel", "ivy", "eddie", "dorothy", "frank", "carmen", "marcus"][i] || "drowned";
     crowd.push(g.spawn(`g${i}`, look, { ghost: true, at: mysteryCurb(g, -2.4 + (i % 7) * 0.8, 6.0 + Math.floor(i / 7) * 0.8), yaw: route.heading(md) + Math.PI / 2 }));
   }
+  // (Marcus is still in his seat as you pull in: he's only out there in the crowd once his seat is empty)
+  const marcusOut = crowd[7];
+  if (f.marcusRode && g.actor("marcus")) marcusOut.show(false);
   await g.until(() => g.d > md - 80);
   g.sky("storm");
   g.storm(true);
@@ -139,6 +146,7 @@ export async function night5(g) {
   await g.think("Fourteen of them. Standing in a rain that isn't falling anywhere else. They're not knocking. They're just waiting. Like they always have.");
   if (f.marcusRode && g.actor("marcus")) {
     g.vanish("marcus");
+    marcusOut.show(true);
     await g.think("Marcus's seat is empty. He's out there with them, in the rain. He's still smiling.");
   }
   g.actor("g0")?.watch(g.camera);             // your mother, at the front of the shelter, looking right at you
@@ -438,7 +446,8 @@ async function dawn(g, deadAir) {
   const junComes = f.junRode || f.junFound;
   if (junComes) {
     const jun = g.spawn("jun", "jun", { at: g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)) });
-    jun.walk([busDoor.clone().setY(0).add(new THREE.Vector3(2.2, 0, 0))], { speed: 1.8 });
+    // (to the pavement just in front of you, clear of the bus and its door)
+    jun.walk([g.bus.group.localToWorld(new THREE.Vector3(-3.3, 0, 5.4)).setY(0)], { speed: 1.8 });
   }
   await g.fade(0, 3000, true);
   await g.muse("Northgate. Morning. The bus is empty, and dry.");

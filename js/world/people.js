@@ -473,7 +473,11 @@ export class Person {
         const dx = target.x - p.x;
         const dz = target.z - p.z;
         const dist = Math.hypot(dx, dz);
-        const step = this.speed * dt;
+        // turning: a sharp turn is made mostly on the spot, a step or two, not by sliding sideways or walking
+        // backwards; a gentle one is walked through
+        const want = Math.atan2(dx, dz);
+        const diff = Math.atan2(Math.sin(want - this.root.rotation.y), Math.cos(want - this.root.rotation.y));
+        const step = this.speed * dt * (dist > 0.05 ? Math.max(0.15, Math.cos(Math.min(Math.abs(diff), Math.PI / 2))) : 1);
         // on steps, the height follows what's underfoot: a quick lift at each edge, not a ramp
         const gy = this.ground ? this.ground(p.x + (dx / (dist || 1)) * 0.12, p.z + (dz / (dist || 1)) * 0.12) : target.y;
         const climbing = gy - p.y;
@@ -485,10 +489,7 @@ export class Person {
         } else {
           p.x += (dx / dist) * step;
           p.z += (dz / dist) * step;
-          const want = Math.atan2(dx, dz);
-          let diff = want - this.root.rotation.y;
-          diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-          this.root.rotation.y += diff * Math.min(1, dt * 10);
+          this.root.rotation.y += Math.sign(diff) * Math.min(Math.abs(diff), Math.max(1.2, Math.abs(diff) * 6) * dt);
         }
         this.walkT += dt * this.speed * 4.2;
         const s = Math.sin(this.walkT);
