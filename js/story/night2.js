@@ -228,7 +228,7 @@ export async function night2(g) {
       await g.board("dorothy", "R1", 0.9);
       f.dorothyRode = true;
     });
-    if (!stayed) g.actor("dorothy")?.walk([curb("St. Agnes", 2.4)], { speed: 0.8 });
+    if (!stayed) g.actor("dorothy")?.walk([curb("St. Agnes", 2.4)], { speed: 0.8, parent: g.actor("dorothy").scene });
   } else {
     if (f.maraAboard) await g.say("mara", "Seriously? That was my damn stop.");
     await g.muse("There was an old woman with a knitting bag at St. Agnes. She waved, like she knew the bus.");
@@ -414,7 +414,7 @@ export async function night2(g) {
   if (f.junAboard) {
     await g.say("jun", "Night, driver.");
     if (f.junTalked) g.spawn("junmom", "junmom", { at: terminalDoor() });
-    await g.alight("jun", terminalDoor());
+    await g.alight("jun", terminalDoor(), { wait: false });
     f.junAboard = false;
   }
   await teodorGone(g, "The back row is empty again. Something hit the floor back there and rolled. Another wet seat.");

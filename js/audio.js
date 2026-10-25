@@ -5,10 +5,22 @@ let ctx = null;
 let master, musicBus, ambBus, sfxBus, voiceBus, reverb, noiseBuf, muffle;
 // (and a way out that skips the muffle: for something right in your face, which you hear even underwater)
 let near, nearSfx;
+// the scares go through their own limiter, so a scream on top of a thunderclap is loud, not distorted
+function limiter(into, threshold = -12) {
+  const c = ctx.createDynamicsCompressor();
+  c.threshold.value = threshold;
+  c.knee.value = 6;
+  c.ratio.value = 12;
+  c.attack.value = 0.002;
+  c.release.value = 0.25;
+  c.connect(into);
+  return c;
+}
 let volume = 0.8;
-// the player's own mix (settings): voices, music, and effects with ambience
-const levels = { voices: 1, music: 1, sfx: 1 };
-let userVoice, userMusic, userSfx;
+// the player's own mix (settings): voices, music, effects with ambience, and the scares (jumpscares, the thunder,
+// the stingers: their own level, so turning the everyday sounds down doesn't take the fright out of them)
+const levels = { voices: 1, music: 1, sfx: 1, horror: 1 };
+let userVoice, userMusic, userSfx, userHorror, horrorBus;
 let muted = false;
 let currentMood = null;
 let moodVoices = [];
@@ -53,7 +65,10 @@ function init() {
   userVoice = bus(levels.voices);
   userMusic = bus(levels.music);
   userSfx = bus(levels.sfx);
-  nearSfx = bus(levels.sfx, near);
+  userHorror = bus(levels.horror);
+  horrorBus = limiter(userHorror);
+  nearSfx = bus(levels.horror, near);
+  nearSfx.limit = limiter(nearSfx);
   musicBus = bus(0.55, userMusic);
   ambBus = bus(0.7, userSfx);
   sfxBus = bus(0.9, userSfx);
@@ -140,6 +155,9 @@ function out(node, peak, t, a, dcy, rev = 0, pan = 0) {
   if (rev) send(g, rev * (sfxDest ? sfxDestLevel * 0.6 : 1));
   return g;
 }
+
+// the sounds of the scares themselves: played on the scares' level (see levels)
+const HORROR = new Set(["sting", "scream", "shriek", "thud", "slam", "crack", "thunder", "crackle"]);
 
 const SFX = {
   sting(t) {
@@ -241,7 +259,7 @@ const SFX = {
     drive.connect(g);
     out(noise(t, dur, "bandpass", 3000, 1.2), 0.5, t, 0.02, dur * 0.9, 0.3);        // the rasp of breath in it
     out(tone(t, 0.9, "sine", 70, 28), 1.4, t, 0.002, 0.85, 0.3);                     // body blow
-    g.connect(userSfx);
+    g.connect(horrorBus);
     send(g, 0.5);
     // everything else drops away for a moment
     for (const b of [musicBus, ambBus]) {
@@ -406,8 +424,16 @@ const SFX = {
     g.gain.linearRampToValueAtTime(0.6, t + 1.2);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 4.4);
     n.connect(g);
-    g.connect(sfxBus);
+    g.connect(sfxDest || sfxBus);
     send(g, 0.5);
+  },
+  // lightning right on top of you: the air splitting (a hard crack of noise, a body blow), then the rumble. (What
+  // plays while the recording of one is still on its way.)
+  crackle(t) {
+    out(noise(t, 0.09, "highpass", 1200), 1.4, t, 0.001, 0.08, 0.5);
+    out(noise(t + 0.01, 0.4, "bandpass", 2500, 0.8), 0.7, t + 0.01, 0.003, 0.38, 0.6);
+    out(tone(t, 0.8, "sine", 60, 24), 1.3, t, 0.002, 0.75, 0.4);
+    SFX.thunder(t + 0.12);
   },
   heartbeat(t, beats = 6, bpm = 72) {
     const gap = 60 / bpm;
@@ -703,9 +729,11 @@ function hornVoice(kind, t, dest, reverb = 0.18) {
 // each jumpscare, the payphone bell, the hospital door. They're fetched as soon as there's sound. One that isn't in
 // yet (or never comes) doesn't play: fx() returns null, and the caller falls back on a synthesized sound.
 const FX_FILES = ["daniel_door", "daniel_window", "breath_behind", "daniel_rise", "door_hands", "window_hands", "carwoman_glass",
-  "mirror_creep", "mirror_drowned", "shade_roof", "shade_window", "underwater_scream", "payphone_ring", "door_latch"];
+  "mirror_creep", "mirror_drowned", "shade_roof", "shade_window", "underwater_scream", "payphone_ring", "door_latch",
+  "thunder_crack", "hood_open", "hood_close", "wet_steps", "daniel_sting"];
 // (they came out at different levels: these even them up)
-const FX_LEVEL = { mirror_creep: 0.45, carwoman_glass: 0.6, daniel_window: 0.55, shade_roof: 0.75, shade_window: 1.2, daniel_rise: 1.5, window_hands: 1.3, breath_behind: 1.5 };
+const FX_LEVEL = { mirror_creep: 0.45, carwoman_glass: 0.6, daniel_window: 0.55, shade_roof: 0.75, shade_window: 1.2, daniel_rise: 1.5, window_hands: 1.3, breath_behind: 1.5,
+  daniel_sting: 0.55, wet_steps: 4, hood_open: 1.3 };
 const fxBufs = new Map();          // name -> AudioBuffer (null while it's on its way)
 let fxVersions = {};
 function loadFx(name) {
@@ -781,9 +809,9 @@ function place(e, now = false) {
     if (e.panner) e.panner.pan.setTargetAtTime(Math.max(-1, Math.min(1, side)) * 0.85, at, 0.04);
   }
 }
-// the score and the ambience drop away under something loud, and come back
+// the score, the ambience and the everyday effects drop away under something loud, and come back (the voices don't)
 function duck(t, seconds) {
-  for (const [b, base] of [[musicBus, live.size ? 0.32 : 0.55], [ambBus, 0.7]]) {
+  for (const [b, base] of [[musicBus, live.size ? 0.32 : 0.55], [ambBus, 0.7], [sfxBus, 0.9]]) {
     b.gain.cancelScheduledValues(t);
     b.gain.setValueAtTime(b.gain.value, t);
     b.gain.linearRampToValueAtTime(base * 0.25, t + 0.05);
@@ -798,7 +826,7 @@ function fx(name, { gain = 1, at = null, range, ref, outside, pan = 0, offset = 
   if (!ctx) return null;
   const buf = fxBufs.get(name);
   if (!buf) { loadFx(name); return null; }
-  const e = emitter({ gain: gain * (FX_LEVEL[name] || 1), at, range, ref, outside, pan, rev: close ? 0 : rev, dest: close ? nearSfx : loud ? userSfx : null });
+  const e = emitter({ gain: gain * (FX_LEVEL[name] || 1), at, range, ref, outside, pan, rev: close ? 0 : rev, dest: close ? nearSfx.limit : loud ? horrorBus : null });
   const src = ctx.createBufferSource();
   src.buffer = buf;
   src.connect(e.input);
@@ -1119,7 +1147,19 @@ export const Sound = {
     f.setValueAtTime(f.value, ctx.currentTime);
     f.exponentialRampToValueAtTime(on ? 380 : 22000, ctx.currentTime + seconds);
   },
-  sfx(name, ...args) { if (ctx && SFX[name]) SFX[name](ctx.currentTime + 0.02, ...args); },
+  sfx(name, ...args) {
+    if (!ctx || !SFX[name]) return;
+    // the scares' own sounds go out on the scares' level
+    if (!HORROR.has(name)) { SFX[name](ctx.currentTime + 0.02, ...args); return; }
+    sfxDest = horrorBus;
+    sfxDestLevel = 1 / 0.6;             // (their echo as loud as on the effects bus)
+    try { SFX[name](ctx.currentTime + 0.02, ...args); } finally { sfxDest = null; sfxDestLevel = 1; }
+  },
+  // a lightning strike right overhead: the thunder crack, on the scares' level, everything else ducking under it
+  thunderCrack() {
+    if (!ctx) return;
+    if (!fx("thunder_crack", { loud: true, offset: 0.09, duck: 2.6 })) { Sound.sfx("crackle"); duck(ctx.currentTime, 2.6); }
+  },
   fx,
   // is this recording in (so it'll play)
   hasFx(name) { return !!fxBufs.get(name); },
@@ -1192,7 +1232,10 @@ export const Sound = {
   },
   setLevels(l) {
     Object.assign(levels, l);
-    if (ctx) { ramp(userVoice.gain, levels.voices, 0.1); ramp(userMusic.gain, levels.music, 0.1); ramp(userSfx.gain, levels.sfx, 0.1); ramp(nearSfx.gain, levels.sfx, 0.1); }
+    if (ctx) {
+      ramp(userVoice.gain, levels.voices, 0.1); ramp(userMusic.gain, levels.music, 0.1); ramp(userSfx.gain, levels.sfx, 0.1);
+      ramp(userHorror.gain, levels.horror, 0.1); ramp(nearSfx.gain, levels.horror, 0.1);
+    }
   },
   setVolume(v) { volume = v; if (ctx && !muted) { ramp(master.gain, v, 0.2); ramp(near.gain, v, 0.2); } },
   setMuted(m) { muted = m; if (ctx) { ramp(master.gain, m ? 0 : volume, 0.2); ramp(near.gain, m ? 0 : volume, 0.2); } },

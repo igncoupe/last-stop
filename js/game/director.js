@@ -57,6 +57,58 @@ export function createDirector(w) {
   }
 
   // anyone standing or sitting in the bus counts as on it
+  // The stop with no name isn't there until you're close to it. It comes in a lightning strike, right overhead (the
+  // white-out hides it arriving), and, once you've pulled away from it, it goes in another (not Ashgrove, on the
+  // last night: you look back at it). Whoever's waiting at it isn't there before it is. When the bus is moved
+  // rather than driven (a new night, a scene that puts it somewhere), the stop just is or isn't there.
+  const REVEAL = 55, GONE = 6;
+  let stopLastD = null;
+  let stopAt = null;
+  const hiddenAtStop = new Set();
+  function watchStop() {
+    const m = props.mystery;
+    const d = drive.d;
+    const moved = stopLastD !== null && Math.abs(d - stopLastD) > 6;
+    stopLastD = d;
+    if (m.d === null) return;
+    if (stopAt !== m.d) {
+      // (it moved on ahead of you: if you could see it, it goes in a strike)
+      if (m.shown) w.strikeDown();
+      stopAt = m.d;
+    }
+    if (!m.shown) {
+      // nobody waiting at an empty curb
+      const at = m.at;
+      for (const p of actors.values()) {
+        if (p.root.visible && !onBus(p) && p.root.getWorldPosition(earA).distanceTo(at) < 9) { p.root.visible = false; hiddenAtStop.add(p); }
+      }
+      const coming = !drive.state.detached && d > m.d - REVEAL && d < m.d + GONE;
+      if (coming && !w.stopStriking) {
+        const show = () => {
+          w.stopStriking = false;
+          m.show(true);
+          hiddenAtStop.forEach((p) => { if (p.root.parent) p.root.visible = true; });
+          hiddenAtStop.clear();
+        };
+        if (moved) show();
+        else { w.stopStriking = true; w.strikeDown(show); }
+      }
+    } else if (s.night !== 5 && !drive.state.detached && d >= m.d + GONE && drive.moving && !w.stopStriking) {
+      const hide = () => { w.stopStriking = false; m.show(false); };
+      if (moved) hide();
+      else { w.stopStriking = true; w.strikeDown(hide); }
+    }
+  }
+  // the doors open (if they're shut) for someone getting on or off, and they wait for them to be open
+  // (never while the bus is moving: false, and they stay where they are)
+  async function doorsOpenFor(p) {
+    if (drive.moving) return false;
+    if (!bus.doorsOpen) g.setDoors(true);
+    if (bus.doorAmount > 0.92) return true;
+    p.stand();
+    await until(() => bus.doorAmount > 0.92 || drive.moving);
+    return !drive.moving;
+  }
   function onBus(p) {
     for (let o = p.root.parent; o; o = o.parent) if (o === bus.group) return true;
     return false;
@@ -409,6 +461,8 @@ export function createDirector(w) {
       const at = p.root.getWorldPosition(new THREE.Vector3());
       // someone already up on the steps (they came to the door to ask) just carries on in
       if (at.distanceTo(step) >= at.distanceTo(outside)) await p.walk([outside], { speed, parent: scene });
+      // nobody walks through the glass: shut, the doors open for them, and they wait at the bottom step until they have
+      if (!(await doorsOpenFor(p))) return;          // (the bus pulled away before they got to it)
       const seatPos = bus.seatSlots[takeSeat(key, seatName)];
       const climbing = p.walk([bus.boardPath[1], bus.boardPath[2]], { speed, parent: bus.group, ground: bus.groundAt });
       // they're aboard the moment they're on the steps: close the doors and pull away while they're still
@@ -421,19 +475,23 @@ export function createDirector(w) {
       p.sit(bus.group, seatPos, 0);
     },
     // get off the bus and walk somewhere (a world position), then vanish
-    async alight(key, to = null, { vanish = true, speed = 1.4 } = {}) {
+    // (wait: false, the story carries on as soon as they're down off the bus, and they walk on by themselves)
+    async alight(key, to = null, { vanish = true, speed = 1.4, wait = true } = {}) {
       s.waiting = `${key} getting off`;
       const p = actors.get(key);
       if (!p) return;
       const z = p.root.position.z;
       freeSeatOf(key);
       p.stand();
-      await p.walk([new THREE.Vector3(0, 0.45, z), bus.boardPath[2], bus.boardPath[1], bus.boardPath[0]], { speed, parent: bus.group, ground: bus.groundAt });
+      await p.walk([new THREE.Vector3(0, 0.45, z), bus.boardPath[2]], { speed, parent: bus.group, ground: bus.groundAt });
+      // (nobody steps off a moving bus: they wait at the top of the steps till it stops)
+      while (!(await doorsOpenFor(p))) await until(() => !drive.moving);
+      await p.walk([bus.boardPath[1], bus.boardPath[0]], { speed, parent: bus.group, ground: bus.groundAt });
       p.leaving = true;
       if (to) {
         // they walk off on their own; if the bus pulls away first, the story doesn't wait for them
         const walked = p.walk([to], { speed, parent: scene }).then(() => { if (vanish && actors.get(key) === p) g.despawn(key); });
-        await Promise.race([walked, until(() => drive.moving)]);
+        if (wait) await Promise.race([walked, until(() => drive.moving)]);
       } else if (vanish) g.despawn(key);
     },
     // someone hands you something: they come up close (onto the bottom step, if you're in your seat),
@@ -576,10 +634,9 @@ export function createDirector(w) {
     // a jumpscare's own sound, loud, everything else dropping away under it (false if it isn't in: play another)
     scareSound(name, opts = {}) { return !!Sound.fx(name, { loud: true, duck: 1.6, ...opts }); },
     // The jolt that goes with a scare the story stages itself (the drowned coming for you): the sting, the scream
-    // (or `sound`, the recording made for it), the flash and the shake every jumpscare has. False if jumpscares are
-    // turned off (play the scene without it).
+    // (or `sound`, the recording made for it), the flash and the shake every jumpscare has. (Always true: the
+    // jumpscares can't be turned off.)
     scareHit({ scream = 1.6, shake = 2.4, sound = null, close = false } = {}) {
-      if (!settings.scares) return false;
       scareSound(sound, () => { Sound.sfx("sting"); Sound.sfx("scream", scream); }, { close });
       Sound.sfx("bubbles", 1.2);
       jolt(shake);
@@ -594,11 +651,6 @@ export function createDirector(w) {
     //   lead:  start the sound this many seconds before it comes, for a sound with its own run-up
     async scare(kind = "face", { look = "drowned", sound, at = null, lead = 0, gain = 1 } = {}) {
       s.waiting = "scare " + kind;
-      if (!settings.scares) {
-        Sound.sfx("heartbeat", 3, 96);
-        await g.wait(700);
-        return;
-      }
       const before = bus.interiorMode;
       const LEGACY = {
         face: () => { Sound.sfx("sting"); Sound.sfx("scream", 1.5); },
@@ -830,15 +882,6 @@ export function createDirector(w) {
       still = drive.speed < 0.5 ? still + dt : 0;
       return nose() > d0 - 14 || still > 2.5;       // stop, and it comes to you anyway
     }, 25000);
-    if (!settings.scares) {
-      bus.setInterior("flicker");
-      Sound.sfx("lightsout");
-      await g.wait(500);
-      shade.hide();
-      bus.setInterior("on");
-      Sound.sfx("heartbeat", 3, 96);
-      return;
-    }
     player.lookAtSoon(() => bus.group.localToWorld(new THREE.Vector3(0.3, 2.0, 6)));   // you look up when it moves (the point rides with the bus)
     Sound.sfx("shriek");
     const land = bus.group.localToWorld(bus.windshieldLanding.clone());
@@ -851,14 +894,6 @@ export function createDirector(w) {
     w.traffic.hold(30);
     s.waiting = "scare window";
     g.interrupt();
-    if (!settings.scares) {
-      bus.setInterior("flicker");
-      Sound.sfx("lightsout");
-      await g.wait(500);
-      bus.setInterior("on");
-      Sound.sfx("heartbeat", 3, 96);
-      return;
-    }
     const from = new THREE.Vector3(3.8, 0.3, 8.5);         // out in the dark, ahead of you and off to the side
     const land = new THREE.Vector3(1.34, 0.32, 4.85);      // its feet; its body flat on the glass beside your face
     shade.standIn(bus.group, from, new THREE.Vector3(0.7, 1.7, 4.8), "crouch");
@@ -937,14 +972,6 @@ export function createDirector(w) {
     w.traffic.hold(30);
     s.waiting = "scare drop";
     g.interrupt();
-    if (!settings.scares) {
-      bus.setInterior("flicker");
-      Sound.sfx("lightsout");
-      await g.wait(500);
-      bus.setInterior("on");
-      Sound.sfx("heartbeat", 3, 96);
-      return;
-    }
     const roof = new THREE.Vector3(0.3, 3.25, 5.3);
     shade.standIn(bus.group, roof, new THREE.Vector3(0.3, 3.25, 12), "crouch");
     // if you're not already looking out the front, you look up at it (a point on the glass, which travels with the bus)
@@ -1138,6 +1165,7 @@ export function createDirector(w) {
       return { text: nextName ? `NEXT: ${nextName.toUpperCase()}` : "ROUTE 9", glitch: false };
     },
     update(dt) {
+      watchStop();
       g.tickDread(dt);
       driftUpdate(bubbles, dt, 0.9);
       driftUpdate(silt, dt, 0.06);

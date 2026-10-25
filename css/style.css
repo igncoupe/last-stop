@@ -69,6 +69,10 @@ button, input { font: inherit; color: inherit; }
 .nav.urgent { color: #fff; border-color: #fff; animation: pulse .8s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .55; } }
 body.scare-flash #view { filter: contrast(1.7) brightness(1.35) saturate(.4); }
+body.less-flash.scare-flash #view { filter: contrast(1.2) brightness(1.08) saturate(.7); }
+/* a lightning strike right on top of you: the light everywhere at once, a little brighter where you're looking */
+.whiteout { position: fixed; inset: 0; z-index: 7; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at 50% 38%, #ffffff 0%, #f1f4fb 50%, #d9e0ee 100%); }
 .crosshair { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(255, 255, 255, .7); box-shadow: 0 0 2px #000; }
 .crosshair.hot { width: 8px; height: 8px; margin: -4px 0 0 -4px; background: #fff; }
 .prompt {

@@ -55,5 +55,25 @@
  "door_latch": [
   1.6,
   "A heavy wooden hospital room door swings shut and the steel latch clicks into place, in a quiet empty room. No music."
+ ],
+ "thunder_crack": [
+  4.0,
+  "Lightning strikes right overhead: an explosive, ear-splitting crack of thunder, like the sky tearing open, an instant sharp transient, then a deep rolling rumble that dies away. Extremely close. No rain, no music."
+ ],
+ "hood_open": [
+  1.8,
+  "Outdoors on a quiet street: a heavy metal access panel on the front of a bus is unlatched with a solid clunk and swung up on stiff, creaking hinges. No music."
+ ],
+ "hood_close": [
+  1.2,
+  "Outdoors: a heavy metal access panel on the front of a bus is slammed shut, a hard metallic bang and a latch click. No music."
+ ],
+ "wet_steps": [
+  3.4,
+  "Slow, dragging footsteps on wet asphalt, coming closer from a few meters away, soaked shoes squelching, water dripping off someone. Night, quiet street, no music."
+ ],
+ "daniel_sting": [
+  2.4,
+  "A sudden horror movie stinger: a single violent hit of shrieking dissonant strings and a deep sub-bass boom, then a ringing, unsettling decay. No voices."
  ]
 }

@@ -72,6 +72,19 @@ export function buildProps(scene) {
     props.stops[name] = { name, d, group: s.group, wait: route.at(d, CURB - 1.6, 0) };
   }
 
+  // is a world point under a shelter's roof? (the rain doesn't fall in there; the stop with no name's own does)
+  const roofs = [];
+  for (const st of Object.values(props.stops)) { st.group.updateMatrixWorld(true); roofs.push({ inv: st.group.matrixWorld.clone().invert(), at: st.group.position }); }
+  const tmpRoof = new THREE.Vector3();
+  props.underShelter = (x, y, z, near) => {
+    for (const r of roofs) {
+      if (near && r.at.distanceToSquared(near) > 900) continue;
+      tmpRoof.set(x, y, z).applyMatrix4(r.inv);
+      if (tmpRoof.x > -1.1 && tmpRoof.x < 0.9 && tmpRoof.z > -2.25 && tmpRoof.z < 2.25 && tmpRoof.y < 2.7) return true;
+    }
+    return false;
+  };
+
   // a missing poster on the Market St shelter (shown only on some nights)
   const poster = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.8), mat({ map: tex.poster(["MISSING", "JUN PARK, 15", "PLEASE CALL"]), side: THREE.DoubleSide }));
   poster.position.set(-0.9, 1.5, 1.2);
@@ -85,8 +98,10 @@ export function buildProps(scene) {
   // its light stays in the scene and just dims while the stop isn't there
   const mLight = new THREE.PointLight(0xffc860, 0, 16, 1.4);
   scene.add(mLight);
-  const mRain = rainBox(260, 1.8, 2.6, 4.4, 0x9fb4d0);
-  mRain.position.set(-0.1, 1.3, 0);
+  // It rains inside it, and only inside it: between its glass walls, under its roof, onto its floor. (A streak is
+  // 0.45 m tall, drawn up from its drop; the roof's underside is at 2.54 m, the sidewalk at 0.15 m.)
+  const mRain = rainBox(240, 1.66, 1.89, 4.24, 0x9fb4d0);
+  mRain.position.set(-0.06, 0.16 + 1.89 / 2, 0);
   m.group.add(mRain);
   m.group.visible = false;
   scene.add(m.group);
@@ -94,11 +109,12 @@ export function buildProps(scene) {
     group: m.group,
     d: null,
     named: false,
+    shown: false,
+    // where it is tonight (null: not tonight). It isn't there until show(true): see the director, which brings it
+    // in a lightning strike
     place(d) {
       this.d = d;
-      m.group.visible = d !== null;
       if (this.box) { this.box.removeFromParent(); this.box = null; }
-      mLight.intensity = d !== null ? 30 : 0;
       if (d !== null) {
         place(m.group, d, CURB - 1.4);
         m.group.updateMatrixWorld(true);
@@ -106,7 +122,15 @@ export function buildProps(scene) {
         this.box = stopBox(d);
         scene.add(this.box);
       }
+      this.show(false);
     },
+    show(on) {
+      this.shown = on && this.d !== null;
+      m.group.visible = this.shown;
+      mLight.intensity = this.shown ? 30 : 0;
+      if (this.box) this.box.visible = this.shown;
+    },
+    get at() { return m.group.position; },
     setName(text) {
       const t = tex.sign(text, { bg: "#d8b24a", fg: "#1a1206" });
       m.plate.material[0].map = t;

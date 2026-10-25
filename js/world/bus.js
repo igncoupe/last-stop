@@ -674,6 +674,8 @@ export function buildBus(scene) {
     driverEye: new THREE.Vector3(0.7, 1.72, 4.78),
     steeringWheel: wheelG,
     get doorsOpen() { return state.doorsOpen; },
+    // how far open the doors are right now (0 shut, 1 open: they take a moment either way)
+    get doorAmount() { return state.doorAmt; },
     setDoors(open) {
       if (open !== state.doorsOpen) state.btnT = 0.18;     // the button clicks down
       state.doorsOpen = open;

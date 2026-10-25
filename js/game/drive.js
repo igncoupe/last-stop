@@ -43,6 +43,10 @@ export function createDrive(bus) {
   }
   place();
 
+  // how far short of a stop still counts as at it. Northgate is the end of the road: anywhere in the
+  // terminal's last stretch will do, so you never have to creep the last few meters to finish the night
+  const before = (stopD) => (stopD > s.endD - 2 ? 55 : STOP_BEFORE);
+
   return {
     state: s,
     get d() { return s.d; },
@@ -50,9 +54,9 @@ export function createDrive(bus) {
     get speed() { return s.speed; },
     get moving() { return s.speed > 0.3; },
     stoppedNear(stopD) {
-      return s.speed < 0.35 && s.d > stopD - STOP_BEFORE && s.d < stopD + STOP_AFTER;
+      return s.speed < 0.35 && s.d > stopD - before(stopD) && s.d < stopD + STOP_AFTER;
     },
-    inZone(stopD) { return s.d > stopD - STOP_BEFORE && s.d < stopD + STOP_AFTER; },
+    inZone(stopD) { return s.d > stopD - before(stopD) && s.d < stopD + STOP_AFTER; },
     passed(stopD) { return s.d >= stopD + STOP_AFTER; },    // no gap: you are always at a stop, short of it, or past it
     // scripts: drive yourself at a speed, optionally stopping at a distance
     auto(speed, stopAt = null) { s.control = "auto"; s.autoSpeed = speed; s.autoStopAt = stopAt; },

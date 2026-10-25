@@ -164,7 +164,7 @@ export async function night1(g) {
       g.kind();
       await g.think("He paid in quarters. Every one of them is from nineteen ninety-three or older.");
     });
-    if (!stayed) g.actor("eddie")?.walk([curbAt(eddieAt)], { speed: 1 });
+    if (!stayed) g.actor("eddie")?.walk([curbAt(eddieAt)], { speed: 1, parent: g.actor("eddie").scene });
   } else {
     await g.muse("He dropped his arm and watched me go by.");
     ghostEddie(g);           // (he's on the bus anyway)
@@ -372,11 +372,11 @@ export async function night1(g) {
   await openUp(g, 25000);
   if (f.maraAboard) {
     await g.say("mara", "End of the line, huh. Thanks for the scenic route.");
-    await g.alight("mara", g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)));
+    await g.alight("mara", g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)), { wait: false });
   }
   if (f.junRode) {
     await g.say("jun", "Thanks. Seriously. I'll pay you back.");
-    await g.alight("jun", g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)));
+    await g.alight("jun", g.props.terminal.group.localToWorld(new THREE.Vector3(-6, 0, 20)), { wait: false });
   }
   await g.say("you", "End of the line, sir.");
   await g.wait(1200);

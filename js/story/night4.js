@@ -60,7 +60,7 @@ export async function night4(g) {
       f.carmenRode = true;
       g.kind();
     });
-    if (!stayed) g.actor("carmen")?.walk([curbAt(carmenAt)], { speed: 1 });
+    if (!stayed) g.actor("carmen")?.walk([curbAt(carmenAt)], { speed: 1, parent: g.actor("carmen").scene });
   } else {
     await g.muse("She ran a few steps after the bus. Then she stopped, and stood in the road, looking up and down it.");
   }
@@ -97,7 +97,7 @@ export async function night4(g) {
       await g.say("mara", "I'll be with him. He won't be alone. I promise.");
       g.actor("mara").walk([g.bus.group.localToWorld(g.bus.boardPath[0].clone()), curb("Elm & 4th", 40)], { speed: 1.2, parent: g.actor("mara").scene });
     });
-    if (!stayed && g.actor("mara")) g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2 });
+    if (!stayed && g.actor("mara")) g.actor("mara").walk([curb("Elm & 4th", 40)], { speed: 1.2, parent: g.actor("mara").scene });
   }
   // a block past Elm, the engine dies under you: it coughs, the lights stutter, and the bus coasts to a stop
   if (g.bus.doorsOpen || !g.drive.moving) await closeDoorsAndGo(g);
@@ -171,7 +171,7 @@ export async function night4(g) {
       await g.say("jun", "Just. If something tells you to go faster? Don't.");
       g.actor("jun").walk([g.bus.group.localToWorld(g.bus.boardPath[0].clone()), curb("Market St", 3)], { speed: 1, parent: g.actor("jun").scene });
     });
-    if (!stayed && g.actor("jun")) g.actor("jun").walk([curb("Market St", 3)], { speed: 1 });
+    if (!stayed && g.actor("jun")) g.actor("jun").walk([curb("Market St", 3)], { speed: 1, parent: g.actor("jun").scene });
   } else if (stopped) {
     await g.muse("The posters are gone. Washed off, or torn down. There's a soaked backpack on the bench nobody's claimed.");
   }
@@ -803,8 +803,9 @@ async function sink(g) {
   await g.wait(250);
   // and then she's on you: your mother comes the last of the way, mouth open, right into your face, and all of them
   // surge in behind her. Their own faces, coming the way they've been coming, never a stranger's popping out of
-  // nowhere. (With jumpscares turned off, the light just goes.)
-  if (g.scareHit({ scream: 1.7, shake: 2.6, sound: "underwater_scream", close: true })) {
+  // nowhere.
+  g.scareHit({ scream: 1.7, shake: 2.6, sound: "underwater_scream", close: true });
+  {
     // she comes to right in front of your face, whichever way you're looking (her face a hand's width from yours);
     // the rest come in behind her
     const mom = floating.find((f) => f.p === g.actor("lena"));

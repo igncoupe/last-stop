@@ -4978,15 +4978,20 @@
   "carwoman_glass": "f375c8ed",
   "daniel_door": "ac1bf52b",
   "daniel_rise": "8495fb1e",
+  "daniel_sting": "a881e5ff",
   "daniel_window": "c6c5f21f",
   "door_hands": "ab8d2f78",
   "door_latch": "63e40077",
+  "hood_close": "348c636b",
+  "hood_open": "4696c039",
   "mirror_creep": "687092bd",
   "mirror_drowned": "533fad5b",
   "payphone_ring": "ebf46020",
   "shade_roof": "13980b77",
   "shade_window": "c005647c",
+  "thunder_crack": "7771c9f3",
   "underwater_scream": "06c1bd05",
+  "wet_steps": "a2f4ce1b",
   "window_hands": "a6a74107"
  }
 }

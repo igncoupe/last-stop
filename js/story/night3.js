@@ -336,12 +336,12 @@ export async function night3(g) {
   if (f.junAboard) {
     await g.say("jun", f.junComforted ? "See you tomorrow." : "Night. Be careful, okay?");
     g.spawn("junmom", "junmom", { at: terminalDoor() });
-    await g.alight("jun", terminalDoor());
+    await g.alight("jun", terminalDoor(), { wait: false });
   }
   if (f.junFound) {
     g.actor("junmom")?.watch(g.camera);
     await g.say("junmom", "This is me. Jun wants to meet you, you know. The driver who called. He thinks you're some kind of hero.");
-    await g.alight("junmom", terminalDoor());
+    await g.alight("junmom", terminalDoor(), { wait: false });
   }
   await teodorGone(g, "He's gone again. Just the coin rolling, and a wet seat. He looked so tired tonight.");
   await rheeLateness(g);

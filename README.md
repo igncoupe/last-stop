@@ -16,7 +16,7 @@ Be careful who you stop for. Be more careful who you don't.
 - The Route 9 file: 24 things to find for yourself (missing posters on the shelters, clippings in an old locker at the depot, the 1994 driver's log on your dash). Read every poster and, if you get them home, you'll know all their names.
 - A generated horror score, rain, radio static, and in-world jumpscares: the drowned, a shadow that stalks the route, and cars on the other side of the road that aren't right
 
-> Content warning: jumpscares, loud sounds, flashing lights, and themes of death, drowning and grief. Jumpscares can be turned off on the title screen.
+> Content warning: jumpscares, loud sounds, flashing lights, and themes of death, drowning and grief. There's a "Reduce flashing" setting (Display) for softer lightning and jumpscare flashes.
 
 ## Controls
 

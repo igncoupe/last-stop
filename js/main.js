@@ -117,6 +117,30 @@ function flashLevel(t) {
   if (t < 0.22) return 0.7;
   return 0.35 * Math.max(0, 1 - (t - 0.22) / 0.35);
 }
+// ...and the strike that comes down right on top of you (the stop with no name arriving, or going): for a split
+// second it's blinding, a white-out; at its height whatever it hides changes (onPeak); the thunder cracks with it;
+// and the dark comes straight back. With "Reduce flashing" the flash is a soft one; the strike is the same.
+// One at a time: asked for again while one's going, the one that's going covers both.
+let strike = null;               // { onPeak, peaked }
+const SKY_STRIKE = new THREE.Color(0xcfd8ec);
+const whiteout = document.getElementById("whiteout");
+function strikeDown(onPeak = null) {
+  if (strike) {
+    if (onPeak && strike.peaked) onPeak();
+    else if (onPeak) { const before = strike.onPeak; strike.onPeak = () => { if (before) before(); onPeak(); }; }
+    return;
+  }
+  flashT = 0;
+  strike = { onPeak, peaked: false };
+  Sound.thunderCrack();
+}
+function strikeLevel(t) {
+  if (t < 0.012) return t / 0.012;          // up in a blink
+  if (t < 0.075) return 1;
+  if (t < 0.12) return 0.25;                // a flicker
+  if (t < 0.17) return 0.6;
+  return 0.6 * Math.max(0, 1 - (t - 0.17) / 0.28);
+}
 
 const city = buildCity(scene);
 const props = buildProps(scene);
@@ -126,16 +150,18 @@ const drive = createDrive(bus);
 const player = createPlayer(camera, scene);
 
 const DEFAULTS = {
-  volume: 0.8, voices: 1, music: 1, sfx: 1,
+  volume: 0.8, voices: 1, music: 1, sfx: 1, horror: 1,
   mouse: 1, invertY: false,
-  brightness: 1, fov: 72, grain: true,
-  subs: true, subSize: "medium", scares: true, shake: true,
+  brightness: 1, fov: 72, grain: true, lessFlash: false,
+  subs: true, subSize: "medium", shake: true,
 };
 const settings = Object.assign({ ...DEFAULTS, warned: false }, store.get(SETTINGS) || {});
+// (the jumpscares are always on now: a save from before, with them switched off, forgets that it was)
+if ("scares" in settings) { delete settings.scares; store.set(SETTINGS, settings); }
 const horror = createHorror(camera);
 const shade = createShade(scene);
 const traffic = createTraffic(scene, (name, ...args) => Sound.sfx(name, ...args), (kind, at, dur) => Sound.horn(kind, { at, dur }));
-const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, blendSky, lightning, input, horror, shade, traffic };
+const world = { scene, camera, player, drive, bus, props, places, city, settings, setSky, blendSky, lightning, strikeDown, input, horror, shade, traffic };
 const director = createDirector(world);
 const self = createSelfBody(scene, bus, player, camera);
 world.self = self;
@@ -229,7 +255,9 @@ function watchNorthgate(dt) {
   if (!rescue || !playing) return;
   const atEnd = player.mode === "seat" && drive.stoppedNear(STOPS["Northgate"]);
   const story = $("subtitle").classList.contains("on") || !!document.querySelector("#choices .choice") ||
-    !!document.querySelector(".paper.on") || horror.playing || (!rescue.offered && $("cta").classList.contains("on"));
+    !!document.querySelector(".paper.on") || horror.playing || (!rescue.offered && $("cta").classList.contains("on"))
+    // (someone getting off and walking away, or a scare playing out, is the story going on, not a dead end)
+    || /getting off|boarding|scare|line \(/.test(director.state.waiting || "");
   rescue.idle = atEnd && !story ? rescue.idle + dt : 0;
   const note = $("stuck-note");
   if (!rescue.offered && rescue.idle > 10) {
@@ -239,8 +267,9 @@ function watchNorthgate(dt) {
     note.hidden = false;
     console.warn("Northgate rescue offered; story was waiting on:", director.state.waiting);
   } else if (rescue.offered && story) {
-    rescue.offered = false;                  // the story picked up again by itself
+    rescue.offered = false;                  // the story picked up again by itself: the offer goes away with it
     note.hidden = true;
+    if ($("cta").textContent.includes("End your shift")) ui.hint(null);
   }
   if (rescue.offered && input.hit("KeyE")) {
     const r = rescue;
@@ -267,7 +296,21 @@ if (TEST) window.__tick = (dt) => tick(dt, true);
 function tick(dt, forceDraw = false) {
   if (paused) return;
   stepSky(dt);
-  if (flashT >= 0) {
+  if (strike) {
+    flashT += dt;
+    const soft = settings.lessFlash;
+    const f = flashT > 0.45 ? 0 : strikeLevel(flashT) * (soft ? 0.45 : 1);
+    hemi.intensity = hemiBase + ((soft ? 1.6 : 3.4) - hemiBase) * f;
+    skyLight.intensity = moonBase + (soft ? 3 : 8) * f;
+    scene.background.lerpColors(skyBase, SKY_STRIKE, f);
+    scene.fog.color.lerpColors(skyBase, SKY_STRIKE, f * 0.85);
+    whiteout.style.opacity = String(f * (soft ? 0.12 : 0.9));
+    if (!strike.peaked && flashT >= 0.03) {
+      strike.peaked = true;
+      if (strike.onPeak) strike.onPeak();
+    }
+    if (flashT > 0.45) { strike = null; flashT = -1; whiteout.style.opacity = "0"; }
+  } else if (flashT >= 0) {
     flashT += dt;
     const f = flashT > 0.6 ? 0 : flashLevel(flashT);
     hemi.intensity = hemiBase + (1.9 - hemiBase) * f;
@@ -312,7 +355,7 @@ function tick(dt, forceDraw = false) {
   props.depot.update(dt, clockMinutes());
   busInverse.copy(bus.group.matrixWorld).invert();
   Sound.setInside(insideBus(focus.x, focus.y, focus.z));
-  props.rain.update(dt, focus, (x, y, z) => insideBus(x, y, z) || places.hospital.inside(x, y, z));
+  props.rain.update(dt, focus, (x, y, z) => insideBus(x, y, z) || places.hospital.inside(x, y, z) || props.underShelter(x, y, z, focus));
   updateWater(dt, { camera, lights: lightsOnWater(), rain: props.rain.on });
   props.mystery.update(dt);
   places.hospital.update(dt, camera);
@@ -494,7 +537,7 @@ async function begin(startNight, saved) {
   if (!menuUp) return;                 // a double click starts one game, not two
   Sound.init();
   Sound.setVolume(SILENT ? 0 : settings.volume);
-  Sound.setLevels({ voices: settings.voices, music: settings.music, sfx: settings.sfx });
+  Sound.setLevels({ voices: settings.voices, music: settings.music, sfx: settings.sfx, horror: settings.horror });
   $("screen-title").hidden = true;
   $("screen-settings").hidden = true;
   menuCol.hidden = false;
@@ -555,7 +598,8 @@ const SETTING_TABS = [
     range("volume", "Master volume", 0, 1, 0.01, pct),
     range("voices", "Voices", 0, 1, 0.01, pct),
     range("music", "Music", 0, 1, 0.01, pct),
-    range("sfx", "Effects", 0, 1, 0.01, pct, "Rain, the engine, the doors, the screams"),
+    range("sfx", "Effects", 0, 1, 0.01, pct, "Rain, the engine, the doors"),
+    range("horror", "Scares", 0, 1, 0.01, pct, "Jumpscares, thunder, the stings: they stay loud when you turn the effects down"),
   ] },
   { name: "Controls", keys: true, rows: [
     range("mouse", "Mouse sensitivity", 0.2, 2, 0.05, (v) => `${v.toFixed(2)}x`),
@@ -565,12 +609,12 @@ const SETTING_TABS = [
     range("brightness", "Brightness", 0.6, 1.6, 0.05, pct, "Turn it up if the nights are too dark to see"),
     range("fov", "Field of view", 60, 90, 1, (v) => `${v}°`),
     toggle("grain", "Film grain"),
+    toggle("lessFlash", "Reduce flashing", "Softer lightning and jumpscare flashes"),
     fullscreen,
   ] },
   { name: "Gameplay", rows: [
     toggle("subs", "Subtitles"),
     { key: "subSize", label: "Subtitle size", type: "choice", options: [["small", "Small"], ["medium", "Medium"], ["large", "Large"]] },
-    toggle("scares", "Jumpscares", "Off: the scary moments still happen, just without the faces and the screams"),
     toggle("shake", "Camera shake"),
   ] },
 ];
@@ -584,6 +628,8 @@ const APPLY = {
   voices: (v) => Sound.setLevels({ voices: v }),
   music: (v) => Sound.setLevels({ music: v }),
   sfx: (v) => Sound.setLevels({ sfx: v }),
+  horror: (v) => Sound.setLevels({ horror: v }),
+  lessFlash: (v) => document.body.classList.toggle("less-flash", v),
   mouse: (v) => { input.sensitivity = v; },
   invertY: (v) => { input.invertY = v; },
   brightness: (v) => { canvas.classList.toggle("bright", v !== 1); canvas.style.setProperty("--bright", String(v)); },
