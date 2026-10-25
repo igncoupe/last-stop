@@ -257,7 +257,9 @@ function watchNorthgate(dt) {
   const story = $("subtitle").classList.contains("on") || !!document.querySelector("#choices .choice") ||
     !!document.querySelector(".paper.on") || horror.playing || (!rescue.offered && $("cta").classList.contains("on"))
     // (someone getting off and walking away, or a scare playing out, is the story going on, not a dead end)
-    || /getting off|boarding|scare|line \(/.test(director.state.waiting || "");
+    || /getting off|boarding|scare|line \(/.test(director.state.waiting || "")
+    // (nor is the screen going dark at the end of the shift)
+    || (atEnd && Number(getComputedStyle($("fade")).opacity) > 0.02);
   rescue.idle = atEnd && !story ? rescue.idle + dt : 0;
   const note = $("stuck-note");
   if (!rescue.offered && rescue.idle > 10) {

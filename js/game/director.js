@@ -505,7 +505,11 @@ export function createDirector(w) {
       item.position.set(0, -0.06, 0.07);
       const me = camera.getWorldPosition(new THREE.Vector3());
       if (player.mode === "seat") {
-        if (!onBus(p)) await p.walk([bus.boardPath[0], bus.boardPath[1]], { speed: 1.3, parent: bus.group, ground: bus.groundAt });
+        if (!onBus(p)) {
+          // (up to the doors; onto the bottom step only once they're open)
+          await p.walk([bus.boardPath[0]], { speed: 1.3, parent: bus.group, ground: bus.groundAt });
+          if (await doorsOpenFor(p)) await p.walk([bus.boardPath[1]], { speed: 1.3, parent: bus.group, ground: bus.groundAt });
+        }
         const local = bus.group.worldToLocal(me.clone());
         p.root.rotation.y = Math.atan2(local.x - p.root.position.x, local.z - p.root.position.z);
       } else {

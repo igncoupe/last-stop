@@ -87,6 +87,7 @@ export function createPlayer(camera, scene) {
       s.look = target ? (typeof target === "function" ? target : () => target) : null;
       s.lookRelease = true;
       s.lookFight = 0;
+      s.lookT = 0;
     },
     shake(amount) { s.shake = Math.max(s.shake, amount); },
     setColliders(list) { s.colliders = list; },
@@ -108,6 +109,9 @@ export function createPlayer(camera, scene) {
         }
       }
       // a cutscene, a scare or a "check your mirror" can turn your view
+      // (and a glide gives up after a few seconds: something you can't turn far enough to see, Teodor in the seat
+      // behind you, never drags your view round for the rest of the drive)
+      if (s.look && s.lookRelease && (s.lookT = (s.lookT || 0) + dt) > 4) s.look = null;
       if (s.look) {
         const target = s.look();
         if (!target) {
